@@ -8,6 +8,8 @@ import PostDetail from "./pages/PostDetail";
 import { useAppSelector } from "./app/hooks";
 import { selectToken, selectUsername } from "./features/auth/authSlice";
 import LoginPage from "./pages/LoginPage";
+import SearchPage from "./pages/SearchPage";
+import SearchBar from "./components/SearchBar";
 
 function App() {
   const token = useAppSelector(selectToken);
@@ -18,15 +20,17 @@ function App() {
 
   return (
     <div>
-      <Header />
+      <SearchBar />
+      {/* <Header /> */}
       <main style={{ padding: "20px", minHeight: "70vh" }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/post/:slug" element={<PostDetail />} />
+         <Route path="/search" element={<SearchPage />} />
         </Routes>
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }

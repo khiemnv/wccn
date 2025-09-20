@@ -74,7 +74,7 @@ export default function LoginPage() {
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
           >
-            Đăng nhập
+            Đăng nhập với Google
           </Button>
         </Box>
       </Paper>

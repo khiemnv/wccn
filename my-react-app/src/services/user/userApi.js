@@ -47,7 +47,7 @@ export class BaseApi {
 
       // check cache
       if (!this.map.has(id)) {
-        return { error: "_id not in cache!" };
+        return { error: "id not in cache!" };
       }
 
       await deleteDoc(doc(db, this.collectionName, id));
@@ -109,7 +109,7 @@ export class BaseApi {
 
       // check cache
       if (!this.map.has(id)) {
-        return { error: "_id not in cache!" };
+        return { error: "id not in cache!" };
       }
 
       const ref = doc(db, this.collectionName, id);
@@ -141,14 +141,14 @@ export class BaseApi {
 
   /**
    *
-   * @param {object} entity {_id, ...}
+   * @param {object} entity {id, ...}
    * @returns
    */
   async saveOrCreate(entity) {
     try {
-      const id = entity._id;
+      const id = entity.id;
       if (!id) {
-        return { error: "missing _id!" };
+        return { error: "missing id!" };
       }
 
       if (this.map.has(id)) {
@@ -165,7 +165,7 @@ export class BaseApi {
       await setDoc(ref, body);
 
       // save to cache
-      body._id = id;
+      body.id = id;
       this.map.set(id, cloneObj(body));
 
       return { result: body };
@@ -177,9 +177,9 @@ export class BaseApi {
 
   async save(entity) {
     try {
-      const id = entity._id;
+      const id = entity.id;
       if (!id) {
-        return { error: "missing _id!" };
+        return { error: "missing id!" };
       }
 
       const old = this.map.get(id);
@@ -203,28 +203,28 @@ export class BaseApi {
   }
 
   /**
-   * entity not has property _id
+   * entity not has property id
    * @param {} entity
    * @returns
    */
-  async create({ _id = null, ...entity }) {
+  async create({ id = null, ...entity }) {
     try {
       const body = {};
       Object.keys(this.defaultEntity).forEach((key) => {
         body[key] = entity[key] || this.defaultEntity[key];
       });
 
-      if (_id) {
-        var ref = doc(db, this.collectionName, _id);
+      if (id) {
+        var ref = doc(db, this.collectionName, id);
         var docRef = await setDoc(ref, body);
-        body._id = _id;
-        this.map.set(_id, cloneObj(body));
+        body.id = id;
+        this.map.set(id, cloneObj(body));
       } else {
         ref = collection(db, this.collectionName);
         docRef = await addDoc(ref, body);
         console.log(docRef.id);
         // save to cache
-        body._id = docRef.id;
+        body.id = docRef.id;
         this.map.set(docRef.id, cloneObj(body));
       }
 
@@ -234,7 +234,7 @@ export class BaseApi {
         const logDocRef = await addDoc(logRef, {
           action: "create",
           json: JSON.stringify(body),
-          itemId: body._id,
+          itemId: body.id,
           timestamp: Timestamp.now(),
         });
         console.log("logDocRef:", logDocRef.id);
@@ -258,7 +258,7 @@ export class BaseApi {
 
       // update cache
       // this.map.clear();
-      result.forEach((u) => this.map.set(u._id, cloneObj(u)));
+      result.forEach((u) => this.map.set(u.id, cloneObj(u)));
 
       return { result };
     } catch (ex) {
@@ -274,7 +274,7 @@ export class BaseApi {
 
       // update cache
       this.map.clear();
-      result.forEach((u) => this.map.set(u._id, cloneObj(u)));
+      result.forEach((u) => this.map.set(u.id, cloneObj(u)));
 
       return { result };
     } catch (ex) {
@@ -286,8 +286,8 @@ export class BaseApi {
     const ref = doc(db, this.collectionName, id);
     const docSnap = await getDoc(ref);
     if (docSnap.exists()) {
-      var obj = { ...docSnap.data(), _id: docSnap.id };
-      this.map.set(obj._id, cloneObj(obj));
+      var obj = { ...docSnap.data(), id: docSnap.id };
+      this.map.set(obj.id, cloneObj(obj));
       return { result: obj };
     } else {
       return { error: "not found" };
@@ -351,7 +351,7 @@ class UserApi extends BaseApi {
       const users = snapshotToArray(querySnapshot);
 
       // add to cache
-      users.forEach((u) => this.map.set(u._id, cloneObj(u)));
+      users.forEach((u) => this.map.set(u.id, cloneObj(u)));
 
       // console.log(account, found);
       if (users.length > 0) {
