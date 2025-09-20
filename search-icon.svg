@@ -1,0 +1,12 @@
+<!-- save as magnifier-s.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="1024" height="1024" fill="none">
+  <rect width="64" height="64" rx="12" fill="#FFFFFF"></rect>
+  <g fill="currentColor" transform="translate(6,6)">
+    <!-- circle lens -->
+    <circle cx="22" cy="22" r="14" opacity="0.95"></circle>
+    <!-- handle -->
+    <rect x="32" y="32" width="18" height="6" rx="3" transform="rotate(45 32 32)"></rect>
+    <!-- letter S -->
+    <path d="M18 16c3-2 8-2 8 2 0 3-5 3-7 5-1 1-1 3 1 4 3 1 9 0 9 5 0 5-7 7-11 7" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+  </g>
+</svg>
