@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import wordData from "../data/word.json";
@@ -8,27 +8,15 @@ import { getKey, getTitle } from "../services/search/keyApi";
 import {
   Box,
   Typography,
-  TextField,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableContainer,
   Paper,
-  IconButton,
   Pagination,
   Stack,
   CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Chip,
 } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import HighlightWords from "./HighlightWords";
 
-const CHUNK_SIZE = 20; // should match how files were generated
+const CHUNK_SIZE = 10; // should match how files were generated
 const MAX_POSSIBLE_CHUNKS = 200; // safety limit; adjust if you expect more
 
 function useQuery() {
@@ -84,7 +72,7 @@ export default function SearchPage() {
 
   const view = rows.slice((page - 1) * CHUNK_SIZE, page * CHUNK_SIZE);
   // console.log("view:", view);
-  const titleIds = view.map((v) => v[0].titleId);
+  const titleIds = view.map((v) => v[0].titleId).sort((a, b) => a - b);
   const titles = useSelector(selectTitlesByIds(titleIds));
   console.log("titles ", titleIds.join(","), ":");
   console.log(titles.map(t=>t.path + " " + t.title).join("\n"));
@@ -120,7 +108,7 @@ export default function SearchPage() {
       setLoadingTitle(false);
     }
     loadTitles();
-  }, [page]);
+  }, [page, titleIds.join(",")]);
 
   if (!loaded) {
     return <div>Loading...</div>;
