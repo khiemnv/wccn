@@ -164,11 +164,14 @@ export default function SearchPage() {
         </Stack>
       </Stack> */}
 
-      <Paper elevation={2} sx={{ p: { xs: 1, sm: 2 }, mb: 2 }}>
+      <Paper
+        elevation={2}
+        sx={{ p: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 2 }, mt: { xs: 1, sm: 2 } }}
+      >
         <Stack
           sx={{ paddingBottom: 1 }}
           direction={false ? "column" : "row"}
-          spacing={2}
+          spacing={isMobile ? 1 : 2}
           alignItems={isMobile ? "stretch" : "center"}
         >
           <Typography variant={isMobile ? "body1" : "h6"}>Page</Typography>
@@ -228,7 +231,11 @@ function Title2({ t, isMobile, words }) {
   return (
     <Card
       variant="outlined"
-      sx={{ mb: 2, width: isMobile ? "100%" : "auto", boxSizing: "border-box" }}
+      sx={{
+        mb: isMobile ? 0 : 1,
+        width: isMobile ? "100%" : "auto",
+        boxSizing: "border-box",
+      }}
     >
       <CardHeader title={t.path} subheader={`ID: ${t.titleId}`}></CardHeader>
       <CardContent>
