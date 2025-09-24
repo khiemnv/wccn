@@ -10,10 +10,12 @@ import { selectToken, selectUsername } from "./features/auth/authSlice";
 import LoginPage from "./pages/LoginPage";
 import SearchPage from "./pages/SearchPage";
 import SearchBar from "./components/SearchBar";
+import { useMediaQuery } from "@mui/material";
 
 function App() {
   const token = useAppSelector(selectToken);
   const email = useAppSelector(selectUsername);
+  const isMobile = useMediaQuery('(max-width:600px)');
   if (!token) {
     return <LoginPage></LoginPage>;
   }
@@ -22,12 +24,12 @@ function App() {
     <div>
       <SearchBar />
       {/* <Header /> */}
-      <main style={{ padding: "20px", minHeight: "70vh" }}>
+      <main style={{ padding: isMobile ? "0px" : "20px", minHeight: "70vh" }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/post/:slug" element={<PostDetail />} />
-         <Route path="/search" element={<SearchPage />} />
+          <Route path="/search" element={<SearchPage />} />
         </Routes>
       </main>
       {/* <Footer /> */}
