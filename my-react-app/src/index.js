@@ -9,6 +9,7 @@ import { store } from "./app/store";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { onAuthStateChanged2 } from "./firebase/firebase";
 import { login, logout } from "./features/auth/authSlice";
+import { getRole } from "./services/role/roleApi";
 
 const AuthProvider = ({ children }) => {
   const dispatch = useAppDispatch();
@@ -18,7 +19,8 @@ const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged2((user) => {
       const handleUser = async () => {
         if (user) {
-          dispatch(login({ username: user.email, token: user.uid }));
+          var {result: roleObj} = await getRole(user.email);
+          dispatch(login({ username: user.email, token: user.uid, roleObj }));
         } else {
           dispatch(logout());
         }

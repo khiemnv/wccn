@@ -376,6 +376,7 @@ const userApi = new UserApi();
 
 export const getAllMembers = (daoTrangId, token) => userApi.getAllMembers(daoTrangId, token);
 export const getMembers = (accounts, token) => userApi.getMembers(accounts, token);
+export const getAllUsers = (user, token) => userApi.getAll(token);
 export const createUser = (user, token) => userApi.create(user, token);
 export const updateUser = (id, changes, token) => userApi.update(id, changes, token);
 export const saveUser = (user, token) => userApi.save(user, token);

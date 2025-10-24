@@ -6,16 +6,18 @@ import HomePage from "./pages/HomePage";
 import CategoryPage from "./pages/CategoryPage";
 import PostDetail from "./pages/PostDetail";
 import { useAppSelector } from "./app/hooks";
-import { selectToken, selectUsername } from "./features/auth/authSlice";
+import { selectRoleObj, selectToken, selectUsername } from "./features/auth/authSlice";
 import LoginPage from "./pages/LoginPage";
 import SearchPage from "./pages/SearchPage";
 import SearchBar from "./components/SearchBar";
 import { useMediaQuery } from "@mui/material";
+import UserManager from "./pages/UserManagerPage";
 
 function App() {
   const token = useAppSelector(selectToken);
   const email = useAppSelector(selectUsername);
   const isMobile = useMediaQuery('(max-width:600px)');
+  const roleObj = useAppSelector(selectRoleObj);
   if (!token) {
     return <LoginPage></LoginPage>;
   }
@@ -30,6 +32,7 @@ function App() {
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/search" element={<SearchPage />} />
+          {roleObj && roleObj.sys === "admin" && <Route path="/usermanager" element={<UserManager />} />}
         </Routes>
       </main>
       {/* <Footer /> */}

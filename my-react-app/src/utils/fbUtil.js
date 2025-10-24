@@ -1,6 +1,6 @@
 export function createEntity(doc, entity = {}) {
   return {
-    _id: doc.id,
+    id: doc.id,
     ...entity,
   };
 }
@@ -12,7 +12,7 @@ export function snapshotToArray(snapshot) {
     // console.log(doc.id, " => ", doc.data());
     lst.push({
       ...doc.data(),
-      _id: doc.id,
+      id: doc.id,
     });
   });
   return lst;

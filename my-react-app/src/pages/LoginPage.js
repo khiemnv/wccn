@@ -22,9 +22,9 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Email:", email, "Password:", password);
+    // console.log("Email:", email, "Password:", password);
     var res = await signIn2();
-    console.log(res);
+    // console.log(res);
     const newUser = res.user;
     if (newUser) {
       var { result: roleObj = {} } = await getRole(newUser.email);

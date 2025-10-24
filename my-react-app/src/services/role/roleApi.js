@@ -7,12 +7,18 @@ import { BaseApi } from "../user/userApi";
 class RoleApi extends BaseApi {
   constructor() {
     const defaultEntity = {
-      btc: "",
-      tp: "",
+      keys: "",
+      titles: "",
     };
     super("roles", defaultEntity);
   }
 }
 var roleApi = new RoleApi()
 
-export const getRole = (gmail, token) => roleApi.getOne(gmail, token);
+export const getRole = (gmail, token) => roleApi.getOne(gmail);
+export const getAllRoles = () => roleApi.getAll();
+export const createRole = (role, token) => roleApi.create(role);
+export const updateRole = (id, changes, token) => roleApi.update(id, changes);
+export const saveRole = (role, token) => roleApi.save(role);
+export const removeRole = (id, token) => roleApi.remove(id);
+export const saveOrCreateRole = (role, token) => roleApi.saveOrCreate(role);

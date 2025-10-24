@@ -41,16 +41,20 @@ export const slice = createSlice({
   reducers: {
     editUser: (state, action) => {
       const { id, changes } = action.payload;
-      const user = state.users.find((u) => u._id === id);
+      const user = state.users.find((u) => u.id === id);
       patch(user, changes);
     },
     addUser: (state, action) => {
       const { user } = action.payload;
       state.users.push(user);
     },
+    setAllUsers: (state, action) => {
+      const { users } = action.payload;
+      state.users = users;
+    },
     deleteUser: (state, action) => {
       const { userId } = action.payload;
-      const index = state.members.findIndex(u=>u._id === userId)
+      const index = state.users.findIndex(u=>u.id === userId)
       console.log(index, userId)
       if (index !== -1) {
         state.users.splice(index,1);
@@ -76,11 +80,12 @@ export const slice = createSlice({
 export const {
   editUser,
   addUser,
+  setAllUsers,
   deleteUser,
 } = slice.actions;
 export const selectUsers = (state) => state.user.users;
 export const selectUserById = (state, id) =>
-  state.user.users.find((u) => u._id === id);
+  state.user.users.find((u) => u.id === id);
 
 export default slice.reducer;
 function patch(entity,changes) {
