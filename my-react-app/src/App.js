@@ -12,6 +12,7 @@ import SearchPage from "./pages/SearchPage";
 import SearchBar from "./components/SearchBar";
 import { useMediaQuery } from "@mui/material";
 import UserManager from "./pages/UserManagerPage";
+import Bai8 from "./pages/Bai8";
 
 function App() {
   const token = useAppSelector(selectToken);
@@ -32,6 +33,8 @@ function App() {
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/Bai8" element={<Bai8 />} />          
+
           {roleObj && roleObj.sys === "admin" && <Route path="/usermanager" element={<UserManager />} />}
         </Routes>
       </main>
