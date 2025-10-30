@@ -30,6 +30,7 @@ function App() {
       <main style={{ padding: isMobile ? "0px" : "20px", minHeight: "70vh" }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/wccn" element={<HomePage />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/search" element={<SearchPage />} />

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import wordData from "../data/word.json";
@@ -28,6 +28,7 @@ import {
   CardHeader,
 } from "@mui/material";
 import HighlightWords from "./HighlightWords";
+import { set } from "firebase/database";
 
 const CHUNK_SIZE = 10; // should match how files were generated
 const MAX_POSSIBLE_CHUNKS = 200; // safety limit; adjust if you expect more
@@ -36,12 +37,11 @@ function useQuery() {
   return new URLSearchParams(useLocation().search);
 }
 
-// data = [{ word: string, titles: string[] }]
+// in_keys = [{ word: string, titles: [{titleId:int, paras:[]}] }]
 function findTitlesForSearch(keys) {
   const map = new Map();
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
-    // console.log(key.titles);
     const titles = key.titles;
     titles.forEach((t) => {
       if (!map.has(t.titleId)) {
@@ -52,7 +52,62 @@ function findTitlesForSearch(keys) {
     });
   }
 
-  return Array.from(map.values()).filter((arr) => arr.length === keys.length);
+  const threshold = 10*keys.length; // adjust as needed
+
+  const calcDiff = (arr) => {
+    let d = 0;
+    var paths = [];
+    arr[0].paras.forEach((p) => {
+      p.pos.forEach((pos) => {
+        paths.push({
+          arr: [{ paraId: p.paraId, pos: pos }],
+          d: 0,
+        });
+      });
+    });
+    for (let i = 1; i < arr.length; i++) {
+      paths = paths.filter((path) => {
+        var temp = undefined; 
+        arr[i].paras.forEach((para) => {
+          para.pos.forEach((pos) => {
+            var diff = Math.min(
+              ...path.arr.map(
+                (x) =>
+                  Math.abs(x.paraId - para.paraId) * 100 +
+                  Math.abs(x.pos - pos)
+              )
+            );
+            if (diff < threshold) { // threshold
+              if ((!temp) || (diff < temp.d)) {
+                temp = {
+                  w: { paraId: para.paraId, pos: pos },
+                  d: diff,
+                };
+              }
+            }
+          });
+        });
+        if (!temp) {
+          return false;
+        } else {
+          path.arr.push(temp.w);
+          path.d = temp.d;
+          return true;
+        }
+      });
+
+      if (paths.length === 0) {
+        return Infinity;
+      }    
+    }
+    
+    d = Math.min(...paths.map(p=>p.d));
+    return d;
+  }
+
+  var grp = Array.from(map.values()).filter((arr) => arr.length === keys.length);
+  var titles = grp.map(arr => ({titleId: arr[0].titleId, d: calcDiff(arr), arr}))
+  return titles.filter(t => t.d < threshold).sort((a,b) => a.d - b.d);
 }
 
 export default function SearchPage() {
@@ -70,11 +125,13 @@ export default function SearchPage() {
   const [filterKeyId, setFilterKeyId] = useState("");
   const [error, setError] = useState(null);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [rows, setRows] = useState([]);
 
   // Find title sets for each word
   const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
+  const keyIdToWord = {};
   const keyIds = words
-    .map((word) => parseInt(wordData[word]))
+    .map((word) => {var keyId = parseInt(wordData[word]); keyIdToWord[keyId] = word; return keyId;})
     .filter(Boolean)
     .sort((a, b) => a - b);
   const keys = useSelector(selectKeysByIds(keyIds));
@@ -83,12 +140,11 @@ export default function SearchPage() {
     keys.map((k) => `${k.word}: ${k.titles.length} titles`).join("\n")
   );
 
-  const rows = findTitlesForSearch(keys);
   // console.log("Search results for", query, ":", rows );
 
   const view = rows.slice((page - 1) * CHUNK_SIZE, page * CHUNK_SIZE);
-  // console.log("view:", view);
-  const titleIds = view.map((v) => v[0].titleId).sort((a, b) => a - b);
+  console.log("view:", view);
+  const titleIds = view.map((v) => v.titleId).sort((a, b) => a - b);
   const titles = useSelector(selectTitlesByIds(titleIds));
   console.log("titles ", titleIds.join(","), ":");
   console.log(titles.map((t) => t.path + " " + t.title).join("\n"));
@@ -97,12 +153,14 @@ export default function SearchPage() {
       for (let i = 0; i < keyIds.length; i++) {
         const key = keys.find((k) => k.keyId === keyIds[i]);
         if (!key) {
-          const { result } = await getKey(keyIds[i].toString());
+          var keyId = keyIds[i];
+          const { result } = await getKey(keyId);
           if (result) {
-            dispatch(addKey({ key: result }));
+            dispatch(addKey({ key: {word: keyIdToWord[keyId], ...result} }));
           }
         }
       }
+
       setLoaded(true);
     };
 
@@ -112,7 +170,7 @@ export default function SearchPage() {
   useEffect(() => {
     async function loadTitles() {
       for (let i = 0; i < view.length; i++) {
-        const titleId = view[i][0].titleId;
+        const titleId = view[i].titleId;
         const title = titles.find((t) => t.titleId === titleId);
         if (!title) {
           const { result } = await getTitle(titleId.toString());
@@ -125,6 +183,13 @@ export default function SearchPage() {
     }
     loadTitles();
   }, [page, titleIds.join(",")]);
+
+  useEffect(() => {
+    if (keys.length === keyIds.length) {
+      var rows = findTitlesForSearch(keys);
+      setRows(rows);
+    }
+  },[keys.map(k=>k.keyId).join(",")]);
 
   if (!loaded) {
     return <div>Loading...</div>;
