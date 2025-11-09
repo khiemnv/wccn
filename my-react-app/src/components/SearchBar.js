@@ -23,6 +23,7 @@ import ClearIcon from "@mui/icons-material/Clear";
 import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
 import SettingsIcon from "@mui/icons-material/Settings";
+import PeopleIcon from "@mui/icons-material/People";
 
 function SearchBar() {
   const dispatch = useAppDispatch();
@@ -35,6 +36,7 @@ function SearchBar() {
     if (!query.trim()) return;
     console.log("🔍 Searching for:", query);
     navigate(`/search?q=${encodeURIComponent(query)}`);
+    setQuery("");
   };
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
@@ -48,7 +50,8 @@ function SearchBar() {
   };
   const menuItems = [
     { text: "Home", icon: <HomeIcon />, roles: ["admin", "user", "guest"] },
-    { text: "User Manger", icon: <SearchIcon />, roles: ["admin"] },
+    { text: "Search", icon: <SearchIcon />, roles: ["admin", "user", "guest"] },
+    { text: "User Manger", icon: <PeopleIcon />, roles: ["admin"] },
     { text: "Settings", icon: <SettingsIcon />,roles: ["admin"] },
   ];
     // Filter menu items by role
@@ -62,6 +65,8 @@ function SearchBar() {
       navigate("/");
     } else if (item === "User Manger") {
       navigate("/usermanager");
+    } else if (item === "Search") {
+      navigate("/search");
     } else if (item === "Settings") {
       alert("Open Settings");
     }
@@ -74,7 +79,7 @@ function SearchBar() {
           <IconButton edge="start" color="inherit" onClick={toggleDrawer(true)}>
             <MenuIcon />
           </IconButton>
-          <TextField
+          {/* <TextField
             variant="outlined"
             size="small"
             placeholder="Search…"
@@ -102,7 +107,7 @@ function SearchBar() {
                 </InputAdornment>
               ),
             }}
-          />
+          /> */}
           {/* <Typography variant="body1">{user}</Typography> */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Button color="inherit" onClick={() => dispatch(logout())}>
