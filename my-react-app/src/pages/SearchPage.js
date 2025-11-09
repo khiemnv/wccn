@@ -7,6 +7,7 @@ import {
   addKey,
   addTitle,
   selectKeysByIds,
+  selectMode,
   selectTitlesByIds,
 } from "../features/search/searchSlice";
 import { getKey, getTitle } from "../services/search/keyApi";
@@ -26,9 +27,17 @@ import {
   Button,
   Collapse,
   CardHeader,
+  TextField,
+  IconButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import HighlightWords from "./HighlightWords";
 import { set } from "firebase/database";
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from "@mui/icons-material/Search";
 
 const CHUNK_SIZE = 10; // should match how files were generated
 const MAX_POSSIBLE_CHUNKS = 200; // safety limit; adjust if you expect more
@@ -112,17 +121,19 @@ function findTitlesForSearch(keys) {
 
 export default function SearchPage() {
   const query = useQuery().get("q");
+  const mode = useQuery().get("mode") || "QA";
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width:600px)");
+  // const mode = useSelector(selectMode);
 
   const [loaded, setLoaded] = useState(false);
   const [page, setPage] = useState(1);
   const [chunkData, setChunkData] = useState([]);
   const [loadingTitle, setLoadingTitle] = useState(false);
   const [totalPages, setTotalPages] = useState(null); // unknown until we detect missing file
-  const [search, setSearch] = useState("");
-  const [filterKeyId, setFilterKeyId] = useState("");
+  const [search, setSearch] = useState(query || "");
+  const [filter, setFilter] = useState("QA");
   const [error, setError] = useState(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [rows, setRows] = useState([]);
@@ -134,7 +145,7 @@ export default function SearchPage() {
     .map((word) => {var keyId = parseInt(wordData[word]); keyIdToWord[keyId] = word; return keyId;})
     .filter(Boolean)
     .sort((a, b) => a - b);
-  const keys = useSelector(selectKeysByIds(keyIds));
+  const keys = useSelector(state => selectKeysByIds(state, mode, keyIds));
   console.log("keys ", keyIds.join(","), ":");
   console.log(
     keys.map((k) => `${k.word}: ${k.titles.length} titles`).join("\n")
@@ -145,18 +156,22 @@ export default function SearchPage() {
   const view = rows.slice((page - 1) * CHUNK_SIZE, page * CHUNK_SIZE);
   console.log("view:", view);
   const titleIds = view.map((v) => v.titleId).sort((a, b) => a - b);
-  const titles = useSelector(selectTitlesByIds(titleIds));
+  const titles = useSelector(state => selectTitlesByIds(state, mode, titleIds));
   console.log("titles ", titleIds.join(","), ":");
   console.log(titles.map((t) => t.path + " " + t.title).join("\n"));
+  useEffect(() => {
+    setFilter(mode);
+    setSearch(query);
+  }, [mode, query]);
   useEffect(() => {
     const loadKeys = async () => {
       for (let i = 0; i < keyIds.length; i++) {
         const key = keys.find((k) => k.keyId === keyIds[i]);
         if (!key) {
           var keyId = keyIds[i];
-          const { result } = await getKey(keyId);
+          const { result } = await getKey(keyId, mode);
           if (result) {
-            dispatch(addKey({ key: {word: keyIdToWord[keyId], ...result} }));
+            dispatch(addKey({ key: {word: keyIdToWord[keyId], ...result}, mode:mode }));
           }
         }
       }
@@ -165,7 +180,7 @@ export default function SearchPage() {
     };
 
     loadKeys();
-  }, [dispatch, keyIds.join(",")]);
+  }, [mode, keyIds.join(",")]);
 
   useEffect(() => {
     async function loadTitles() {
@@ -173,23 +188,24 @@ export default function SearchPage() {
         const titleId = view[i].titleId;
         const title = titles.find((t) => t.titleId === titleId);
         if (!title) {
-          const { result } = await getTitle(titleId.toString());
+          const { result } = await getTitle(titleId.toString(), mode);
           if (result) {
-            dispatch(addTitle({ title: result }));
+            dispatch(addTitle({ title: result, mode:mode }));
           }
         }
       }
       setLoadingTitle(false);
     }
     loadTitles();
-  }, [page, titleIds.join(",")]);
+  }, [page, mode, titleIds.join(",")]);
 
   useEffect(() => {
     if (keys.length === keyIds.length) {
       var rows = findTitlesForSearch(keys);
       setRows(rows);
+      setTotalPages(Math.ceil(rows.length / CHUNK_SIZE));
     }
-  },[keys.map(k=>k.keyId).join(",")]);
+  },[mode, keys.map(k=>k.keyId).join(",")]);
 
   if (!loaded) {
     return <div>Loading...</div>;
@@ -197,37 +213,43 @@ export default function SearchPage() {
   const handleChangePage = (e, value) => {
     setPage(value);
   };
-  const handleRefresh = () => setRefreshTick((t) => t + 1);
+  const handleSearch = () => navigate(`/search?q=${encodeURIComponent(search)}&mode=${filter}`);
   return (
     <Box sx={{ p: { xs: 0, sm: 1 } }}>
-      {/* <Stack
+      <Stack
         direction="row"
         alignItems="center"
         justifyContent="space-between"
         spacing={2}
         mb={2}
+        mt = {2}
       >
-        <Typography variant="h5">Tìm kiếm</Typography>
+        {/* <Typography variant="h5">Tìm kiếm</Typography> */}
 
         <Stack direction="row" spacing={1} alignItems="center">
           <TextField
             label="Search"
-            value={query}
-            onChange={(e) => navigate(`/search?q=${encodeURIComponent(query)}`)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             size="small"
           />
-          <TextField
-            label="Filter TitleId"
-            value={filterKeyId}
-            onChange={(e) => setFilterKeyId(e.target.value)}
-            size="small"
-            sx={{ width: 120 }}
-          />
-          <IconButton onClick={handleRefresh} title="Reload page chunk">
-            <RefreshIcon />
+          <FormControl size="small" sx={{ width: 140 }}>
+            <InputLabel id="mode-select-label">Mode</InputLabel>
+            <Select
+              labelId="mode-select-label"
+              label="Mode"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <MenuItem value="QA">QA</MenuItem>
+              <MenuItem value="BBH">BBH</MenuItem>
+            </Select>
+          </FormControl>
+          <IconButton onClick={handleSearch} title="Reload page chunk">
+            <SearchIcon />
           </IconButton>
         </Stack>
-      </Stack> */}
+      </Stack>
 
       <Paper
         elevation={2}
@@ -239,7 +261,7 @@ export default function SearchPage() {
           spacing={isMobile ? 1 : 2}
           alignItems={isMobile ? "stretch" : "center"}
         >
-          <Typography variant={isMobile ? "body1" : "h6"}>Page</Typography>
+          {isMobile || <Typography variant={isMobile ? "body1" : "h6"}>Page</Typography>}
           <Pagination
             count={totalPages === null ? Math.max(page + 3, 10) : totalPages}
             page={page}
@@ -249,9 +271,7 @@ export default function SearchPage() {
             boundaryCount={1}
             size={isMobile ? "small" : "medium"}
           />
-          <Typography>
-            <strong>{rows.length}</strong> results
-          </Typography>
+          {isMobile || <Typography><strong>{rows.length}</strong> results</Typography>}
           {loadingTitle && <CircularProgress size={CHUNK_SIZE} />}
           {error && <Typography color="error">Error: {error}</Typography>}
         </Stack>

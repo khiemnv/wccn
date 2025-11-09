@@ -19,20 +19,8 @@ import { BaseApi } from "../user/userApi";
  */
 
 class KeyApi extends BaseApi {
-  constructor() {
-    const defaultEntity = {
-      titles: "",
-      word: "",
-      keyId: 0,
-    };
-    super("keys", defaultEntity);
-  }
-
-  async getKey(keyId) {
+  async getKey(keyId, mode) {
     try {
-      // initialize key object
-      var keyObj = {keyId: parseInt(keyId), titles: []};
-
       // fetch {id: number, key: string}
 
       // const ref = doc(db, this.collectionName, keyId.toString());
@@ -46,25 +34,30 @@ class KeyApi extends BaseApi {
       // }
 
       // fetch titles: T<tid>P<pid>,<pos>...T<tid>P<pid>,<pos>...
-      const querySnapshot = await getDocs(collection(db, `keys/${keyId}/t`));
+      const map = new Map();
+      const querySnapshot = await getDocs(collection(db, mode === "QA" ? `keys/${keyId}/t` : `ccn/bbh/keys/${keyId}/t`));
       querySnapshot.forEach((doc) => {
         // doc.data() is never undefined for query doc snapshots
         // console.log(doc.id, " => ", doc.data());
         var grp = doc.data();
-        var tlst=grp.data.split("T");
+        var tlst = grp.data.split("T");
         tlst.shift();
-        tlst.forEach(t=>{
-          var tObj = {paras: []};
+        tlst.forEach((t) => {
+          var tObj = { paras: [] };
           var plst = t.split("P");
           var p1st = plst.shift();
           tObj.titleId = parseInt(p1st);
-          plst.forEach(p=>{
-            var arr = p.split(",").map(x=>parseInt(x));
-            var paraId = arr.shift()
-            tObj.paras.push({paraId, pos: arr})
+          plst.forEach((p) => {
+            var arr = p.split(",").map((x) => parseInt(x));
+            var paraId = arr.shift();
+            tObj.paras.push({ paraId, pos: arr });
           });
-          keyObj.titles.push(tObj);
-        })});
+          map.set(tObj.titleId, tObj);
+        });
+      });
+
+      // create key object
+      var keyObj = { keyId: parseInt(keyId), titles: Array.from(map.values()) };
 
       // update cache
       // this.map.clear();
@@ -76,40 +69,8 @@ class KeyApi extends BaseApi {
     }
   }
 }
-var keyApi = new KeyApi()
-const originalKeyGet = keyApi.getOne;
-
-function keyWrapMethod(originalMethod, idx) {
-  return async function() {
-    try {
-      // Call the original method
-      var { error, result } = await originalMethod.apply(this, arguments);
-      if (!error) {
-        if (Array.isArray(result)) {
-          result.forEach(function(key) {
-            key.keyId = parseInt(key.keyId);
-            key.titles = JSON.parse(key.titles);
-            key.titles.forEach(t=>{
-              t.titleId = parseInt(t.titleId);
-            });
-          });
-        } else {
-          result.keyId = parseInt(result.keyId);
-          result.titles = JSON.parse(result.titles);
-          result.titles.forEach(t=>{
-            t.titleId = parseInt(t.titleId);
-          });
-        }
-      }
-      return { error, result };
-    } catch(e) {
-      return {error: e, result: null};
-    }
-    
-  }
-}
-keyApi.getOne = keyWrapMethod(originalKeyGet, 0);
-export const getKey = (id) => keyApi.getKey(id);
+var keyApi = new KeyApi();
+export const getKey = (id, mode = "QA") => keyApi.getKey(id, mode);
 
 class TitleApi extends BaseApi {
   constructor() {
@@ -121,16 +82,16 @@ class TitleApi extends BaseApi {
     super("titles", defaultEntity);
   }
 }
-var titleApi = new TitleApi()
+var titleApi = new TitleApi();
 const originalTitleGet = titleApi.getOne;
 
 function titleWrapMethod(originalMethod, idx) {
-  return async function() {
+  return async function () {
     // Call the original method
     var { error, result } = await originalMethod.apply(this, arguments);
     if (!error) {
       if (Array.isArray(result)) {
-        result.forEach(function(title) {
+        result.forEach(function (title) {
           title.titleId = parseInt(title.titleId);
         });
       } else {
@@ -138,7 +99,21 @@ function titleWrapMethod(originalMethod, idx) {
       }
     }
     return { error, result };
-  }
+  };
 }
 titleApi.getOne = titleWrapMethod(originalTitleGet, 0);
-export const getTitle = (id) => titleApi.getOne(id);
+
+class TitleApi2 extends BaseApi {
+  constructor() {
+    const defaultEntity = {
+      titles: "",
+      word: "",
+      keyId: 0,
+    };
+    super("ccn/bbh/titles", defaultEntity);
+  }
+}
+var titleApi2 = new TitleApi2();
+titleApi2.getOne = titleWrapMethod(titleApi2.getOne, 0);
+
+export const getTitle = (id, mode = "QA") => mode === "QA" ? titleApi.getOne(id) : titleApi2.getOne(id);

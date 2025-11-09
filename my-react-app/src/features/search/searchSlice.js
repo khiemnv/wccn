@@ -3,6 +3,9 @@ import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit"
 const initialState = {
   titles: [],
   keys: [],
+  QA : {keys: [], titles: []},
+  BBH : {keys: [], titles: []},
+  mode: "QA",
   status: "idle",
 };
 
@@ -11,43 +14,47 @@ export const slice = createSlice({
   initialState,
   reducers: {
     editTitle: (state, action) => {
-      const { id, changes } = action.payload;
-      const title = state.titles.find((t) => t.titleId === id);
+      const { id, changes, mode } = action.payload;
+      const title = state[mode].titles.find((t) => t.titleId === id);
       patch(title, changes);
     },
     addTitle: (state, action) => {
-      const { title } = action.payload;
-      if (!state.titles.find(t=>t.titleId === title.titleId)) {
-        state.titles.push(title);
+      const { title, mode } = action.payload;
+      if (!state[mode].titles.find(t=>t.titleId === title.titleId)) {
+        state[mode].titles.push(title);
       }
     },
     deleteTitle: (state, action) => {
-      const { titleId } = action.payload;
-      const index = state.titles.findIndex(t=>t.titleId === titleId)
+      const { titleId, mode } = action.payload;
+      const index = state[mode].titles.findIndex(t=>t.titleId === titleId)
       if (index !== -1) {
-        state.titles.splice(index,1);
+        state[mode].titles.splice(index,1);
       }
     },
     editKey: (state, action) => {
-      const { id, changes } = action.payload;
-      const key = state.keys.find((k) => k.keyId === id);
+      const { id, changes, mode } = action.payload;
+      const key = state[mode].keys.find((k) => k.keyId === id);
       patch(key, changes);
     },
     addKey: (state, action) => {
-      const {key} = action.payload;
-      if (state.keys.find(k=>k.keyId === key.keyId)) {
+      const {key, mode} = action.payload;
+      if (state[mode].keys.find(k=>k.keyId === key.keyId)) {
         // already exists
       } else {
-        state.keys.push(key);
+        state[mode].keys.push(key);
       }
     },
     deleteKey: (state, action) => {
-      const { keyId } = action.payload;
-      const index = state.keys.findIndex(k=>k.keyId === keyId)
+      const { keyId, mode } = action.payload;
+      const index = state[mode].keys.findIndex(k=>k.keyId === keyId)
       if (index !== -1) {
-        state.keys.splice(index,1);
+        state[mode].keys.splice(index,1);
       }
     },
+    changeMode: (state, action) => {
+      const {mode} = action.payload;
+      state.mode = mode;
+    }
   },
 });
 
@@ -58,22 +65,32 @@ export const {
   editKey,
   addKey,
   deleteKey,
+  changeMode,
 } = slice.actions;
-export const selectAllTitles = (state) => state.search.titles;
-export const selectTitlesByIds = (ids) =>
-  createSelector([selectAllTitles], (titles) =>
-    titles.filter((t) => ids.includes(t.titleId))
+const selectSearch = (state) => state.search;
+const selectModePara = (state, mode) => mode;
+const selectModeTitlesPara = (state, mode, ids) => ids;
+export const selectTitlesByIds = 
+  createSelector([selectSearch, selectModePara, selectModeTitlesPara], (search, mode, ids) =>
+  { 
+    console.log("Selecting titles by ids:", ids, "in mode:", mode);
+    return search[mode].titles.filter((t) => ids.includes(t.titleId)); 
+  }
   );
-export const selectTitleById = (id) =>
-  createSelector([selectAllTitles], (titles) =>
-    titles.find((t) => t.titleId === id)
+const selectModeTitleParam = (state, mode, id) => id;
+export const selectTitleById = 
+  createSelector([selectSearch, selectModePara, selectModeTitleParam], (search, mode, id) =>
+    search[mode].titles.find((t) => t.titleId === id)
   );
-export const selectAllKeys = (state) => state.search.keys;
-export const selectKeysByIds = (ids) =>
-  createSelector([selectAllKeys], (keys) => keys.filter((k) => ids.includes(k.keyId)));
+
+export const selectAllKeys = 
+createSelector([selectSearch, selectModePara], (search, mode) => search[mode].keys);
+const selectModeKeysPara = (state, mode, ids) => ids;
+export const selectKeysByIds = 
+  createSelector([selectSearch, selectModePara, selectModeKeysPara], (search, mode, ids) => search[mode].keys.filter((k) => ids.includes(k.keyId)));
 export const selectKeyById = (id) =>
   createSelector([selectAllKeys], (keys) => keys.find((k) => k.keyId === id));
-
+export const selectMode = (state) => state.search.mode;
 export default slice.reducer;
 
 function patch(entity,changes) {
