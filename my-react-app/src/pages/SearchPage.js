@@ -1,7 +1,8 @@
 import { use, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import wordData from "../data/word.json";
+import qaWords from "../data/qaWords.json";
+import bbhWords from "../data/bbhWords.json";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addKey,
@@ -141,6 +142,7 @@ export default function SearchPage() {
   // Find title sets for each word
   const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
   const keyIdToWord = {};
+  const wordData = mode === "QA" ? qaWords : bbhWords;
   const keyIds = words
     .map((word) => {var keyId = parseInt(wordData[word]); keyIdToWord[keyId] = word; return keyId;})
     .filter(Boolean)

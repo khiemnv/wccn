@@ -24,6 +24,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PeopleIcon from "@mui/icons-material/People";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 function SearchBar() {
   const dispatch = useAppDispatch();
@@ -108,11 +109,11 @@ function SearchBar() {
               ),
             }}
           /> */}
-          {/* <Typography variant="body1">{user}</Typography> */}
+          <Typography variant="body1">{user}</Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Button color="inherit" onClick={() => dispatch(logout())}>
-              Đăng xuất
-            </Button>
+            <IconButton color="inherit" onClick={() => dispatch(logout())} aria-label="logout">
+              <LogoutIcon />
+            </IconButton>
           </Box>
         </Toolbar>
       </AppBar>

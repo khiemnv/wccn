@@ -35,7 +35,7 @@ class KeyApi extends BaseApi {
 
       // fetch titles: T<tid>P<pid>,<pos>...T<tid>P<pid>,<pos>...
       const map = new Map();
-      const querySnapshot = await getDocs(collection(db, mode === "QA" ? `keys/${keyId}/t` : `ccn/bbh/keys/${keyId}/t`));
+      const querySnapshot = await getDocs(collection(db, mode === "QA" ? `keys/${keyId}/t` : `bbh_keys/${keyId}/t`));
       querySnapshot.forEach((doc) => {
         // doc.data() is never undefined for query doc snapshots
         // console.log(doc.id, " => ", doc.data());
@@ -110,7 +110,7 @@ class TitleApi2 extends BaseApi {
       word: "",
       keyId: 0,
     };
-    super("ccn/bbh/titles", defaultEntity);
+    super("bbh_titles", defaultEntity);
   }
 }
 var titleApi2 = new TitleApi2();

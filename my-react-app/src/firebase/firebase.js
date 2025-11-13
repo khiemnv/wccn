@@ -22,7 +22,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // emu
-if (process.env.REACT_APP_USE_EMU) {
+// if (process.env.NODE_ENV === 'development') {
+if (process.env.REACT_APP_USE_EMU === 'true') {
   connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
 }
 // const db = getFirestore(app);
@@ -48,7 +49,8 @@ export const onAuthStateChanged2 = (cb) => onAuthStateChanged(auth, cb);
 export const db = getFirestore(app);
 
 // emu
-if (process.env.REACT_APP_USE_EMU) {
+//if (process.env.NODE_ENV === 'development') {
+if (process.env.REACT_APP_USE_EMU === 'true') {
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
 }
 

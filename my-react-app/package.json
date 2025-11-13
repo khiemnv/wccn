@@ -1,5 +1,4 @@
 {
-  "homepage": "https://khiemnv.github.io/wccn/",
   "name": "my-react-app",
   "version": "0.1.0",
   "private": true,
@@ -25,6 +24,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "dev": "env-cmd -f .env.development react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
@@ -49,6 +49,7 @@
     ]
   },
   "devDependencies": {
+    "env-cmd": "^11.0.0",
     "gh-pages": "^6.3.0"
   }
 }
