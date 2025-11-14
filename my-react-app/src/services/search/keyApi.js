@@ -75,9 +75,10 @@ export const getKey = (id, mode = "QA") => keyApi.getKey(id, mode);
 class TitleApi extends BaseApi {
   constructor() {
     const defaultEntity = {
-      titles: "",
-      word: "",
-      keyId: 0,
+      paragraphs: [],
+      path: "",
+      title: "",
+      titleId: 0,
     };
     super("titles", defaultEntity);
   }
@@ -106,9 +107,10 @@ titleApi.getOne = titleWrapMethod(originalTitleGet, 0);
 class TitleApi2 extends BaseApi {
   constructor() {
     const defaultEntity = {
-      titles: "",
-      word: "",
-      keyId: 0,
+      paragraphs: [],
+      path: "",
+      title: "",
+      titleId: 0,
     };
     super("bbh_titles", defaultEntity);
   }
@@ -116,4 +118,5 @@ class TitleApi2 extends BaseApi {
 var titleApi2 = new TitleApi2();
 titleApi2.getOne = titleWrapMethod(titleApi2.getOne, 0);
 
+export const updateTitle = (id, changes, mode = "QA") => mode === "QA" ? titleApi.update(id, changes) : titleApi2.update(id, changes);
 export const getTitle = (id, mode = "QA") => mode === "QA" ? titleApi.getOne(id) : titleApi2.getOne(id);

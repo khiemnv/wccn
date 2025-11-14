@@ -7,11 +7,12 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   addKey,
   addTitle,
+  editTitle,
   selectKeysByIds,
   selectMode,
   selectTitlesByIds,
 } from "../features/search/searchSlice";
-import { getKey, getTitle } from "../services/search/keyApi";
+import { getKey, getTitle, updateTitle } from "../services/search/keyApi";
 import {
   Box,
   Typography,
@@ -34,11 +35,21 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  styled,
+  Menu,
+  Modal,
 } from "@mui/material";
 import HighlightWords from "./HighlightWords";
 import { set } from "firebase/database";
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from "@mui/icons-material/Search";
+
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { selectRoleObj } from "../features/auth/authSlice";
 
 const CHUNK_SIZE = 10; // should match how files were generated
 const MAX_POSSIBLE_CHUNKS = 200; // safety limit; adjust if you expect more
@@ -62,7 +73,7 @@ function findTitlesForSearch(keys) {
     });
   }
 
-  const threshold = 10*keys.length; // adjust as needed
+  const threshold = 10 * keys.length; // adjust as needed
 
   const calcDiff = (arr) => {
     let d = 0;
@@ -77,7 +88,7 @@ function findTitlesForSearch(keys) {
     });
     for (let i = 1; i < arr.length; i++) {
       paths = paths.filter((path) => {
-        var temp = undefined; 
+        var temp = undefined;
         arr[i].paras.forEach((para) => {
           para.pos.forEach((pos) => {
             var diff = Math.min(
@@ -108,16 +119,16 @@ function findTitlesForSearch(keys) {
 
       if (paths.length === 0) {
         return Infinity;
-      }    
+      }
     }
-    
-    d = Math.min(...paths.map(p=>p.d));
+
+    d = Math.min(...paths.map(p => p.d));
     return d;
   }
 
   var grp = Array.from(map.values()).filter((arr) => arr.length === keys.length);
-  var titles = grp.map(arr => ({titleId: arr[0].titleId, d: calcDiff(arr), arr}))
-  return titles.filter(t => t.d < threshold).sort((a,b) => a.d - b.d);
+  var titles = grp.map(arr => ({ titleId: arr[0].titleId, d: calcDiff(arr), arr }))
+  return titles.filter(t => t.d < threshold).sort((a, b) => a.d - b.d);
 }
 
 export default function SearchPage() {
@@ -144,7 +155,7 @@ export default function SearchPage() {
   const keyIdToWord = {};
   const wordData = mode === "QA" ? qaWords : bbhWords;
   const keyIds = words
-    .map((word) => {var keyId = parseInt(wordData[word]); keyIdToWord[keyId] = word; return keyId;})
+    .map((word) => { var keyId = parseInt(wordData[word]); keyIdToWord[keyId] = word; return keyId; })
     .filter(Boolean)
     .sort((a, b) => a - b);
   const keys = useSelector(state => selectKeysByIds(state, mode, keyIds));
@@ -173,7 +184,7 @@ export default function SearchPage() {
           var keyId = keyIds[i];
           const { result } = await getKey(keyId, mode);
           if (result) {
-            dispatch(addKey({ key: {word: keyIdToWord[keyId], ...result}, mode:mode }));
+            dispatch(addKey({ key: { word: keyIdToWord[keyId], ...result }, mode: mode }));
           }
         }
       }
@@ -192,7 +203,7 @@ export default function SearchPage() {
         if (!title) {
           const { result } = await getTitle(titleId.toString(), mode);
           if (result) {
-            dispatch(addTitle({ title: result, mode:mode }));
+            dispatch(addTitle({ title: result, mode: mode }));
           }
         }
       }
@@ -207,7 +218,7 @@ export default function SearchPage() {
       setRows(rows);
       setTotalPages(Math.ceil(rows.length / CHUNK_SIZE));
     }
-  },[mode, keys.map(k=>k.keyId).join(",")]);
+  }, [mode, keys.map(k => k.keyId).join(",")]);
 
   if (!loaded) {
     return <div>Loading...</div>;
@@ -224,7 +235,7 @@ export default function SearchPage() {
         justifyContent="space-between"
         spacing={2}
         mb={2}
-        mt = {2}
+        mt={2}
       >
         {/* <Typography variant="h5">Tìm kiếm</Typography> */}
 
@@ -280,7 +291,7 @@ export default function SearchPage() {
         <Grid container spacing={isMobile ? 1 : 2}>
           {(titles || []).map((t) => (
             <Grid item xs={12} sm={6} md={4} key={t.titleId}>
-              <Title2 t={t} isMobile={isMobile} words={words}></Title2>
+              <TitleCard t={t} isMobile={isMobile} words={words}></TitleCard>
             </Grid>
           ))}
         </Grid>
@@ -312,10 +323,234 @@ function renderTitle(t, isMobile, words) {
     </Box>
   );
 }
-function Title2({ t, isMobile, words }) {
+
+
+const ExpandMore = styled((props) => {
+  const { expand, ...other } = props;
+  return <IconButton {...other} />;
+})(({ theme }) => ({
+  marginLeft: 'auto',
+  transition: theme.transitions.create('transform', {
+    duration: theme.transitions.duration.shortest,
+  }),
+  variants: [
+    {
+      props: ({ expand }) => !expand,
+      style: {
+        transform: 'rotate(0deg)',
+      },
+    },
+    {
+      props: ({ expand }) => !!expand,
+      style: {
+        transform: 'rotate(180deg)',
+      },
+    },
+  ],
+}));
+
+
+function EditMenu({onEdit, onDel, onCopy}) {
+  const mode = useSelector(selectMode);
+  const roleObj = useSelector(selectRoleObj);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const canWrite = mode === "QA" ? roleObj.titles === "write" : roleObj.bbh_titles === "write";
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  return (
+    <div>
+      <IconButton
+        aria-label="more"
+        id="long-button"
+        aria-controls={open ? 'long-menu' : undefined}
+        aria-expanded={open ? 'true' : undefined}
+        aria-haspopup="true"
+        onClick={handleClick}
+      >
+        <MoreVertIcon />
+      </IconButton>
+      <Menu
+        id="demo-customized-menu"
+        slotProps={{
+          list: {
+            'aria-labelledby': 'demo-customized-button',
+          },
+        }}
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+      >
+        <MenuItem onClick={() => { handleClose(); onCopy(); }} disableRipple>
+          <ContentCopyIcon />
+          Copy
+        </MenuItem>
+        {
+          canWrite && <MenuItem onClick={() => { handleClose(); onEdit(); }} disableRipple>
+            <EditIcon />
+            Sửa
+          </MenuItem>}
+        {canWrite && <MenuItem onClick={() => { handleClose(); onDel(); }} disableRipple>
+          <DeleteIcon />
+          Xóa
+        </MenuItem>}
+      </Menu>
+    </div>
+  );
+}
+
+function EditTitleModal({
+  open,
+  onClose,
+  data,
+  onSubmit,
+}) {
+  const [path, setPath] = useState(data.path);
+  const [title, setTitle] = useState(data.title);
+  const [paragraphs, setParagraphs] = useState(data.paragraphs);
+
+  const handleParagraphChange = (index, value) => {
+    const updated = [...paragraphs];
+    updated[index] = value;
+    setParagraphs(updated);
+  };
+
+  const addParagraph = () => setParagraphs([...paragraphs, ""]);
+  const removeParagraph = (index) =>
+    setParagraphs(paragraphs.filter((_, i) => i !== index));
+
+  const handleSave = () => {
+    onSubmit({
+      titleId: data.titleId,
+      path,
+      title,
+      paragraphs,
+    });
+    onClose();
+  };
+
+console.log("edit title modal")
+  
+  return (
+     <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 600,
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: 4,
+          maxHeight: "80vh",
+          overflowY: "auto",
+          borderRadius: 2,
+        }}
+      >
+        <Typography variant="h5" mb={2}>
+          {`Edit Title: ${data.titleId}`}
+        </Typography>
+
+        {/* path */}
+        <TextField
+          label="Path"
+          fullWidth
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          sx={{ mb: 3 }}
+        />
+
+        {/* Title */}
+        <TextField
+          label="Title"
+          fullWidth
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          sx={{ mb: 3 }}
+        />
+
+        {/* Paragraphs */}
+        <Typography variant="h6" mb={1}>
+          Paragraphs
+        </Typography>
+
+        {paragraphs.map((p, idx) => (
+          <Box key={idx} sx={{ position: "relative", mb: 2 }}>
+            <TextField
+              multiline
+              rows={3}
+              fullWidth
+              value={p}
+              onChange={(e) => handleParagraphChange(idx, e.target.value)}
+              label={`Paragraph ${idx + 1}`}
+            />
+            <IconButton
+              onClick={() => removeParagraph(idx)}
+              sx={{ position: "absolute", top: 0, right: 0 }}
+            >
+              <DeleteIcon color="error" />
+            </IconButton>
+          </Box>
+        ))}
+
+        <Button variant="outlined" onClick={addParagraph} sx={{ mb: 3 }}>
+          + Add Paragraph
+        </Button>
+
+        {/* Actions */}
+        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+          <Button variant="text" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave}>
+            Save
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
+  );
+}
+function isSameArray(a, b) {
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+}
+function TitleCard({ t, isMobile, words }) {
+  const mode = useSelector(selectMode);
+  const dispatch = useDispatch();
   const [expanded, setExpanded] = useState(false);
   const handleExpandClick = () => setExpanded((prev) => !prev);
+  const handleEdit = () => {setOpen(true)}
+  const handleCopy = () => {}
+  const handleDel = () => {}
+  const handleSave = async (edited) => {
+    var changes = {};
+    ["title", "path"].forEach(field=>{
+      if (edited[field] !== t[field] ) {
+        changes[field] = edited[field];
+      }
+    });
+    if (!isSameArray(edited.paragraphs,t.paragraphs)) {
+      changes.paragraphs = edited.paragraphs;
+    }
+    if (Object.keys(changes).length) {
+      var {result, error} = await updateTitle(t.id, changes, mode);
+      console.log(result, error);
+      if (result) {
+        dispatch(editTitle({id:t.titleId, changes, mode}))
+      }
+    }
+  }
+  const [open, setOpen] = useState(false);
   return (
+    (!open)?
     <Card
       variant="outlined"
       sx={{
@@ -324,7 +559,9 @@ function Title2({ t, isMobile, words }) {
         boxSizing: "border-box",
       }}
     >
-      <CardHeader title={t.path} subheader={`ID: ${t.titleId}`}></CardHeader>
+      <CardHeader title={t.path} subheader={`ID: ${t.titleId}`} action={
+        <EditMenu onEdit={handleEdit} onCopy={handleCopy} onDel={handleDel} />
+      }></CardHeader>
       <CardContent>
         <Typography variant="h6">
           {t.title.replace(/Question|cau/, "Câu")}
@@ -336,6 +573,14 @@ function Title2({ t, isMobile, words }) {
             {expanded ? "Ẩn chi tiết" : "Chi tiết"}
           </Button>
         </Box>
+        <ExpandMore
+          expand={expanded}
+          onClick={handleExpandClick}
+          aria-expanded={expanded}
+          aria-label="show more"
+        >
+          <ExpandMoreIcon />
+        </ExpandMore>
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent>
@@ -374,5 +619,11 @@ function Title2({ t, isMobile, words }) {
         )}
       </Collapse>
     </Card>
+    :<EditTitleModal
+        open={open}
+        onClose={() => setOpen(false)}
+        data={t}
+        onSubmit={handleSave}
+      />
   );
 }
