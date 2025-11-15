@@ -443,7 +443,14 @@ function TitleCard({ t, isMobile, words }) {
   const handleEdit = () => {
     setOpen(true);
   };
-  const handleCopy = () => { };
+  const handleCopy = async () => {
+    try {
+      const text = [t.path, `ID: ${t.titleId}`, ...t.paragraphs].join("\r\n");
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error("Copy failed:", err);
+    }
+  };
   const handleDel = () => { };
   const handleSave = async (edited) => {
     var changes = {};
@@ -511,13 +518,14 @@ function TitleCard({ t, isMobile, words }) {
                 .trim()
                 .replace("question", "Câu hỏi")
                 .replace("answer", "CCN chỉ dạy")
+                .replace(/Cô (Chủ nhiệm|CN)/i, "CCN")
             )
             .filter((p) => p !== "")
             .map((s, idx) => {
-              const isCauHoi = s.match("Câu hỏi|CCN chỉ dạy");
+              const isSubtitle = s.match("^Câu hỏi|^CCN chỉ dạy");
               return (
                 <Box key={idx}>
-                  {isCauHoi ? (
+                  {isSubtitle ? (
                     <Typography
                       variant="subtitle2"
                       sx={{ fontWeight: 600, mt: 0.5, mb: 0.5 }}
