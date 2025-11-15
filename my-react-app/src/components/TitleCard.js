@@ -23,6 +23,7 @@ import {
   styled,
   Menu,
   Modal,
+  Autocomplete,
 } from "@mui/material";
 import HighlightWords from "./HighlightWords";
 
@@ -32,6 +33,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import AddIcon from "@mui/icons-material/Add";
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { selectRoleObj } from "../features/auth/authSlice";
 
 const ExpandMore = styled((props) => {
@@ -141,6 +143,9 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
   const [path, setPath] = useState(data.path);
   const [title, setTitle] = useState(data.title);
   const [paragraphs, setParagraphs] = useState(data.paragraphs);
+  const [tags, setTags] = useState([]);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
 
   const handleParagraphChange = (index, value) => {
     const updated = [...paragraphs];
@@ -148,7 +153,8 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
     setParagraphs(updated);
   };
 
-  const addParagraph = () => setParagraphs([...paragraphs, ""]);
+  const tagLst = ["quan chung", "nghi le", "tri su"];
+  const availableTags = tagLst.filter((tag) => !tags.includes(tag));
   const removeParagraph = (index) =>
     setParagraphs(paragraphs.filter((_, i) => i !== index));
   const insertParagraph = (idx) => {
@@ -156,6 +162,48 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
     newParagraphs.splice(idx + 1, 0, "");
     setParagraphs(newParagraphs);
   };
+
+  const handleDragStart = (index) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (dragOverIndex !== index) setDragOverIndex(index);
+  };
+
+  const handleDragLeave = (index) => {
+    if (dragOverIndex === index) setDragOverIndex(null);
+  };
+
+  const handleDrop = (targetIndex) => {
+    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+      const updated = [...paragraphs];
+      const [draggedParagraph] = updated.splice(draggedIndex, 1);
+      updated.splice(targetIndex, 0, draggedParagraph);
+      setParagraphs(updated);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    // If a drag ended while over an item but drop wasn't fired,
+    // ensure we still reorder based on the current dragOverIndex.
+    if (
+      draggedIndex !== null &&
+      dragOverIndex !== null &&
+      draggedIndex !== dragOverIndex
+    ) {
+      const updated = [...paragraphs];
+      const [draggedParagraph] = updated.splice(draggedIndex, 1);
+      updated.splice(dragOverIndex, 0, draggedParagraph);
+      setParagraphs(updated);
+    }
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   const handleSave = () => {
     onSubmit({
       titleId: data.titleId,
@@ -210,74 +258,76 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
           sx={{ mb: 2 }}
         />
 
+        {/* Tags */}
+        <Box sx={{ mb: 2 }}>
+          <Autocomplete
+            multiple
+            freeSolo
+            options={availableTags}
+            value={tags}
+            onChange={(event, newValue) => setTags(newValue || [])}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Tags"
+                size={isMobile ? "small" : "medium"}
+              />
+            )}
+          />
+        </Box>
+
+
         {/* Paragraphs */}
         <Typography variant={isMobile ? "subtitle1" : "h6"} mb={1}>
-          Paragraphs
+          Paragraphs (drag to reorder)
         </Typography>
 
-        {paragraphs.map((p, idx) => (
-          <Box key={idx} sx={{ position: "relative", mb: 2 }}>
-            <TextField
-              multiline
-              minRows={2}
-              maxRows={12}
-              onInput={(e) => {
-                const ta = e.target;
-                ta.style.height = "auto";
-                ta.style.height = `${ta.scrollHeight}px`;
-              }}
-              fullWidth
-              value={p}
-              onChange={(e) => handleParagraphChange(idx, e.target.value)}
-              label={`Paragraph ${idx + 1}`}
-              size={isMobile ? "small" : "medium"}
-            />
+        {paragraphs.map((p, idx) => {
+          const isDragged = draggedIndex === idx;
+          const isDragOver = dragOverIndex === idx && !isDragged;
+          return (
             <Box
+              key={idx}
               sx={{
-                position: "absolute",
-                bottom: isMobile ? 8 : 0,
-                right: 0,
-                display: "flex",
-                gap: 0.5,
+                position: "relative",
+                mb: 2,
+                opacity: isDragged ? 0.5 : 1,
+                transition: "opacity 0.2s, background-color 0.15s",
+                backgroundColor: isDragOver ? "rgba(25,118,210,0.08)" : isDragged ? "action.hover" : "transparent",
+                borderRadius: 1,
+                p: 1,
               }}
+              draggable
+              onDragStart={() => handleDragStart(idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragEnter={() => setDragOverIndex(idx)}
+              onDragLeave={() => handleDragLeave(idx)}
+              onDrop={() => handleDrop(idx)}
+              onDragEnd={handleDragEnd}
             >
-              <IconButton
-                onClick={() => insertParagraph(idx)}
-                size={isMobile ? "small" : "medium"}
-                title="Insert new paragraph after this"
-              >
-                <AddIcon color="primary" />
-              </IconButton>
-              <IconButton 
-                onClick={() => removeParagraph(idx)} 
-                size={isMobile ? "small" : "medium"}
-              >
-                <DeleteIcon color="error" />
-              </IconButton>
+              <ParagraphEditor
+                p={p}
+                handleParagraphChange={handleParagraphChange}
+                idx={idx}
+                isMobile={isMobile}
+                insertParagraph={insertParagraph}
+                removeParagraph={removeParagraph}
+              />
             </Box>
-          </Box>
-        ))}
-
-        <Button 
-          variant="outlined" 
-          onClick={addParagraph} 
-          fullWidth={isMobile}
-          sx={{ mb: 3 }}
-        >
-          + Add Paragraph
-        </Button>
+          );
+        })}
 
         {/* Actions */}
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, flexDirection: isMobile ? "column" : "row" }}>
-          <Button 
-            variant="text" 
+          <Button
+            variant="text"
             onClick={onClose}
             fullWidth={isMobile}
           >
             Cancel
           </Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={handleSave}
             fullWidth={isMobile}
           >
@@ -288,6 +338,63 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
     </Modal>
   );
 }
+
+function ParagraphEditor({ p, handleParagraphChange, idx, isMobile, insertParagraph, removeParagraph }) {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <Box>
+      <TextField
+        multiline
+        minRows={2}
+        maxRows={12}
+        onInput={(e) => {
+          const ta = e.target;
+          ta.style.height = "auto";
+          ta.style.height = `${ta.scrollHeight}px`;
+        }}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        fullWidth
+        value={p}
+        onChange={(e) => handleParagraphChange(idx, e.target.value)}
+        label={`Paragraph ${idx + 1}`}
+        size={isMobile ? "small" : "medium"}
+      />
+
+      {!isFocused && (
+        <Box sx={{ position: "absolute", top: 2, left: 2 }}>
+          <Box sx={{ display: "flex", gap: 0.5 }}>
+            <IconButton>
+              <DragIndicatorIcon color="primary" sx={{ transform: "rotate(90deg)" }} />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
+      {!isFocused && (
+        <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+          <Box sx={{ display: "flex", gap: 0.5 }}>
+            <IconButton
+              onClick={() => insertParagraph(idx)}
+              size={isMobile ? "small" : "medium"}
+              title="Insert new paragraph after this"
+            >
+              <AddIcon color="primary" />
+            </IconButton>
+            <IconButton
+              onClick={() => removeParagraph(idx)}
+              size={isMobile ? "small" : "medium"}
+            >
+              <DeleteIcon color="error" />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+
 function isSameArray(a, b) {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
@@ -300,8 +407,8 @@ function TitleCard({ t, isMobile, words }) {
   const handleEdit = () => {
     setOpen(true);
   };
-  const handleCopy = () => {};
-  const handleDel = () => {};
+  const handleCopy = () => { };
+  const handleDel = () => { };
   const handleSave = async (edited) => {
     var changes = {};
     ["title", "path"].forEach((field) => {
@@ -360,40 +467,40 @@ function TitleCard({ t, isMobile, words }) {
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent>
           {t.paragraphs
-                .map((p) =>
-                  p
-                    .trim()
-                    .replace("question", "Câu hỏi")
-                    .replace("answer", "CCN chỉ dạy")
-                )
-                .filter((p) => p !== "")
-                .map((s, idx) => {
-                  const isCauHoi = s.match("Câu hỏi|CCN chỉ dạy");
-                  return (
-                    <Box key={idx}>
-                      {isCauHoi ? (
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600, mt: 0.5, mb: 0.5 }}
-                          color="primary"
-                        >
-                          {s}
-                        </Typography>
-                      ) : (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
-                          •{" "}
-                          <HighlightWords
-                            text={s.replace(/^[-\s]+/, "")}
-                            words={words}
-                          />
-                        </Typography>
-                      )}
-                    </Box>
-                  );
-                })}
+            .map((p) =>
+              p
+                .trim()
+                .replace("question", "Câu hỏi")
+                .replace("answer", "CCN chỉ dạy")
+            )
+            .filter((p) => p !== "")
+            .map((s, idx) => {
+              const isCauHoi = s.match("Câu hỏi|CCN chỉ dạy");
+              return (
+                <Box key={idx}>
+                  {isCauHoi ? (
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 600, mt: 0.5, mb: 0.5 }}
+                      color="primary"
+                    >
+                      {s}
+                    </Typography>
+                  ) : (
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                    >
+                      •{" "}
+                      <HighlightWords
+                        text={s.replace(/^[-\s]+/, "")}
+                        words={words}
+                      />
+                    </Typography>
+                  )}
+                </Box>
+              );
+            })}
         </CardContent>
         {expanded && (
           <Box sx={{ textAlign: "left", mt: 1, ml: 1 }}>

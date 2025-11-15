@@ -1,136 +1,108 @@
 import {
-  AppBar,
-  Box,
-  Button,
-  Drawer,
+  FormControl,
   IconButton,
-  InputAdornment,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  TextField,
-  Toolbar,
-  Typography,
+  InputBase,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
 } from "@mui/material";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "../app/hooks";
-import { logout, selectRoleObj, selectUsername } from "../features/auth/authSlice";
 import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Clear";
-import MenuIcon from "@mui/icons-material/Menu";
-import HomeIcon from "@mui/icons-material/Home";
-import SettingsIcon from "@mui/icons-material/Settings";
-import PeopleIcon from "@mui/icons-material/People";
-import LogoutIcon from "@mui/icons-material/Logout";
+import { useDispatch, useSelector } from "react-redux";
+import { selectSortByDate, setSortByDate, selectMode, changeMode } from "../features/search/searchSlice";
 
-function SearchBar() {
-  const dispatch = useAppDispatch();
-  const user = useAppSelector(selectUsername);
-  const [query, setQuery] = useState("");
-  const navigate = useNavigate();
-  const roleObj = useAppSelector(selectRoleObj);
-  const handleClear = () => setQuery("");
-  const handleSearch = () => {
-    if (!query.trim()) return;
-    console.log("🔍 Searching for:", query);
-    navigate(`/search?q=${encodeURIComponent(query)}`);
-    setQuery("");
-  };
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-  const [open, setOpen] = useState(false);
+export { default as MenuAppBar } from "./MenuAppBar";
+export { ResponsiveAppBar } from "./ResponsiveAppBar";
 
-  const toggleDrawer = (state) => () => {
-    setOpen(state);
-  };
-  const menuItems = [
-    { text: "Home", icon: <HomeIcon />, roles: ["admin", "user", "guest"] },
-    { text: "Search", icon: <SearchIcon />, roles: ["admin", "user", "guest"] },
-    { text: "User Manger", icon: <PeopleIcon />, roles: ["admin"] },
-    { text: "Settings", icon: <SettingsIcon />,roles: ["admin"] },
-  ];
-    // Filter menu items by role
-  const userRole = roleObj ? roleObj.sys || "guest" : "guest";
-  const visibleItems = menuItems.filter((item) =>
-    item.roles.includes(userRole)
-  );
-  // console.log("User Role:", userRole, "Visible Items:", visibleItems);
-  const handleMenuClick = (item) => {
-    if (item === "Home") {
-      navigate("/");
-    } else if (item === "User Manger") {
-      navigate("/usermanager");
-    } else if (item === "Search") {
-      navigate("/search");
-    } else if (item === "Settings") {
-      alert("Open Settings");
-    }
-    setOpen(false); // close sidebar after click
-  };
-  return (
-    <>
-      <AppBar position="static">
-        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-          <IconButton edge="start" color="inherit" onClick={toggleDrawer(true)}>
-            <MenuIcon />
-          </IconButton>
-          {/* <TextField
-            variant="outlined"
-            size="small"
-            placeholder="Search…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown} // ✅ Trigger search on Enter
-            sx={{
-              backgroundColor: "white",
-              borderRadius: 2,
-              minWidth: 250,
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconButton onClick={handleSearch}>
-                    <SearchIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-              endAdornment: query && (
-                <InputAdornment position="end">
-                  <IconButton onClick={handleClear} edge="end">
-                    <ClearIcon />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          /> */}
-          <Typography variant="body1">{user}</Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <IconButton color="inherit" onClick={() => dispatch(logout())} aria-label="logout">
-              <LogoutIcon />
-            </IconButton>
-          </Box>
-        </Toolbar>
-      </AppBar>
-      <Drawer anchor="left" open={open} onClose={toggleDrawer(false)}>
-        <List sx={{ width: 250 }}>
-          {visibleItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton onClick={() => handleMenuClick(item.text)}>
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-    </>
-  );
+export function TitleSearchBar({onSearch}) {
+  const dispatch = useDispatch();
+  const sortByDate = useSelector(selectSortByDate);
+  const filter = useSelector(selectMode);
+  
+  return <Stack
+    direction="row"
+    alignItems="center"
+    justifyContent="space-between"
+    spacing={2}
+    mb={2}
+    mt={2}
+  >
+    {/* <Typography variant="h5">Tìm kiếm</Typography> */}
+
+    <Stack direction="row" spacing={1} alignItems="center">
+      {/* <TextField
+          label="Search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size="small"
+        /><IconButton onClick={handleSearch} title="Reload page chunk">
+            <SearchIcon />
+          </IconButton> */}
+      <CustomizedInputBase onSearch={onSearch}></CustomizedInputBase>
+      <FormControl size="small">
+        <InputLabel id="mode-select-label">Mode</InputLabel>
+        <Select
+          labelId="mode-select-label"
+          label="Mode"
+          value={filter}
+          onChange={(e) => dispatch(changeMode({ mode: e.target.value }))}
+        >
+          <MenuItem value="QA">QA</MenuItem>
+          <MenuItem value="BBH">BBH</MenuItem>
+        </Select>
+      </FormControl>
+      <FormControl size="small">
+        <InputLabel id="sort-select-label">Sort</InputLabel>
+        <Select
+          labelId="sort-select-label"
+          label="Sort"
+          value={sortByDate}
+          onChange={(e) => dispatch(setSortByDate({ sortByDate: e.target.value }))}
+        >
+          <MenuItem value="dsc">Mới hơn</MenuItem>
+          <MenuItem value="asc">Cũ hơn</MenuItem>
+        </Select>
+      </FormControl>
+    </Stack>
+  </Stack>;
 }
 
-export default SearchBar;
+function CustomizedInputBase({ onSearch }) {
+  const [searchStr, setSearchStr] = useState("");
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onSearch(searchStr);
+    }
+  };
+  return (
+    <Paper
+      component="form"
+      sx={{ p: "2px 4px", display: "flex", alignItems: "center" }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSearch(searchStr);
+      }}
+    >
+      <InputBase
+        sx={{ ml: 1, flex: 1 }}
+        placeholder="Search"
+        inputProps={{ "aria-label": "search" }}
+        value={searchStr}
+        onChange={(e) => setSearchStr(e.target.value)}
+        onKeyDown={handleKeyDown}
+      />
+      <IconButton
+        type="button"
+        sx={{ p: "6px" }}
+        aria-label="search"
+        onClick={() => onSearch(searchStr)}
+      >
+        <SearchIcon />
+      </IconButton>
+    </Paper>
+  );
+}

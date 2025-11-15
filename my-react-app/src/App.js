@@ -9,7 +9,7 @@ import { useAppSelector } from "./app/hooks";
 import { selectRoleObj, selectToken, selectUsername } from "./features/auth/authSlice";
 import LoginPage from "./pages/LoginPage";
 import SearchPage from "./pages/SearchPage";
-import SearchBar from "./components/SearchBar";
+import SearchBar, { ResponsiveAppBar } from "./components/SearchBar";
 import { useMediaQuery } from "@mui/material";
 import UserManager from "./pages/UserManagerPage";
 import Bai8 from "./pages/Bai8";
@@ -25,7 +25,7 @@ function App() {
 
   return (
     <div>
-      <SearchBar />
+      <ResponsiveAppBar />
       {/* <Header /> */}
       <main style={{ padding: isMobile ? "0px" : "20px", minHeight: "70vh" }}>
         <Routes>

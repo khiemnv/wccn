@@ -6,6 +6,8 @@ const initialState = {
   QA : {keys: [], titles: []},
   BBH : {keys: [], titles: []},
   mode: "QA",
+  sortByDate: "dsc",
+  tags: [],
   status: "idle",
 };
 
@@ -54,7 +56,31 @@ export const slice = createSlice({
     changeMode: (state, action) => {
       const {mode} = action.payload;
       state.mode = mode;
-    }
+    },
+    setSortByDate: (state, action) => {
+      const { sortByDate } = action.payload;
+      state.sortByDate = sortByDate;
+    },
+    addTag: (state, action) => {
+      const { tag } = action.payload;
+      if (!state.tags.includes(tag)) {
+        state.tags.push(tag);
+      }
+    },
+    removeTag: (state, action) => {
+      const { tag } = action.payload;
+      const index = state.tags.indexOf(tag);
+      if (index !== -1) {
+        state.tags.splice(index, 1);
+      }
+    },
+    setTags: (state, action) => {
+      const { tags } = action.payload;
+      state.tags = tags;
+    },
+    clearTags: (state) => {
+      state.tags = [];
+    },
   },
 });
 
@@ -66,6 +92,11 @@ export const {
   addKey,
   deleteKey,
   changeMode,
+  setSortByDate,
+  addTag,
+  removeTag,
+  setTags,
+  clearTags,
 } = slice.actions;
 const selectSearch = (state) => state.search;
 const selectModePara = (state, mode) => mode;
@@ -91,6 +122,8 @@ export const selectKeysByIds =
 export const selectKeyById = (id) =>
   createSelector([selectAllKeys], (keys) => keys.find((k) => k.keyId === id));
 export const selectMode = (state) => state.search.mode;
+export const selectSortByDate = (state) => state.search.sortByDate;
+export const selectTags = (state) => state.search.tags;
 export default slice.reducer;
 
 function patch(entity,changes) {

@@ -10,6 +10,7 @@ import {
   editTitle,
   selectKeysByIds,
   selectMode,
+  selectSortByDate,
   selectTitlesByIds,
 } from "../features/search/searchSlice";
 import { getKey, getTitle, updateTitle } from "../services/search/keyApi";
@@ -53,6 +54,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import AddIcon from "@mui/icons-material/Add";
 import { selectRoleObj } from "../features/auth/authSlice";
 import TitleCard from "../components/TitleCard";
+import { TitleSearchBar } from "../components/SearchBar";
 
 const CHUNK_SIZE = 10; // should match how files were generated
 const MAX_POSSIBLE_CHUNKS = 200; // safety limit; adjust if you expect more
@@ -177,21 +179,20 @@ function CustomizedInputBase({ onSearch }) {
 }
 export default function SearchPage() {
   const query = useQuery().get("q");
-  const mode = useQuery().get("mode") || "QA";
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width:600px)");
   // const mode = useSelector(selectMode);
 
   const [loaded, setLoaded] = useState(false);
-  const [sort, setSort] = useState("asc");
+  const sortByDate = useSelector(selectSortByDate);
+  const mode = useSelector(selectMode);
   const [sortedRows, setSortedRows] = useState([]);
   const [page, setPage] = useState(1);
   const [chunkData, setChunkData] = useState([]);
   const [loadingTitle, setLoadingTitle] = useState(false);
   const [totalPages, setTotalPages] = useState(null); // unknown until we detect missing file
   const [search, setSearch] = useState(query || "");
-  const [filter, setFilter] = useState("QA");
   const [error, setError] = useState(null);
   const [refreshTick, setRefreshTick] = useState(0);
   const [rows, setRows] = useState([]);
@@ -222,14 +223,14 @@ export default function SearchPage() {
   const titles = useSelector((state) =>
     selectTitlesByIds(state, mode, titleIds)
   ).sort((a, b) =>
-    sort === "asc" ? a.titleId - b.titleId : b.titleId - a.titleId
+    sortByDate === "asc" ? a.titleId - b.titleId : b.titleId - a.titleId
   );
   console.log("titles ", titleIds.join(","), ":");
   console.log(titles.map((t) => t.path + " " + t.title).join("\n"));
   useEffect(() => {
-    setFilter(mode);
+    // dispatch(changeMode({ mode }));
     setSearch(query);
-  }, [mode, query]);
+  }, [mode, query, dispatch]);
   useEffect(() => {
     const loadKeys = async () => {
       for (let i = 0; i < keyIds.length; i++) {
@@ -281,10 +282,10 @@ export default function SearchPage() {
 
   useEffect(() => {
     var sorted = rows.sort((a, b) =>
-      sort === "asc" ? a.titleId - b.titleId : b.titleId - a.titleId
+      sortByDate === "asc" ? a.titleId - b.titleId : b.titleId - a.titleId
     );
     setSortedRows(sorted);
-  }, [sort, rows]);
+  }, [sortByDate, rows]);
 
   if (!loaded) {
     return <div>Loading...</div>;
@@ -293,55 +294,10 @@ export default function SearchPage() {
     setPage(value);
   };
   const handleSearch = (searchStr) =>
-    navigate(`/search?q=${encodeURIComponent(searchStr)}&mode=${filter}`);
+    navigate(`/search?q=${encodeURIComponent(searchStr)}`);
   return (
     <Box sx={{ p: { xs: 0, sm: 1 } }}>
-      <Stack
-        direction="row"
-        alignItems="center"
-        justifyContent="space-between"
-        spacing={2}
-        mb={2}
-        mt={2}
-      >
-        {/* <Typography variant="h5">Tìm kiếm</Typography> */}
-
-        <Stack direction="row" spacing={1} alignItems="center">
-          {/* <TextField
-            label="Search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            size="small"
-          /><IconButton onClick={handleSearch} title="Reload page chunk">
-              <SearchIcon />
-            </IconButton> */}
-          <CustomizedInputBase onSearch={handleSearch}></CustomizedInputBase>
-          <FormControl size="small">
-            <InputLabel id="mode-select-label">Mode</InputLabel>
-            <Select
-              labelId="mode-select-label"
-              label="Mode"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <MenuItem value="QA">QA</MenuItem>
-              <MenuItem value="BBH">BBH</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl size="small">
-            <InputLabel id="sort-select-label">Sort</InputLabel>
-            <Select
-              labelId="sort-select-label"
-              label="Sort"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              <MenuItem value="dsc">Mới hơn</MenuItem>
-              <MenuItem value="asc">Cũ hơn</MenuItem>
-            </Select>
-          </FormControl>
-        </Stack>
-      </Stack>
+      <TitleSearchBar onSearch={handleSearch}/>
 
       <Paper
         elevation={2}
@@ -384,3 +340,4 @@ export default function SearchPage() {
     </Box>
   );
 }
+
