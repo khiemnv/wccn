@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMediaQuery } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 import {
   editTitle,
   selectMode,
+  selectTags,
+  setTags,
 } from "../features/search/searchSlice";
-import { updateTitle } from "../services/search/keyApi";
+import { getAllTags, updateTitle } from "../services/search/keyApi";
 import {
   Box,
   Typography,
-  Stack,
   Card,
   CardContent,
   CardActions,
@@ -140,12 +141,45 @@ function EditMenu({ onEdit, onDel, onCopy }) {
 
 function EditTitleModal({ open, onClose, data, onSubmit }) {
   const isMobile = useMediaQuery('(max-width:600px)');
+  const dispatch = useDispatch();
   const [path, setPath] = useState(data.path);
   const [title, setTitle] = useState(data.title);
   const [paragraphs, setParagraphs] = useState(data.paragraphs);
-  const [tags, setTags] = useState([]);
+  // Selected tags for this title (editable by the user)
+  const [selectedTags, setSelectedTags] = useState([]);
+  // All available tags (from API or from store) used to suggest options
+  const allTags = useSelector(selectTags);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+
+  // --- Effects ------------------------------------------------------------
+  // Initialize selected tags from incoming `data.tags` whenever data changes
+  useEffect(() => {
+    setSelectedTags(Array.isArray(data.tags) ? data.tags : []);
+  }, [data.tags]);
+
+  // Load all tags from API (fallback to store selector if API fails)
+  const tagLstFromStore = allTags? allTags.map(t=>t.tag) : [];
+  useEffect(() => {
+    let mounted = true;
+    async function loadTags() {
+      try {
+        const { result } = await getAllTags();
+        if (!mounted) return;
+        if (result) {
+          // attempt to read friendly name fields, fallback to raw value
+          dispatch(setTags({tags:result}));
+        }
+      } catch (err) {
+      }
+    }
+    if (!allTags) {
+      loadTags();
+    }
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleParagraphChange = (index, value) => {
     const updated = [...paragraphs];
@@ -153,8 +187,9 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
     setParagraphs(updated);
   };
 
-  const tagLst = ["quan chung", "nghi le", "tri su"];
-  const availableTags = tagLst.filter((tag) => !tags.includes(tag));
+  const availableTags = (tagLstFromStore || []).filter(
+    (tag) => !selectedTags.includes(tag)
+  );
   const removeParagraph = (index) =>
     setParagraphs(paragraphs.filter((_, i) => i !== index));
   const insertParagraph = (idx) => {
@@ -210,6 +245,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
       path,
       title,
       paragraphs,
+      tags: selectedTags,
     });
     onClose();
   };
@@ -264,8 +300,8 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
             multiple
             freeSolo
             options={availableTags}
-            value={tags}
-            onChange={(event, newValue) => setTags(newValue || [])}
+            value={selectedTags}
+            onChange={(event, newValue) => setSelectedTags(newValue || [])}
             renderInput={(params) => (
               <TextField
                 {...params}
@@ -418,6 +454,9 @@ function TitleCard({ t, isMobile, words }) {
     });
     if (!isSameArray(edited.paragraphs, t.paragraphs)) {
       changes.paragraphs = edited.paragraphs;
+    }
+    if (!isSameArray(edited.tags || [], t.tags || [])) {
+      changes.tags = edited.tags;
     }
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle(t.id, changes, mode);

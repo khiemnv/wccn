@@ -120,3 +120,17 @@ titleApi2.getOne = titleWrapMethod(titleApi2.getOne, 0);
 
 export const updateTitle = (id, changes, mode = "QA") => mode === "QA" ? titleApi.update(id, changes) : titleApi2.update(id, changes);
 export const getTitle = (id, mode = "QA") => mode === "QA" ? titleApi.getOne(id) : titleApi2.getOne(id);
+
+class TagApi extends BaseApi {
+  constructor() {
+    const defaultEntity = { tag: "" };
+    super("tags", defaultEntity);
+  } 
+}
+var tagApi = new TagApi();
+export const getAllTags = () => tagApi.getAll();
+export const createTag = (tag, token) => tagApi.create(tag);
+export const updateTag = (id, changes, token) => tagApi.update(id, changes);
+export const saveTag = (tag, token) => tagApi.save(tag);  
+export const removeTag = (id, token) => tagApi.remove(id);
+export const saveOrCreateTag = (tag, token) => tagApi.saveOrCreate(tag);

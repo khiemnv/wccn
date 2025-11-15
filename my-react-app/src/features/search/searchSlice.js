@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSelector, createSlice } from "@reduxjs/toolkit";
+import { createSelector, createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   titles: [],
@@ -7,7 +7,7 @@ const initialState = {
   BBH : {keys: [], titles: []},
   mode: "QA",
   sortByDate: "dsc",
-  tags: [],
+  tags: undefined,
   status: "idle",
 };
 

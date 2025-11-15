@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import qaWords from "../data/qaWords.json";
@@ -7,13 +7,12 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   addKey,
   addTitle,
-  editTitle,
   selectKeysByIds,
   selectMode,
   selectSortByDate,
   selectTitlesByIds,
 } from "../features/search/searchSlice";
-import { getKey, getTitle, updateTitle } from "../services/search/keyApi";
+import { getKey, getTitle } from "../services/search/keyApi";
 import {
   Box,
   Typography,
@@ -21,43 +20,14 @@ import {
   Pagination,
   Stack,
   CircularProgress,
-  Chip,
   useMediaQuery,
   Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Collapse,
-  CardHeader,
-  TextField,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  styled,
-  Menu,
-  Modal,
-  InputBase,
 } from "@mui/material";
-import HighlightWords from "../components/HighlightWords";
-import { set } from "firebase/database";
-import RefreshIcon from "@mui/icons-material/Refresh";
-import SearchIcon from "@mui/icons-material/Search";
 
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import AddIcon from "@mui/icons-material/Add";
-import { selectRoleObj } from "../features/auth/authSlice";
 import TitleCard from "../components/TitleCard";
 import { TitleSearchBar } from "../components/SearchBar";
 
 const CHUNK_SIZE = 10; // should match how files were generated
-const MAX_POSSIBLE_CHUNKS = 200; // safety limit; adjust if you expect more
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -140,42 +110,6 @@ function findTitlesForSearch(keys) {
     arr,
   }));
   return titles.filter((t) => t.d < threshold).sort((a, b) => a.d - b.d);
-}
-function CustomizedInputBase({ onSearch }) {
-  const [searchStr, setSearchStr] = useState("");
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      onSearch(searchStr);
-    }
-  };
-  return (
-    <Paper
-      component="form"
-      sx={{ p: "2px 4px", display: "flex", alignItems: "center" }}
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSearch(searchStr);
-      }}
-    >
-      <InputBase
-        sx={{ ml: 1, flex: 1 }}
-        placeholder="Search"
-        inputProps={{ "aria-label": "search" }}
-        value={searchStr}
-        onChange={(e) => setSearchStr(e.target.value)}
-        onKeyDown={handleKeyDown}
-      />
-      <IconButton
-        type="button"
-        sx={{ p: "6px" }}
-        aria-label="search"
-        onClick={() => onSearch(searchStr)}
-      >
-        <SearchIcon />
-      </IconButton>
-    </Paper>
-  );
 }
 export default function SearchPage() {
   const query = useQuery().get("q");
