@@ -85,8 +85,14 @@ export const TitlePage = () => {
                     </Select>
                 </FormControl> */}
 
-                <Button>
-                    Prev
+                <Button
+                 onClick={()=>{
+                    const curId = parseInt(id);
+                    if (curId <= 1) return;
+                    navigate(`/title?mode=${mode}&id=${curId - 1}`);
+                }}
+                >
+                    Trước
                 </Button>
                 <TextField
                     label="Title ID"
@@ -97,8 +103,13 @@ export const TitlePage = () => {
                         navigate(`/title?mode=${mode}&id=${newId}`);
                     }}>
                 </TextField>
-                <Button>
-                    Next
+                <Button
+                onClick={()=>{
+                    const newId = parseInt(id) + 1;
+                    navigate(`/title?mode=${mode}&id=${newId}`);
+                }}
+                >
+                    Tiếp
                 </Button>
 
             </Stack>
