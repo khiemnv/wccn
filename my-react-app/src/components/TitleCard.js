@@ -141,6 +141,41 @@ function EditMenu({ onEdit, onDel, onCopy }) {
 
 function EditTitleModal({ open, onClose, data, onSubmit }) {
   const isMobile = useMediaQuery('(max-width:600px)');
+  // const [editingTitle, setEditingTitle] = useState(data); 
+  const handleSave = ({changes}) => {
+    onSubmit({changes});
+    onClose();
+  };
+
+  return (
+    <Modal open={open} onClose={onClose}>
+<Box
+    sx={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: isMobile ? "90%" : 600,
+      maxWidth: "90vw",
+      bgcolor: "background.paper",
+      boxShadow: 24,
+      p: isMobile ? 2 : 4,
+      maxHeight: isMobile ? "90vh" : "80vh",
+      overflowY: "auto",
+      borderRadius: 2,
+    }}
+  >
+          <TitleEditor isMobile={isMobile} data={data} 
+      onClose={onClose} 
+      onSave={handleSave}/>
+  </Box>
+
+    </Modal>
+  );
+}
+
+export function TitleEditor({isMobile, data, onSave, onClose}) {
+  console.log("TitleEditor data:", data);
   const dispatch = useDispatch();
   const [path, setPath] = useState(data.path);
   const [title, setTitle] = useState(data.title);
@@ -179,7 +214,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [allTags, dispatch]);
 
   const handleParagraphChange = (index, value) => {
     const updated = [...paragraphs];
@@ -239,140 +274,128 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
     setDragOverIndex(null);
   };
 
-  const handleSave = () => {
-    onSubmit({
-      titleId: data.titleId,
-      path,
-      title,
-      paragraphs,
-      tags: selectedTags,
-    });
-    onClose();
-  };
 
   console.log("edit title modal");
 
-  return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: isMobile ? "90%" : 600,
-          maxWidth: "90vw",
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "90vh" : "80vh",
-          overflowY: "auto",
-          borderRadius: 2,
-        }}
+  function isSameArray(a, b) {
+    if (a.length !== b.length) return false;
+    return a.every((v, i) => v === b[i]);
+  }
+
+  var changes = {};
+  var t = data;
+  var edited = { path, title, paragraphs, tags: selectedTags };
+  ["title", "path"].forEach((field) => {
+    if (edited[field] !== t[field]) {
+      changes[field] = edited[field];
+    }
+  });
+  if (!isSameArray(edited.paragraphs, t.paragraphs)) {
+    changes.paragraphs = edited.paragraphs;
+  }
+  if (!isSameArray(edited.tags || [], t.tags || [])) {
+    changes.tags = edited.tags;
+  }
+
+  return <>
+    <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
+      {`Edit Title: ${data.titleId}`}
+    </Typography>
+
+    {/* path */}
+    <TextField
+      label="Path"
+      fullWidth
+      value={path}
+      onChange={(e) => setPath(e.target.value)}
+      size={isMobile ? "small" : "medium"}
+      sx={{ mb: 2 }} />
+
+    {/* Title */}
+    <TextField
+      label="Title"
+      fullWidth
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
+      size={isMobile ? "small" : "medium"}
+      sx={{ mb: 2 }} />
+
+    {/* Tags */}
+    <Box sx={{ mb: 2 }}>
+      <Autocomplete
+        multiple
+        freeSolo
+        options={availableTags}
+        value={selectedTags}
+        onChange={(event, newValue) => setSelectedTags(newValue || [])}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Tags"
+            size={isMobile ? "small" : "medium"} />
+        )} />
+    </Box>
+
+
+    {/* Paragraphs */}
+    <Typography variant={isMobile ? "subtitle1" : "h6"} mb={1}>
+      Paragraphs (drag to reorder)
+    </Typography>
+
+    {paragraphs.map((p, idx) => {
+      const isDragged = draggedIndex === idx;
+      const isDragOver = dragOverIndex === idx && !isDragged;
+      return (
+        <Box
+          key={idx}
+          sx={{
+            position: "relative",
+            mb: 2,
+            opacity: isDragged ? 0.5 : 1,
+            transition: "opacity 0.2s, background-color 0.15s",
+            backgroundColor: isDragOver ? "rgba(25,118,210,0.08)" : isDragged ? "action.hover" : "transparent",
+            borderRadius: 1,
+            p: 1,
+          }}
+          draggable
+          onDragStart={() => handleDragStart(idx)}
+          onDragOver={(e) => handleDragOver(e, idx)}
+          onDragEnter={() => setDragOverIndex(idx)}
+          onDragLeave={() => handleDragLeave(idx)}
+          onDrop={() => handleDrop(idx)}
+          onDragEnd={handleDragEnd}
+        >
+          <ParagraphEditor
+            p={p}
+            handleParagraphChange={handleParagraphChange}
+            idx={idx}
+            isMobile={isMobile}
+            insertParagraph={insertParagraph}
+            removeParagraph={removeParagraph} />
+        </Box>
+      );
+    })}
+
+    
+    {/* Actions */}
+    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, flexDirection: isMobile ? "column" : "row" }}>
+      <Button
+        variant="text"
+        onClick={onClose}
+        fullWidth={isMobile}
       >
-        <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
-          {`Edit Title: ${data.titleId}`}
-        </Typography>
-
-        {/* path */}
-        <TextField
-          label="Path"
-          fullWidth
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          size={isMobile ? "small" : "medium"}
-          sx={{ mb: 2 }}
-        />
-
-        {/* Title */}
-        <TextField
-          label="Title"
-          fullWidth
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          size={isMobile ? "small" : "medium"}
-          sx={{ mb: 2 }}
-        />
-
-        {/* Tags */}
-        <Box sx={{ mb: 2 }}>
-          <Autocomplete
-            multiple
-            freeSolo
-            options={availableTags}
-            value={selectedTags}
-            onChange={(event, newValue) => setSelectedTags(newValue || [])}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Tags"
-                size={isMobile ? "small" : "medium"}
-              />
-            )}
-          />
-        </Box>
-
-
-        {/* Paragraphs */}
-        <Typography variant={isMobile ? "subtitle1" : "h6"} mb={1}>
-          Paragraphs (drag to reorder)
-        </Typography>
-
-        {paragraphs.map((p, idx) => {
-          const isDragged = draggedIndex === idx;
-          const isDragOver = dragOverIndex === idx && !isDragged;
-          return (
-            <Box
-              key={idx}
-              sx={{
-                position: "relative",
-                mb: 2,
-                opacity: isDragged ? 0.5 : 1,
-                transition: "opacity 0.2s, background-color 0.15s",
-                backgroundColor: isDragOver ? "rgba(25,118,210,0.08)" : isDragged ? "action.hover" : "transparent",
-                borderRadius: 1,
-                p: 1,
-              }}
-              draggable
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={(e) => handleDragOver(e, idx)}
-              onDragEnter={() => setDragOverIndex(idx)}
-              onDragLeave={() => handleDragLeave(idx)}
-              onDrop={() => handleDrop(idx)}
-              onDragEnd={handleDragEnd}
-            >
-              <ParagraphEditor
-                p={p}
-                handleParagraphChange={handleParagraphChange}
-                idx={idx}
-                isMobile={isMobile}
-                insertParagraph={insertParagraph}
-                removeParagraph={removeParagraph}
-              />
-            </Box>
-          );
-        })}
-
-        {/* Actions */}
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, flexDirection: isMobile ? "column" : "row" }}>
-          <Button
-            variant="text"
-            onClick={onClose}
-            fullWidth={isMobile}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            fullWidth={isMobile}
-          >
-            Save
-          </Button>
-        </Box>
-      </Box>
-    </Modal>
-  );
+        Cancel
+      </Button>
+      <Button
+        variant="contained"
+        onClick={()=>onSave({changes})}
+        fullWidth={isMobile}
+        disabled={Object.keys(changes).length === 0}
+      >
+        Save
+      </Button>
+    </Box>
+  </>;
 }
 
 function ParagraphEditor({ p, handleParagraphChange, idx, isMobile, insertParagraph, removeParagraph }) {
@@ -435,6 +458,7 @@ function isSameArray(a, b) {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
 }
+
 function TitleCard({ t, isMobile, words }) {
   const mode = useSelector(selectMode);
   const dispatch = useDispatch();
@@ -452,19 +476,7 @@ function TitleCard({ t, isMobile, words }) {
     }
   };
   const handleDel = () => { };
-  const handleSave = async (edited) => {
-    var changes = {};
-    ["title", "path"].forEach((field) => {
-      if (edited[field] !== t[field]) {
-        changes[field] = edited[field];
-      }
-    });
-    if (!isSameArray(edited.paragraphs, t.paragraphs)) {
-      changes.paragraphs = edited.paragraphs;
-    }
-    if (!isSameArray(edited.tags || [], t.tags || [])) {
-      changes.tags = edited.tags;
-    }
+  const handleSave = async ({changes}) => {
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle(t.id, changes, mode);
       console.log(result, error);

@@ -10,6 +10,7 @@ import { ResponsiveAppBar } from "./components/SearchBar";
 import { useMediaQuery } from "@mui/material";
 import UserManager from "./pages/UserManagerPage";
 import Bai8 from "./pages/Bai8";
+import { TitlePage } from "./pages/TitlePage";
 
 function App() {
   const token = useAppSelector(selectToken);
@@ -31,6 +32,7 @@ function App() {
           <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/Bai8" element={<Bai8 />} />          
+          <Route path="/Title" element={<TitlePage />} />          
 
           {roleObj && roleObj.sys === "admin" && <Route path="/usermanager" element={<UserManager />} />}
         </Routes>

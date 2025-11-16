@@ -26,6 +26,7 @@ import {
 
 import TitleCard from "../components/TitleCard";
 import { TitleSearchBar } from "../components/SearchBar";
+import { useMemo } from "react";
 
 const CHUNK_SIZE = 10; // should match how files were generated
 
@@ -132,17 +133,20 @@ export default function SearchPage() {
   const [rows, setRows] = useState([]);
 
   // Find title sets for each word
-  const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
-  const keyIdToWord = {};
   const wordData = mode === "QA" ? qaWords : bbhWords;
-  const keyIds = words
-    .map((word) => {
-      var keyId = parseInt(wordData[word]);
-      keyIdToWord[keyId] = word;
-      return keyId;
-    })
-    .filter(Boolean)
-    .sort((a, b) => a - b);
+  const { keyIdToWord, keyIds, words } = useMemo(() => {
+    const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
+    const map = {};
+    const ids = words
+      .map((word) => {
+        const keyId = parseInt(wordData[word]);
+        if (keyId) map[keyId] = word;
+        return keyId;
+      })
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+    return { keyIdToWord: map, keyIds: ids, words };
+  }, [query, wordData]);
   const keys = useSelector((state) => selectKeysByIds(state, mode, keyIds));
   console.log("keys ", keyIds.join(","), ":");
   console.log(
@@ -161,58 +165,108 @@ export default function SearchPage() {
   );
   console.log("titles ", titleIds.join(","), ":");
   console.log(titles.map((t) => t.path + " " + t.title).join("\n"));
+
+
   useEffect(() => {
     // dispatch(changeMode({ mode }));
     setSearch(query);
   }, [mode, query, dispatch]);
+
+
+  // prepare stable dependency primitives for the effect
+  const keyIdsStr = keyIds.join(",");
+  const loadedKeyIdsStr = keys.map((k) => k.keyId).join(",");
+
   useEffect(() => {
-    const loadKeys = async () => {
-      for (let i = 0; i < keyIds.length; i++) {
-        const key = keys.find((k) => k.keyId === keyIds[i]);
-        if (!key) {
-          var keyId = keyIds[i];
-          const { result } = await getKey(keyId, mode);
-          if (result) {
+    // Parse stable string deps into arrays to avoid referencing complex objects
+    const keyIdsArr = keyIdsStr.split(",").map((s) => parseInt(s, 10));
+    const existingKeyIds = new Set(loadedKeyIdsStr.split(",").map((s) => parseInt(s, 10)));
+    const missingKeyIds = keyIdsArr.filter((id) => !existingKeyIds.has(id));
+
+    if (missingKeyIds.length === 0) {
+      setLoaded(true);
+      return;
+    }
+
+    let mounted = true;
+    (async () => {
+      try {
+        setLoaded(false);
+        const results = await Promise.all(
+          missingKeyIds.map((id) => getKey(id, mode))
+        );
+        for (let i = 0; i < results.length; i++) {
+          if (!mounted) break;
+          const res = results[i];
+          const keyId = missingKeyIds[i];
+          if (res && res.result) {
             dispatch(
-              addKey({
-                key: { word: keyIdToWord[keyId], ...result },
-                mode: mode,
-              })
+              addKey({ key: { word: keyIdToWord[keyId] || "", ...res.result }, mode: mode })
             );
           }
         }
+      } catch (err) {
+        // ignore, we'll mark loaded in finally
+      } finally {
+        if (mounted) setLoaded(true);
       }
+    })();
 
-      setLoaded(true);
+    return () => {
+      mounted = false;
     };
+  }, [mode, keyIdsStr, loadedKeyIdsStr, keyIdToWord, dispatch]);
 
-    loadKeys();
-  }, [mode, keyIds.join(",")]);
+
+  // compute which ids are still missing from store
+  const missingIds = useMemo(() => {
+    if (!Array.isArray(titles)) return titleIds.slice();
+    return titleIds.filter((id) => !titles.some((t) => t.titleId === id));
+  }, [titleIds, titles]);
+
+  const missingIdsStr = missingIds.join(",");
 
   useEffect(() => {
-    async function loadTitles() {
-      for (let i = 0; i < view.length; i++) {
-        const titleId = view[i].titleId;
-        const title = titles.find((t) => t.titleId === titleId);
-        if (!title) {
-          const { result } = await getTitle(titleId.toString(), mode);
-          if (result) {
-            dispatch(addTitle({ title: result, mode: mode }));
+    const ids = missingIdsStr ? missingIdsStr.split(",").filter(Boolean).map((s) => parseInt(s, 10)) : [];
+    if (ids.length === 0) {
+      setLoadingTitle(false);
+      return;
+    }
+
+    let mounted = true;
+    setLoadingTitle(true);
+
+    (async () => {
+      try {
+        // fetch all missing titles in parallel
+        const results = await Promise.all(ids.map((id) => getTitle(id.toString(), mode)));
+
+        // dispatch each successful result
+        for (const res of results) {
+          if (!mounted) break;
+          if (res && res.result) {
+            dispatch(addTitle({ title: res.result, mode }));
           }
         }
+      } finally {
+        if (mounted) setLoadingTitle(false);
       }
-      setLoadingTitle(false);
-    }
-    loadTitles();
-  }, [page, mode, titleIds.join(",")]);
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [missingIdsStr, mode, dispatch]);
 
   useEffect(() => {
-    if (keys.length === keyIds.length) {
-      var rows = findTitlesForSearch(keys);
+    const keyIdsArr = keyIdsStr ? keyIdsStr.split(",").filter(Boolean).map((s) => parseInt(s, 10)) : [];
+    const keysArr = keys || [];
+    if (keysArr.length === keyIdsArr.length) {
+      var rows = findTitlesForSearch(keysArr);
       setRows(rows);
       setTotalPages(Math.ceil(rows.length / CHUNK_SIZE));
     }
-  }, [mode, keys.map((k) => k.keyId).join(",")]);
+  }, [mode, keys, keyIdsStr]);
 
   useEffect(() => {
     var sorted = rows.sort((a, b) =>
@@ -231,7 +285,7 @@ export default function SearchPage() {
     navigate(`/search?q=${encodeURIComponent(searchStr)}`);
   return (
     <Box sx={{ p: { xs: 0, sm: 1 } }}>
-      <TitleSearchBar onSearch={handleSearch}/>
+      <TitleSearchBar onSearch={handleSearch} />
 
       <Paper
         elevation={2}
