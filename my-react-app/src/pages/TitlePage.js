@@ -92,8 +92,14 @@ export const TitlePage = () => {
                     </Select>
                 </FormControl> */}
 
-                    <Button>
-                        Prev
+                    <Button
+                        onClick={() => {
+                            const curId = parseInt(id);
+                            if (curId <= 1) return;
+                            navigate(`/title?mode=${mode}&id=${curId - 1}`);
+                        }}
+                    >
+                        Trước
                     </Button>
                     <TextField
                         label="Title ID"
@@ -104,10 +110,15 @@ export const TitlePage = () => {
                             navigate(`/title?mode=${mode}&id=${newId}`);
                         }}>
                     </TextField>
-                    <Button>
-                        Next
+                    <Button
+                        onClick={() => {
+                            const newId = parseInt(id) + 1;
+                            navigate(`/title?mode=${mode}&id=${newId}`);
+                        }}
+                    >
+                        Tiếp
                     </Button>
-    
+
                 </Stack>
 
                 {/* title editor box */}
@@ -128,11 +139,11 @@ export const TitlePage = () => {
                     }}
                 >
                     {
-                        titles[0] && <TitleEditor 
-                        data={titles[0]} 
-                        isMobile={isMobile} 
-                        onSave={handleSave} 
-                        onClose={handleClose}></TitleEditor>
+                        titles[0] && <TitleEditor
+                            data={titles[0]}
+                            isMobile={isMobile}
+                            onSave={handleSave}
+                            onClose={handleClose}></TitleEditor>
                     }
                 </Box>
             </Stack>
