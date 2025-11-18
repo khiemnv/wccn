@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMediaQuery } from "@mui/material";
+import { FormControlLabel, Radio, RadioGroup, Stack, useMediaQuery } from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -8,7 +8,7 @@ import {
   selectTags,
   setTags,
 } from "../features/search/searchSlice";
-import { getAllTags, updateTitle } from "../services/search/keyApi";
+import { getAllTags, getTitleLog2, updateTitle2 } from "../services/search/keyApi";
 import {
   Box,
   Typography,
@@ -36,6 +36,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import AddIcon from "@mui/icons-material/Add";
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { selectRoleObj } from "../features/auth/authSlice";
+import { diff_match_patch } from "diff-match-patch";
+import { rApplyPath } from "../utils/fbUtil";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -142,59 +144,62 @@ function EditMenu({ onEdit, onDel, onCopy }) {
 function EditTitleModal({ open, onClose, data, onSubmit }) {
   const isMobile = useMediaQuery('(max-width:600px)');
   // const [editingTitle, setEditingTitle] = useState(data); 
-  const handleSave = ({changes}) => {
-    onSubmit({changes});
+  const handleSave = ({ changes }) => {
+    onSubmit({ changes });
     onClose();
   };
 
   return (
     <Modal open={open} onClose={onClose}>
-<Box
-    sx={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: isMobile ? "90%" : 600,
-      maxWidth: "90vw",
-      bgcolor: "background.paper",
-      boxShadow: 24,
-      p: isMobile ? 2 : 4,
-      maxHeight: isMobile ? "90vh" : "80vh",
-      overflowY: "auto",
-      borderRadius: 2,
-    }}
-  >
-          <TitleEditor isMobile={isMobile} data={data} 
-      onClose={onClose} 
-      onSave={handleSave}/>
-  </Box>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: isMobile ? "90%" : 600,
+          maxWidth: "90vw",
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: isMobile ? 2 : 4,
+          maxHeight: isMobile ? "90vh" : "80vh",
+          overflowY: "auto",
+          borderRadius: 2,
+        }}
+      >
+        <TitleEditor isMobile={isMobile} data={data}
+          onClose={onClose}
+          onSave={handleSave} />
+      </Box>
 
     </Modal>
   );
 }
 
-export function TitleEditor({isMobile, data, onSave, onClose}) {
-  console.log("TitleEditor data:", data);
+export function TitleEditor({ isMobile, data, onSave, onClose }) {
+  // console.log("TitleEditor data:", data);
   const dispatch = useDispatch();
-  const [path, setPath] = useState(data.path);
-  const [title, setTitle] = useState(data.title);
-  const [paragraphs, setParagraphs] = useState(data.paragraphs);
+
+  // log
+  const [logs, setLogs] = useState();
+  const [showLogModal, setShowLog] = useState(false);
+
+  // title
+  const [editing, setEditing] = useState(data);
+  const [path, setPath] = [editing.path, (path)=>setEditing ({...editing, path})];
+  const [title, setTitle] = [editing.title, (title)=>setEditing ({...editing, title})];
+  const [paragraphs, setParagraphs] = [editing.paragraphs,(paragraphs)=>setEditing ({...editing, paragraphs})];
   // Selected tags for this title (editable by the user)
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedTags, setSelectedTags] = [(editing.tags || []), (tags) => setEditing({ ...editing, tags })];
   // All available tags (from API or from store) used to suggest options
   const allTags = useSelector(selectTags);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
   // --- Effects ------------------------------------------------------------
-  // Initialize selected tags from incoming `data.tags` whenever data changes
-  useEffect(() => {
-    setSelectedTags(Array.isArray(data.tags) ? data.tags : []);
-  }, [data.tags]);
 
   // Load all tags from API (fallback to store selector if API fails)
-  const tagLstFromStore = allTags? allTags.map(t=>t.tag) : [];
+  const tagLstFromStore = allTags ? allTags.map(t => t.tag) : [];
   useEffect(() => {
     let mounted = true;
     async function loadTags() {
@@ -203,7 +208,7 @@ export function TitleEditor({isMobile, data, onSave, onClose}) {
         if (!mounted) return;
         if (result) {
           // attempt to read friendly name fields, fallback to raw value
-          dispatch(setTags({tags:result}));
+          dispatch(setTags({ tags: result }));
         }
       } catch (err) {
       }
@@ -297,10 +302,36 @@ export function TitleEditor({isMobile, data, onSave, onClose}) {
     changes.tags = edited.tags;
   }
 
+  // log
+  function handleCloseLogModal() {
+    setShowLog(false);
+  }
+
+  const handleLog = async () => {
+    console.log("handle log")
+    if (true) {
+      var { result } = await getTitleLog2(data.id);
+      // console.log("log: ", result)
+      if (result) {
+        result.sort((a, b) => a.timestamp - b.timestamp)
+        setLogs(result);
+      }
+    }
+    setShowLog(true);
+  }
+
   return <>
-    <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
-      {`Edit Title: ${data.titleId}`}
-    </Typography>
+    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexDirection: "row" }}>
+
+      <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
+        {`Edit Title: ${data.titleId}`}
+      </Typography>
+      <Button
+        onClick={handleLog}
+      >
+        Log
+      </Button>
+    </Box>
 
     {/* path */}
     <TextField
@@ -376,7 +407,7 @@ export function TitleEditor({isMobile, data, onSave, onClose}) {
       );
     })}
 
-    
+
     {/* Actions */}
     <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, flexDirection: isMobile ? "column" : "row" }}>
       <Button
@@ -388,14 +419,154 @@ export function TitleEditor({isMobile, data, onSave, onClose}) {
       </Button>
       <Button
         variant="contained"
-        onClick={()=>onSave({changes})}
+        onClick={() => onSave({ changes })}
         fullWidth={isMobile}
         disabled={Object.keys(changes).length === 0}
       >
         Save
       </Button>
     </Box>
+
+    {logs && logs.length && <TitleLogModal
+      showLogModal={showLogModal}
+      handleCloseLogModal={handleCloseLogModal}
+      isMobile={isMobile}
+      logs={logs}
+      base={data}
+      onRevert={(obj) => { setShowLog(false); setEditing(obj) }}
+    />}
   </>;
+}
+
+function TitleLogModal({ showLogModal, handleCloseLogModal, isMobile, logs, base, onRevert }) {
+  console.log("title log modal")
+  const [selected, setSelected] = useState(logs.length - 1)
+  const [data, setData] = useState(base)
+
+  function titleToStr(title) {
+    return [title.path, title.id, title.tags.join(", "),
+    ...title.paragraphs].join("\n")
+  }
+
+  function handleUndo(idx) {
+    setSelected(idx);
+  }
+  function calcDiff(idx, afterJson) {
+    var version = [afterJson];
+    try {
+      for (var i = logs.length - 1; i >= idx; i--) {
+        var patch = logs[i].patch;
+        var {result} = rApplyPath(version[0], patch);
+        // console.log(i, patch, beforeJson);
+        if (result) {
+          version.splice(0, 0, result);
+        } else {
+          break;
+        }
+      }
+    } catch (ex) {
+
+    }
+    return version.slice(0, 2);
+  }
+  // restore prev version
+  var baseJson = JSON.stringify(base);
+  var [beforeJson, afterJson] = calcDiff(selected, baseJson);
+
+  if (!beforeJson && !afterJson) {
+    return <div>Error</div>;
+  }
+
+  // create diff
+  var dmp = new diff_match_patch();
+  var beforeStr = titleToStr(JSON.parse(beforeJson));
+  var afterStr = titleToStr(JSON.parse(afterJson));
+  var diff = dmp.diff_main(beforeStr, afterStr);
+
+  // console.log(dmp.diff_prettyHtml(diff))
+  var left = [];
+  var right = [];
+  diff.forEach(([op, data], idx) => {
+    if (op === 0) {
+      left.push(<span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>{data}</span>)
+      right.push(<span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>{data}</span>)
+    } else if (op === 1) {
+      right.push(<ins key={idx} style={{ background: "#0ee60eff" }}>{data}</ins>)
+    } else {
+      left.push(<del key={idx} style={{ background: "#e4db8bff" }}>{data}</del>)
+    }
+  })
+  // const [selected, setSelected] = useState(0);
+  return <Modal open={showLogModal} onClose={handleCloseLogModal}>
+    <Box
+      sx={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: isMobile ? "90%" : 600,
+        maxWidth: "90vw",
+        bgcolor: "background.paper",
+        boxShadow: 24,
+        p: isMobile ? 2 : 4,
+        maxHeight: isMobile ? "90vh" : "80vh",
+        overflowY: "auto",
+        borderRadius: 2,
+      }}
+    >
+      <div style={{ width: "100%", display: "flex", flexDirection: "row", flexWrap: "wrap", overflow: "auto" }}>
+        {logs && logs.map((log, idx) => {
+          const date = log.timestamp.toDate();
+          const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+
+          return <Box key={log.id} sx={{ display: "flex", direction: "row", alignItems: "center" }}>
+
+            <Radio
+              checked={idx === selected}
+              onClick={() => handleUndo(idx)}>
+            </Radio>
+            <Typography
+
+            >{formatted}</Typography>
+          </Box>;
+        }
+        )}
+      </div>
+
+      <div style={{ width: "100%", display: "flex", flexDirection: "row" }}   >
+        <div style={{ width: "50%", border: "1px, solid", padding: "0.5rem", margin: "1px" }} >
+          {left}
+        </div>
+        <div style={{ width: "50%", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
+          {right}
+        </div>
+      </div>
+      <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
+        {beforeStr}
+      </div>
+
+      {/* Actions */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, flexDirection: isMobile ? "column" : "row", mt:"0.5rem" }}>
+        <Button
+          variant="text"
+          onClick={handleCloseLogModal}
+          fullWidth={isMobile}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => onRevert(JSON.parse(beforeJson))}
+          fullWidth={isMobile}
+          // disabled={selected && (selected === (logs.length-1))}
+        >
+          Revert
+        </Button>
+      </Box>
+    </Box>
+
+
+  </Modal>;
 }
 
 function ParagraphEditor({ p, handleParagraphChange, idx, isMobile, insertParagraph, removeParagraph }) {
@@ -460,6 +631,7 @@ function isSameArray(a, b) {
 }
 
 function TitleCard({ t, isMobile, words }) {
+  console.log("TitleCard");
   const mode = useSelector(selectMode);
   const dispatch = useDispatch();
   const [expanded, setExpanded] = useState(false);
@@ -476,9 +648,9 @@ function TitleCard({ t, isMobile, words }) {
     }
   };
   const handleDel = () => { };
-  const handleSave = async ({changes}) => {
+  const handleSave = async ({ changes, patch }) => {
     if (Object.keys(changes).length) {
-      var { result, error } = await updateTitle(t.id, changes, mode);
+      var { result, error } = await updateTitle2(t, changes, mode);
       console.log(result, error);
       if (result) {
         dispatch(editTitle({ id: t.titleId, changes, mode }));

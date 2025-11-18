@@ -13,8 +13,9 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
-import { snapshotToArray } from "../../utils/fbUtil";
+import { calcPath as calcPatch, snapshotToArray } from "../../utils/fbUtil";
 import latinize from "latinize";
+import { patch } from "@mui/material";
 
 /**
  * Splits an array into chunks of a specified size.
@@ -139,6 +140,57 @@ export class BaseApi {
     }
   }
 
+  async update2(before, changes) {
+    try {
+      var id = before.id;
+      console.log("update", this.collectionName, "/", id, changes);
+
+      // check cache
+      if (!this.map.has(id)) {
+        return { error: "id not in cache!" };
+      }
+
+      const ref = doc(db, this.collectionName, id);
+      await updateDoc(ref, changes);
+
+      // update cache
+      const u = this.map.get(id);
+      Object.keys(changes).forEach((key) => (u[key] = changes[key]));
+
+      // add log
+      try {
+        var after = {...before, ...changes};
+        var text = calcPatch(before, after);
+        const logRef = collection(db, this.collectionName + "_log");
+        const logDocRef = await addDoc(logRef, {
+          action: "update",
+          patch: text,
+          itemId: id,
+          timestamp: Timestamp.now(),
+        });
+        console.log("logDocRef:", logDocRef.id);
+      } catch (error) {
+        console.log(error.message);
+      }
+
+      return { result: cloneObj(u) };
+    } catch (ex) {
+      return { error: ex.message };
+    }
+  }
+
+  async getLog(id) {
+    try {
+      const ref = collection(db, this.collectionName + "_log");
+      const q = query(ref, where("itemId", "==", id));
+      const querySnapshot = await getDocs(q);
+      const result = snapshotToArray(querySnapshot);
+
+      return { result };
+    } catch (ex) {
+      return { error: ex.message };
+    }
+  }
   /**
    *
    * @param {object} entity {id, ...}

@@ -118,7 +118,8 @@ class TitleApi2 extends BaseApi {
 var titleApi2 = new TitleApi2();
 titleApi2.getOne = titleWrapMethod(titleApi2.getOne, 0);
 
-export const updateTitle = (id, changes, mode = "QA") => mode === "QA" ? titleApi.update(id, changes) : titleApi2.update(id, changes);
+export const updateTitle2 = (before, changes, mode = "QA") => mode === "QA" ? titleApi.update2(before, changes) : titleApi2.update2(before, changes);
+export const getTitleLog2 = (id, mode = "QA") => mode === "QA" ? titleApi.getLog(id) : titleApi2.getLog(id);
 export const getTitle = (id, mode = "QA") => mode === "QA" ? titleApi.getOne(id) : titleApi2.getOne(id);
 
 class TagApi extends BaseApi {

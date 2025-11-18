@@ -1,12 +1,16 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { addTitle, changeMode, editTitle, selectMode, selectTitlesByIds } from "../features/search/searchSlice";
-import { use, useEffect } from "react";
-import { getTitle, updateTitle } from "../services/search/keyApi";
-import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Paper, Select, Stack, TextField, useMediaQuery } from "@mui/material";
+import { use, useEffect, useState } from "react";
+import { getTitle, getTitleLog2, updateTitle2 } from "../services/search/keyApi";
+import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Paper, Select, Stack, TextField, useMediaQuery } from "@mui/material";
 import TitleCard, { TitleEditor } from "../components/TitleCard";
+import { rApplyPath } from "../utils/fbUtil";
 
 export const TitlePage = () => {
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
 
     const isMobile = useMediaQuery("(max-width:600px)");
 
@@ -14,14 +18,13 @@ export const TitlePage = () => {
     const id = params.get("id");
     const mode = params.get("mode") || "QA";
 
-    const navigate = useNavigate();
     const titleIds = [parseInt(id, 10)];
     const titles = useSelector((state) =>
         selectTitlesByIds(state, mode, titleIds)
     );
     const missingTitles = titles.length ? [] : titleIds;
     const missingTitlesStr = missingTitles.join(",");
-    const dispatch = useDispatch();
+
     console.log("TitlePage missingTitlesStr:", missingTitlesStr);
     useEffect(() => {
         async function fetchTitle() {
@@ -54,25 +57,29 @@ export const TitlePage = () => {
     async function handleSave({ changes }) {
         var t = titles[0];
         if (Object.keys(changes).length) {
-            var { result, error } = await updateTitle(t.id, changes, mode);
+            var { result, error } = await updateTitle2(t, changes, mode);
             console.log(result, error);
             if (result) {
                 dispatch(editTitle({ id: t.titleId, changes, mode }));
             }
         }
     }
-    function handleClose() {
-    }
-    return (
-        <Stack
-            direction={"column"}
-            alignItems={"center"}
-            sx={{ height: "80vh", p: 2, flexGrow: 1 }}
-        >
 
-            {/* control bar */}
-            <Stack direction="row" spacing={1} alignItems="center">
-                {/* <FormControl size="small">
+    function handleClose() {
+
+    }
+
+    return (
+        <>
+            <Stack
+                direction={"column"}
+                alignItems={"center"}
+                sx={{ height: "80vh", p: 2, flexGrow: 1 }}
+            >
+
+                {/* control bar */}
+                <Stack direction="row" spacing={1} alignItems="center">
+                    {/* <FormControl size="small">
                     <InputLabel id="mode-select-label">Mode</InputLabel>
                     <Select
                         labelId="mode-select-label"
@@ -85,46 +92,52 @@ export const TitlePage = () => {
                     </Select>
                 </FormControl> */}
 
-                <Button>
-                    Prev
-                </Button>
-                <TextField
-                    label="Title ID"
-                    value={id}
-                    size="small"
-                    onChange={(e) => {
-                        const newId = e.target.value;
-                        navigate(`/title?mode=${mode}&id=${newId}`);
-                    }}>
-                </TextField>
-                <Button>
-                    Next
-                </Button>
+                    <Button>
+                        Prev
+                    </Button>
+                    <TextField
+                        label="Title ID"
+                        value={id}
+                        size="small"
+                        onChange={(e) => {
+                            const newId = e.target.value;
+                            navigate(`/title?mode=${mode}&id=${newId}`);
+                        }}>
+                    </TextField>
+                    <Button>
+                        Next
+                    </Button>
+    
+                </Stack>
 
+                {/* title editor box */}
+                <Box
+                    sx={{
+                        // position: "absolute",
+                        // top: "50%",
+                        // left: "50%",
+                        // transform: "translate(-50%, -50%)",
+                        width: isMobile ? "90%" : 600,
+                        maxWidth: "90vw",
+                        bgcolor: "background.paper",
+                        // boxShadow: 24,
+                        p: isMobile ? 2 : 4,
+                        // maxHeight: isMobile ? "90vh" : "80vh",
+                        overflowY: "auto",
+                        borderRadius: 2,
+                    }}
+                >
+                    {
+                        titles[0] && <TitleEditor 
+                        data={titles[0]} 
+                        isMobile={isMobile} 
+                        onSave={handleSave} 
+                        onClose={handleClose}></TitleEditor>
+                    }
+                </Box>
             </Stack>
 
-            {/* title editor box */}
-            <Box
-                sx={{
-                    // position: "absolute",
-                    // top: "50%",
-                    // left: "50%",
-                    // transform: "translate(-50%, -50%)",
-                    width: isMobile ? "90%" : 600,
-                    maxWidth: "90vw",
-                    bgcolor: "background.paper",
-                    // boxShadow: 24,
-                    p: isMobile ? 2 : 4,
-                    // maxHeight: isMobile ? "90vh" : "80vh",
-                    overflowY: "auto",
-                    borderRadius: 2,
-                }}
-            >
-                {
-                    titles[0] && <TitleEditor data={titles[0]} isMobile={isMobile} onSave={handleSave} onClose={handleClose}></TitleEditor>
-                }
-            </Box>
-        </Stack>
 
+        </>
     );
 };
