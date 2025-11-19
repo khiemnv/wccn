@@ -25,14 +25,30 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import { addUser, editUser, selectUsers, setAllUsers, deleteUser } from "../features/user/userSlice";
+import {
+  addUser,
+  editUser,
+  selectUsers,
+  setAllUsers,
+  deleteUser,
+} from "../features/user/userSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { createUser, getAllUsers, removeUser, updateUser } from "../services/user/userApi";
-import { createRole, getRole, removeRole, updateRole } from "../services/role/roleApi";
+import {
+  createUser,
+  getAllUsers,
+  removeUser,
+  updateUser,
+} from "../services/user/userApi";
+import {
+  createRole,
+  getRole,
+  removeRole,
+  updateRole,
+} from "../services/role/roleApi";
 
 export default function UserManager() {
   const dispatch = useDispatch();
-  const users = useSelector(selectUsers)
+  const users = useSelector(selectUsers);
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form, setForm] = useState({ name: "", email: "" });
@@ -40,10 +56,10 @@ export default function UserManager() {
   useEffect(() => {
     async function loadUsers() {
       // Placeholder for loading users if needed
-      var {result:users} = await getAllUsers();
+      var { result: users } = await getAllUsers();
       if (users) {
         // Dispatch action to load users into Redux store
-        dispatch(setAllUsers({users}));
+        dispatch(setAllUsers({ users }));
       }
     }
     // Load users if needed
@@ -66,7 +82,11 @@ export default function UserManager() {
 
   const handleOpen = (user = null) => {
     setEditingUser(user);
-    setForm(user ? { name: user.name, email: user.email, role: ""} : { name: "", email: "", role: "" });
+    setForm(
+      user
+        ? { name: user.name, email: user.email, role: "" }
+        : { name: "", email: "", role: "" }
+    );
     setOpen(true);
   };
 
@@ -79,21 +99,36 @@ export default function UserManager() {
     if (editingUser) {
       // update role
       if (form.role !== editingUser.role) {
-        if (form.email === editingUser.email){
-          var roleObj = { titles: form.role, keys: form.role };
-          var {result} = await updateRole(editingUser.email, roleObj);
+        if (form.email === editingUser.email) {
+          var roleObj = {
+            titles: form.role,
+            titles_log: form.role,
+            bbh_titles: form.role,
+            bbh_titles_log: form.role,
+            keys: form.role,
+            bbh_keys: form.role,
+          };
+          var { result } = await updateRole(editingUser.email, roleObj);
           console.log("Role updated:", result);
         }
       }
 
       if (form.email !== editingUser.email) {
         // delete old role
-        var {result} = await removeRole(editingUser.email);
+        var { result } = await removeRole(editingUser.email);
         console.log("Old role removed:", result);
         // create new role
         if (form.role !== "") {
-          var roleObj = { id: form.email, titles: form.role, keys: form.role };
-          var {result} = await createRole(roleObj);
+          var roleObj = {
+            id: form.email,
+            titles: form.role,
+            titles_log: form.role,
+            bbh_titles: form.role,
+            bbh_titles_log: form.role,
+            keys: form.role,
+            bbh_keys: form.role,
+          };
+          var { result } = await createRole(roleObj);
           console.log("New role created:", result);
         }
       }
@@ -105,9 +140,9 @@ export default function UserManager() {
         if (form[field] !== editingUser[field]) {
           changes[field] = form[field];
         }
-      });      
+      });
       if (Object.keys(changes).length !== 0) {
-        var {result} = await updateUser(id, changes);
+        var { result } = await updateUser(id, changes);
         if (result) {
           dispatch(editUser({ id, changes }));
         }
@@ -115,15 +150,23 @@ export default function UserManager() {
     } else {
       // Add role
       if (form.role !== "" && form.email !== "") {
-        var roleObj = { id: form.email, titles: form.role, keys: form.role };
-        var {result} = await createRole(roleObj);
+        var roleObj = {
+          id: form.email,
+          titles: form.role,
+          titles_log: form.role,
+          bbh_titles: form.role,
+          bbh_titles_log: form.role,
+          keys: form.role,
+          bbh_keys: form.role,
+        };
+        var { result } = await createRole(roleObj);
       }
 
       // Create
       var newUser = { email: form.email, name: form.name };
-      var {result} = await createUser(newUser);
+      var { result } = await createUser(newUser);
       if (result) {
-        dispatch(addUser({user:result}));
+        dispatch(addUser({ user: result }));
       }
     }
     handleClose();
@@ -131,17 +174,17 @@ export default function UserManager() {
 
   const handleDelete = async (id) => {
     // remove user
-    var {result} = await removeUser(id);
+    var { result } = await removeUser(id);
     if (result) {
       console.log("User removed:", result);
 
       // remove role
       if (result.email) {
-        var {result} = await removeRole(result.email);
+        var { result } = await removeRole(result.email);
         console.log("Role removed:", result);
       }
 
-      dispatch(deleteUser({ userId: id }) );
+      dispatch(deleteUser({ userId: id }));
     }
   };
 
@@ -202,38 +245,36 @@ export default function UserManager() {
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>{editingUser ? "Edit User" : "Add User"}</DialogTitle>
         <DialogContent>
-            <TextField
-              autoFocus
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Name"
+            fullWidth
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            label="Email"
+            type="email"
+            fullWidth
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+          <FormControl sx={{ mt: 1 }} fullWidth>
+            <InputLabel id="role-label">Role</InputLabel>
+            <Select
+              labelId="role-label"
               margin="dense"
-              label="Name"
-              fullWidth
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              label="Email"
-              type="email"
-              fullWidth
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-            <FormControl 
-                sx = {{mt:1}}
-                fullWidth>
-              <InputLabel id="role-label">Role</InputLabel>
-              <Select
-                labelId="role-label"
-                margin="dense"
-                label="Role"
-                value={form.role?form.role:""}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              >
-                <MenuItem value="">None</MenuItem>
-                <MenuItem value="read">Read</MenuItem>
-                <MenuItem value="write">Write</MenuItem>
-              </Select>
-            </FormControl>
+              label="Role"
+              value={form.role ? form.role : ""}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+            >
+              <MenuItem value="">None</MenuItem>
+              <MenuItem value="read">Read</MenuItem>
+              <MenuItem value="write">Write</MenuItem>
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>

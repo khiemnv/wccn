@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { FormControlLabel, Radio, RadioGroup, Stack, useMediaQuery } from "@mui/material";
+import {
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Snackbar,
+  Stack,
+  useMediaQuery,
+} from "@mui/material";
 
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -8,7 +15,11 @@ import {
   selectTags,
   setTags,
 } from "../features/search/searchSlice";
-import { getAllTags, getTitleLog2, updateTitle2 } from "../services/search/keyApi";
+import {
+  getAllTags,
+  getTitleLog2,
+  updateTitle2,
+} from "../services/search/keyApi";
 import {
   Box,
   Typography,
@@ -34,10 +45,12 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import AddIcon from "@mui/icons-material/Add";
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
 import { rApplyPath } from "../utils/fbUtil";
+import { AlertDialog } from "./dialog/AlertDialog";
+import { DONE, ERROR } from "../constant/strings";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -124,7 +137,7 @@ function EditMenu({ onEdit, onDel, onCopy }) {
             Sửa
           </MenuItem>
         )}
-        {canWrite && (
+        {/* {canWrite && (
           <MenuItem
             onClick={() => {
               handleClose();
@@ -135,15 +148,15 @@ function EditMenu({ onEdit, onDel, onCopy }) {
             <DeleteIcon />
             Xóa
           </MenuItem>
-        )}
+        )} */}
       </Menu>
     </div>
   );
 }
 
 function EditTitleModal({ open, onClose, data, onSubmit }) {
-  const isMobile = useMediaQuery('(max-width:600px)');
-  // const [editingTitle, setEditingTitle] = useState(data); 
+  const isMobile = useMediaQuery("(max-width:600px)");
+  // const [editingTitle, setEditingTitle] = useState(data);
   const handleSave = ({ changes }) => {
     onSubmit({ changes });
     onClose();
@@ -167,11 +180,13 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
           borderRadius: 2,
         }}
       >
-        <TitleEditor isMobile={isMobile} data={data}
+        <TitleEditor
+          isMobile={isMobile}
+          data={data}
           onClose={onClose}
-          onSave={handleSave} />
+          onSave={handleSave}
+        />
       </Box>
-
     </Modal>
   );
 }
@@ -186,20 +201,36 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   // title
   const [editing, setEditing] = useState(data);
-  const [path, setPath] = [editing.path, (path)=>setEditing ({...editing, path})];
-  const [title, setTitle] = [editing.title, (title)=>setEditing ({...editing, title})];
-  const [paragraphs, setParagraphs] = [editing.paragraphs,(paragraphs)=>setEditing ({...editing, paragraphs})];
+  const [path, setPath] = [
+    editing.path,
+    (path) => setEditing({ ...editing, path }),
+  ];
+  const [title, setTitle] = [
+    editing.title,
+    (title) => setEditing({ ...editing, title }),
+  ];
+  const [paragraphs, setParagraphs] = [
+    editing.paragraphs,
+    (paragraphs) => setEditing({ ...editing, paragraphs }),
+  ];
   // Selected tags for this title (editable by the user)
-  const [selectedTags, setSelectedTags] = [(editing.tags || []), (tags) => setEditing({ ...editing, tags })];
+  const [selectedTags, setSelectedTags] = [
+    editing.tags || [],
+    (tags) => setEditing({ ...editing, tags }),
+  ];
   // All available tags (from API or from store) used to suggest options
   const allTags = useSelector(selectTags);
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
+  // alert dialog
+
+  const [error, setError] = useState();
+
   // --- Effects ------------------------------------------------------------
 
   // Load all tags from API (fallback to store selector if API fails)
-  const tagLstFromStore = allTags ? allTags.map(t => t.tag) : [];
+  const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
   useEffect(() => {
     let mounted = true;
     async function loadTags() {
@@ -210,8 +241,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           // attempt to read friendly name fields, fallback to raw value
           dispatch(setTags({ tags: result }));
         }
-      } catch (err) {
-      }
+      } catch (err) {}
     }
     if (!allTags) {
       loadTags();
@@ -279,7 +309,6 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     setDragOverIndex(null);
   };
 
-
   console.log("edit title modal");
 
   function isSameArray(a, b) {
@@ -308,144 +337,186 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   }
 
   const handleLog = async () => {
-    console.log("handle log")
+    console.log("handle log");
     if (true) {
       var { result } = await getTitleLog2(data.id);
       // console.log("log: ", result)
       if (result) {
-        result.sort((a, b) => a.timestamp - b.timestamp)
+        result.sort((a, b) => a.timestamp - b.timestamp);
         setLogs(result);
+        if (!result.length) {
+          setError({ message: "No logs available" });
+        } else {
+          setShowLog(true);
+        }
       }
     }
-    setShowLog(true);
-  }
+  };
 
-  return <>
-    <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexDirection: "row" }}>
+  return (
+    <>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 2,
+          flexDirection: "row",
+        }}
+      >
+        <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
+          {`Edit Title: ${data.titleId}`}
+        </Typography>
+        <Button onClick={handleLog}>Log</Button>
+      </Box>
 
-      <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
-        {`Edit Title: ${data.titleId}`}
+      {/* path */}
+      <TextField
+        label="Path"
+        fullWidth
+        value={path}
+        onChange={(e) => setPath(e.target.value)}
+        size={isMobile ? "small" : "medium"}
+        sx={{ mb: 2 }}
+      />
+
+      {/* Title */}
+      <TextField
+        label="Title"
+        fullWidth
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        size={isMobile ? "small" : "medium"}
+        sx={{ mb: 2 }}
+      />
+
+      {/* Tags */}
+      <Box sx={{ mb: 2 }}>
+        <Autocomplete
+          multiple
+          freeSolo
+          options={availableTags}
+          value={selectedTags}
+          onChange={(event, newValue) => setSelectedTags(newValue || [])}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Tags"
+              size={isMobile ? "small" : "medium"}
+            />
+          )}
+        />
+      </Box>
+
+      {/* Paragraphs */}
+      <Typography variant={isMobile ? "subtitle1" : "h6"} mb={1}>
+        Paragraphs (drag to reorder)
       </Typography>
-      <Button
-        onClick={handleLog}
+
+      {paragraphs.map((p, idx) => {
+        const isDragged = draggedIndex === idx;
+        const isDragOver = dragOverIndex === idx && !isDragged;
+        return (
+          <Box
+            key={idx}
+            sx={{
+              position: "relative",
+              mb: 2,
+              opacity: isDragged ? 0.5 : 1,
+              transition: "opacity 0.2s, background-color 0.15s",
+              backgroundColor: isDragOver
+                ? "rgba(25,118,210,0.08)"
+                : isDragged
+                ? "action.hover"
+                : "transparent",
+              borderRadius: 1,
+              p: 1,
+            }}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDragEnter={() => setDragOverIndex(idx)}
+            onDragLeave={() => handleDragLeave(idx)}
+            onDrop={() => handleDrop(idx)}
+            onDragEnd={handleDragEnd}
+          >
+            <ParagraphEditor
+              p={p}
+              handleParagraphChange={handleParagraphChange}
+              idx={idx}
+              isMobile={isMobile}
+              insertParagraph={insertParagraph}
+              removeParagraph={removeParagraph}
+            />
+          </Box>
+        );
+      })}
+
+      {/* Actions */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 2,
+          flexDirection: isMobile ? "column" : "row",
+        }}
       >
-        Log
-      </Button>
-    </Box>
-
-    {/* path */}
-    <TextField
-      label="Path"
-      fullWidth
-      value={path}
-      onChange={(e) => setPath(e.target.value)}
-      size={isMobile ? "small" : "medium"}
-      sx={{ mb: 2 }} />
-
-    {/* Title */}
-    <TextField
-      label="Title"
-      fullWidth
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-      size={isMobile ? "small" : "medium"}
-      sx={{ mb: 2 }} />
-
-    {/* Tags */}
-    <Box sx={{ mb: 2 }}>
-      <Autocomplete
-        multiple
-        freeSolo
-        options={availableTags}
-        value={selectedTags}
-        onChange={(event, newValue) => setSelectedTags(newValue || [])}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Tags"
-            size={isMobile ? "small" : "medium"} />
-        )} />
-    </Box>
-
-
-    {/* Paragraphs */}
-    <Typography variant={isMobile ? "subtitle1" : "h6"} mb={1}>
-      Paragraphs (drag to reorder)
-    </Typography>
-
-    {paragraphs.map((p, idx) => {
-      const isDragged = draggedIndex === idx;
-      const isDragOver = dragOverIndex === idx && !isDragged;
-      return (
-        <Box
-          key={idx}
-          sx={{
-            position: "relative",
-            mb: 2,
-            opacity: isDragged ? 0.5 : 1,
-            transition: "opacity 0.2s, background-color 0.15s",
-            backgroundColor: isDragOver ? "rgba(25,118,210,0.08)" : isDragged ? "action.hover" : "transparent",
-            borderRadius: 1,
-            p: 1,
-          }}
-          draggable
-          onDragStart={() => handleDragStart(idx)}
-          onDragOver={(e) => handleDragOver(e, idx)}
-          onDragEnter={() => setDragOverIndex(idx)}
-          onDragLeave={() => handleDragLeave(idx)}
-          onDrop={() => handleDrop(idx)}
-          onDragEnd={handleDragEnd}
+        <Button variant="text" onClick={onClose} fullWidth={isMobile}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => onSave({ changes })}
+          fullWidth={isMobile}
+          disabled={Object.keys(changes).length === 0}
         >
-          <ParagraphEditor
-            p={p}
-            handleParagraphChange={handleParagraphChange}
-            idx={idx}
-            isMobile={isMobile}
-            insertParagraph={insertParagraph}
-            removeParagraph={removeParagraph} />
-        </Box>
-      );
-    })}
+          Save
+        </Button>
+      </Box>
 
+      {logs && logs.length && (
+        <TitleLogModal
+          showLogModal={showLogModal}
+          handleCloseLogModal={handleCloseLogModal}
+          isMobile={isMobile}
+          logs={logs}
+          base={data}
+          onRevert={(obj) => {
+            setShowLog(false);
+            setEditing(obj);
+          }}
+        />
+      )}
 
-    {/* Actions */}
-    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, flexDirection: isMobile ? "column" : "row" }}>
-      <Button
-        variant="text"
-        onClick={onClose}
-        fullWidth={isMobile}
-      >
-        Cancel
-      </Button>
-      <Button
-        variant="contained"
-        onClick={() => onSave({ changes })}
-        fullWidth={isMobile}
-        disabled={Object.keys(changes).length === 0}
-      >
-        Save
-      </Button>
-    </Box>
-
-    {logs && logs.length && <TitleLogModal
-      showLogModal={showLogModal}
-      handleCloseLogModal={handleCloseLogModal}
-      isMobile={isMobile}
-      logs={logs}
-      base={data}
-      onRevert={(obj) => { setShowLog(false); setEditing(obj) }}
-    />}
-  </>;
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        open={!!error}
+        autoHideDuration={5000}
+        onClose={() => setError(null)}
+        message={error ? `${ERROR} 「${error.message}」` : DONE}
+      />
+    </>
+  );
 }
 
-function TitleLogModal({ showLogModal, handleCloseLogModal, isMobile, logs, base, onRevert }) {
-  console.log("title log modal")
-  const [selected, setSelected] = useState(logs.length - 1)
-  const [data, setData] = useState(base)
+function TitleLogModal({
+  showLogModal,
+  handleCloseLogModal,
+  isMobile,
+  logs,
+  base,
+  onRevert,
+}) {
+  console.log("title log modal");
+  const [selected, setSelected] = useState(logs.length - 1);
+  const [data, setData] = useState(base);
 
   function titleToStr(title) {
-    return [title.path, title.id, title.tags.join(", "),
-    ...title.paragraphs].join("\n")
+    return [
+      title.path,
+      title.id,
+      (title.tags || []).join(", "),
+      ...title.paragraphs,
+    ].join("\n");
   }
 
   function handleUndo(idx) {
@@ -456,7 +527,7 @@ function TitleLogModal({ showLogModal, handleCloseLogModal, isMobile, logs, base
     try {
       for (var i = logs.length - 1; i >= idx; i--) {
         var patch = logs[i].patch;
-        var {result} = rApplyPath(version[0], patch);
+        var { result } = rApplyPath(version[0], patch);
         // console.log(i, patch, beforeJson);
         if (result) {
           version.splice(0, 0, result);
@@ -464,9 +535,7 @@ function TitleLogModal({ showLogModal, handleCloseLogModal, isMobile, logs, base
           break;
         }
       }
-    } catch (ex) {
-
-    }
+    } catch (ex) {}
     return version.slice(0, 2);
   }
   // restore prev version
@@ -488,88 +557,149 @@ function TitleLogModal({ showLogModal, handleCloseLogModal, isMobile, logs, base
   var right = [];
   diff.forEach(([op, data], idx) => {
     if (op === 0) {
-      left.push(<span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>{data}</span>)
-      right.push(<span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>{data}</span>)
+      left.push(
+        <span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>
+          {data}
+        </span>
+      );
+      right.push(
+        <span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>
+          {data}
+        </span>
+      );
     } else if (op === 1) {
-      right.push(<ins key={idx} style={{ background: "#0ee60eff" }}>{data}</ins>)
+      right.push(
+        <ins key={idx} style={{ background: "#0ee60eff" }}>
+          {data}
+        </ins>
+      );
     } else {
-      left.push(<del key={idx} style={{ background: "#e4db8bff" }}>{data}</del>)
+      left.push(
+        <del key={idx} style={{ background: "#e4db8bff" }}>
+          {data}
+        </del>
+      );
     }
-  })
+  });
   // const [selected, setSelected] = useState(0);
-  return <Modal open={showLogModal} onClose={handleCloseLogModal}>
-    <Box
-      sx={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: isMobile ? "90%" : 600,
-        maxWidth: "90vw",
-        bgcolor: "background.paper",
-        boxShadow: 24,
-        p: isMobile ? 2 : 4,
-        maxHeight: isMobile ? "90vh" : "80vh",
-        overflowY: "auto",
-        borderRadius: 2,
-      }}
-    >
-      <div style={{ width: "100%", display: "flex", flexDirection: "row", flexWrap: "wrap", overflow: "auto" }}>
-        {logs && logs.map((log, idx) => {
-          const date = log.timestamp.toDate();
-          const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+  return (
+    <Modal open={showLogModal} onClose={handleCloseLogModal}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: isMobile ? "90%" : 600,
+          maxWidth: "90vw",
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: isMobile ? 2 : 4,
+          maxHeight: isMobile ? "90vh" : "80vh",
+          overflowY: "auto",
+          borderRadius: 2,
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "row",
+            flexWrap: "wrap",
+            overflow: "auto",
+          }}
+        >
+          {logs &&
+            logs.map((log, idx) => {
+              const date = log.timestamp.toDate();
+              const formatted = `${date.getDate()}/${
+                date.getMonth() + 1
+              }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
 
-          return <Box key={log.id} sx={{ display: "flex", direction: "row", alignItems: "center" }}>
-
-            <Radio
-              checked={idx === selected}
-              onClick={() => handleUndo(idx)}>
-            </Radio>
-            <Typography
-
-            >{formatted}</Typography>
-          </Box>;
-        }
-        )}
-      </div>
-
-      <div style={{ width: "100%", display: "flex", flexDirection: "row" }}   >
-        <div style={{ width: "50%", border: "1px, solid", padding: "0.5rem", margin: "1px" }} >
-          {left}
+              return (
+                <Box
+                  key={log.id}
+                  sx={{
+                    display: "flex",
+                    direction: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Radio
+                    checked={idx === selected}
+                    onClick={() => handleUndo(idx)}
+                  ></Radio>
+                  <Typography>{formatted}</Typography>
+                </Box>
+              );
+            })}
         </div>
-        <div style={{ width: "50%", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
-          {right}
+
+        <div style={{ width: "100%", display: "flex", flexDirection: "row" }}>
+          <div
+            style={{
+              width: "50%",
+              border: "1px, solid",
+              padding: "0.5rem",
+              margin: "1px",
+            }}
+          >
+            {left}
+          </div>
+          <div
+            style={{
+              width: "50%",
+              border: "1px, solid",
+              padding: "0.5rem",
+              margin: "1px",
+            }}
+          >
+            {right}
+          </div>
         </div>
-      </div>
-      <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
+        {/* <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
         {beforeStr}
-      </div>
+      </div> */}
 
-      {/* Actions */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, flexDirection: isMobile ? "column" : "row", mt:"0.5rem" }}>
-        <Button
-          variant="text"
-          onClick={handleCloseLogModal}
-          fullWidth={isMobile}
+        {/* Actions */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 2,
+            flexDirection: isMobile ? "column" : "row",
+            mt: "0.5rem",
+          }}
         >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={() => onRevert(JSON.parse(beforeJson))}
-          fullWidth={isMobile}
-          // disabled={selected && (selected === (logs.length-1))}
-        >
-          Revert
-        </Button>
+          <Button
+            variant="text"
+            onClick={handleCloseLogModal}
+            fullWidth={isMobile}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => onRevert(JSON.parse(beforeJson))}
+            fullWidth={isMobile}
+            // disabled={selected && (selected === (logs.length-1))}
+          >
+            Revert
+          </Button>
+        </Box>
       </Box>
-    </Box>
-
-
-  </Modal>;
+    </Modal>
+  );
 }
 
-function ParagraphEditor({ p, handleParagraphChange, idx, isMobile, insertParagraph, removeParagraph }) {
+function ParagraphEditor({
+  p,
+  handleParagraphChange,
+  idx,
+  isMobile,
+  insertParagraph,
+  removeParagraph,
+}) {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -596,7 +726,10 @@ function ParagraphEditor({ p, handleParagraphChange, idx, isMobile, insertParagr
         <Box sx={{ position: "absolute", top: 2, left: 2 }}>
           <Box sx={{ display: "flex", gap: 0.5 }}>
             <IconButton>
-              <DragIndicatorIcon color="primary" sx={{ transform: "rotate(90deg)" }} />
+              <DragIndicatorIcon
+                color="primary"
+                sx={{ transform: "rotate(90deg)" }}
+              />
             </IconButton>
           </Box>
         </Box>
@@ -624,7 +757,6 @@ function ParagraphEditor({ p, handleParagraphChange, idx, isMobile, insertParagr
   );
 }
 
-
 function isSameArray(a, b) {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
@@ -647,7 +779,7 @@ function TitleCard({ t, isMobile, words }) {
       console.error("Copy failed:", err);
     }
   };
-  const handleDel = () => { };
+  const handleDel = () => {};
   const handleSave = async ({ changes, patch }) => {
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
@@ -718,10 +850,7 @@ function TitleCard({ t, isMobile, words }) {
                       {s}
                     </Typography>
                   ) : (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                    >
+                    <Typography variant="caption" color="text.secondary">
                       •{" "}
                       <HighlightWords
                         text={s.replace(/^[-\s]+/, "")}

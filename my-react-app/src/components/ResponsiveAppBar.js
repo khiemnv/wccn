@@ -160,7 +160,7 @@ export function ResponsiveAppBar() {
             ))}
           </Box>
           <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Open settings">
+            <Tooltip title={user}>
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                 <Avatar alt={user}>{user ? user[0].toUpperCase() : '?'}</Avatar>
               </IconButton>

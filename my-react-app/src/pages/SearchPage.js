@@ -285,7 +285,7 @@ export default function SearchPage() {
     navigate(`/search?q=${encodeURIComponent(searchStr)}`);
   return (
     <Box sx={{ p: { xs: 0, sm: 1 } }}>
-      <TitleSearchBar onSearch={handleSearch} />
+      <TitleSearchBar searchStr={search} onSearch={handleSearch} />
 
       <Paper
         elevation={2}

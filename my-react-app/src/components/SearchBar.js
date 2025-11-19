@@ -16,7 +16,7 @@ import { selectSortByDate, setSortByDate, selectMode, changeMode } from "../feat
 export { default as MenuAppBar } from "./MenuAppBar";
 export { ResponsiveAppBar } from "./ResponsiveAppBar";
 
-export function TitleSearchBar({onSearch}) {
+export function TitleSearchBar({searchStr, onSearch}) {
   const dispatch = useDispatch();
   const sortByDate = useSelector(selectSortByDate);
   const filter = useSelector(selectMode);
@@ -40,7 +40,7 @@ export function TitleSearchBar({onSearch}) {
         /><IconButton onClick={handleSearch} title="Reload page chunk">
             <SearchIcon />
           </IconButton> */}
-      <CustomizedInputBase onSearch={onSearch}></CustomizedInputBase>
+      <CustomizedInputBase searchStr={searchStr} onSearch={onSearch}></CustomizedInputBase>
       <FormControl size="small">
         <InputLabel id="mode-select-label">Mode</InputLabel>
         <Select
@@ -69,13 +69,13 @@ export function TitleSearchBar({onSearch}) {
   </Stack>;
 }
 
-function CustomizedInputBase({ onSearch }) {
-  const [searchStr, setSearchStr] = useState("");
+function CustomizedInputBase({searchStr, onSearch }) {
+  const [search, setSearchStr] = useState(searchStr || "");
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      onSearch(searchStr);
+      onSearch(search);
     }
   };
   return (
@@ -84,14 +84,14 @@ function CustomizedInputBase({ onSearch }) {
       sx={{ p: "2px 4px", display: "flex", alignItems: "center" }}
       onSubmit={(e) => {
         e.preventDefault();
-        onSearch(searchStr);
+        onSearch(search);
       }}
     >
       <InputBase
         sx={{ ml: 1, flex: 1 }}
         placeholder="Search"
         inputProps={{ "aria-label": "search" }}
-        value={searchStr}
+        value={search}
         onChange={(e) => setSearchStr(e.target.value)}
         onKeyDown={handleKeyDown}
       />
@@ -99,7 +99,7 @@ function CustomizedInputBase({ onSearch }) {
         type="button"
         sx={{ p: "6px" }}
         aria-label="search"
-        onClick={() => onSearch(searchStr)}
+        onClick={() => onSearch(search)}
       >
         <SearchIcon />
       </IconButton>
