@@ -46,6 +46,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import AddIcon from "@mui/icons-material/Add";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
 import { rApplyPath } from "../utils/fbUtil";
@@ -241,7 +244,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           // attempt to read friendly name fields, fallback to raw value
           dispatch(setTags({ tags: result }));
         }
-      } catch (err) {}
+      } catch (err) { }
     }
     if (!allTags) {
       loadTags();
@@ -308,6 +311,15 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     setDraggedIndex(null);
     setDragOverIndex(null);
   };
+
+  const moveParagraph = (fromIndex, toIndex) => {
+    if (fromIndex < 0 || fromIndex >= paragraphs.length) return;
+    if (toIndex < 0 || toIndex >= paragraphs.length) return;
+    const updated = [...paragraphs];
+    const [movedParagraph] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, movedParagraph);
+    setParagraphs(updated);
+  }
 
   console.log("edit title modal");
 
@@ -426,8 +438,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
               backgroundColor: isDragOver
                 ? "rgba(25,118,210,0.08)"
                 : isDragged
-                ? "action.hover"
-                : "transparent",
+                  ? "action.hover"
+                  : "transparent",
               borderRadius: 1,
               p: 1,
             }}
@@ -446,6 +458,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
               isMobile={isMobile}
               insertParagraph={insertParagraph}
               removeParagraph={removeParagraph}
+              moveParagraph={moveParagraph}
             />
           </Box>
         );
@@ -535,7 +548,7 @@ function TitleLogModal({
           break;
         }
       }
-    } catch (ex) {}
+    } catch (ex) { }
     return version.slice(0, 2);
   }
   // restore prev version
@@ -612,9 +625,8 @@ function TitleLogModal({
           {logs &&
             logs.map((log, idx) => {
               const date = log.timestamp.toDate();
-              const formatted = `${date.getDate()}/${
-                date.getMonth() + 1
-              }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+              const formatted = `${date.getDate()}/${date.getMonth() + 1
+                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
 
               return (
                 <Box
@@ -682,7 +694,7 @@ function TitleLogModal({
             variant="contained"
             onClick={() => onRevert(JSON.parse(beforeJson))}
             fullWidth={isMobile}
-            // disabled={selected && (selected === (logs.length-1))}
+          // disabled={selected && (selected === (logs.length-1))}
           >
             Revert
           </Button>
@@ -699,8 +711,17 @@ function ParagraphEditor({
   isMobile,
   insertParagraph,
   removeParagraph,
+  moveParagraph,
 }) {
   const [isFocused, setIsFocused] = useState(false);
+
+  const onMoveUp = () => {
+    moveParagraph(idx, idx - 1);
+  };
+
+  const onMoveDown = () => {
+    moveParagraph(idx, idx + 1);
+  };
 
   return (
     <Box>
@@ -724,13 +745,34 @@ function ParagraphEditor({
 
       {!isFocused && (
         <Box sx={{ position: "absolute", top: 2, left: 2 }}>
-          <Box sx={{ display: "flex", gap: 0.5 }}>
-            <IconButton>
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
+            <IconButton
+              size={isMobile ? "small" : "medium"}
+              aria-label="drag handle"
+            >
               <DragIndicatorIcon
-                color="primary"
                 sx={{ transform: "rotate(90deg)" }}
               />
             </IconButton>
+
+            <IconButton
+              size={isMobile ? "small" : "medium"}
+              aria-label="move up"
+              onClick={onMoveUp}
+              color="primary"
+            >
+              <KeyboardArrowUpIcon fontSize="small" />
+            </IconButton>
+
+            <IconButton
+              size={isMobile ? "small" : "medium"}
+              aria-label="move down"
+              onClick={onMoveDown}
+              color="primary"
+            >
+              <KeyboardArrowDownIcon fontSize="small" />
+            </IconButton>
+
           </Box>
         </Box>
       )}
@@ -779,7 +821,7 @@ function TitleCard({ t, isMobile, words }) {
       console.error("Copy failed:", err);
     }
   };
-  const handleDel = () => {};
+  const handleDel = () => { };
   const handleSave = async ({ changes, patch }) => {
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
