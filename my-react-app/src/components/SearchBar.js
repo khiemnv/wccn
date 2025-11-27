@@ -12,6 +12,7 @@ import { useState } from "react";
 import SearchIcon from "@mui/icons-material/Search";
 import { useDispatch, useSelector } from "react-redux";
 import { selectSortByDate, setSortByDate, selectMode, changeMode } from "../features/search/searchSlice";
+import { MODE_BBH, MODE_QA } from "../constant/strings";
 
 export { default as MenuAppBar } from "./MenuAppBar";
 export { ResponsiveAppBar } from "./ResponsiveAppBar";
@@ -49,8 +50,8 @@ export function TitleSearchBar({searchStr, onSearch}) {
           value={filter}
           onChange={(e) => dispatch(changeMode({ mode: e.target.value }))}
         >
-          <MenuItem value="QA">QA</MenuItem>
-          <MenuItem value="BBH">BBH</MenuItem>
+          <MenuItem value={MODE_QA}>QA</MenuItem>
+          <MenuItem value={MODE_BBH}>BBH</MenuItem>
         </Select>
       </FormControl>
       <FormControl size="small">

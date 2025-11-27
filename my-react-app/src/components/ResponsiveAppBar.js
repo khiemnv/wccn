@@ -25,6 +25,7 @@ import { useSelector } from "react-redux";
 const pages = [
   { text: "Home", icon: <HomeIcon />, url: "/", roles: ["admin", "user", "guest"] },
   { text: "Search", icon: <SearchIcon />, url: "/search", roles: ["admin", "user", "guest"] },
+  { text: "Title", icon: <SearchIcon />, url: "/title", roles: ["admin", "user", "guest"] },
   { text: "User Manger", icon: <PeopleIcon />, url: "/usermanager", roles: ["admin"] },
   { text: "Settings", icon: <SettingsIcon />, roles: ["admin"] },
 ];

@@ -9,6 +9,10 @@ class RoleApi extends BaseApi {
     const defaultEntity = {
       keys: "",
       titles: "",
+      titles_log: "",
+      bbh_keys: "",
+      bbh_titles: "",
+      bbh_titles_log: "",
     };
     super("roles", defaultEntity);
   }

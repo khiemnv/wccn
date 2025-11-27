@@ -11,16 +11,15 @@ export const TitlePage = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
-
     const isMobile = useMediaQuery("(max-width:600px)");
 
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
-    const mode = params.get("mode") || "QA";
+    const mode = params.get("mode");
 
     const titleIds = [parseInt(id, 10)];
     const titles = useSelector((state) =>
-        selectTitlesByIds(state, mode, titleIds)
+        mode ? selectTitlesByIds(state, mode, titleIds):[]
     );
     const missingTitles = titles.length ? [] : titleIds;
     const missingTitlesStr = missingTitles.join(",");
@@ -44,7 +43,9 @@ export const TitlePage = () => {
                 console.error("Error fetching titles:", error);
             }
         }
-        fetchTitle();
+        if (mode) {
+            fetchTitle();
+        }
     }, [dispatch, mode, missingTitlesStr]);
 
     useEffect(() => {
@@ -67,6 +68,25 @@ export const TitlePage = () => {
 
     function handleClose() {
 
+    }
+
+    if (!mode) {
+        return (
+            <Box sx={{ p: 2 }}>
+                <h2>Please select a mode:</h2>
+                <Button
+                    variant="contained"
+                    onClick={() => navigate(`/title?mode=QA&id=${id || 1}`)}
+                    sx={{ mr: 2 }}
+                >
+                    QA Mode </Button>
+                <Button
+                    variant="contained" 
+                    onClick={() => navigate(`/title?mode=BBH&id=${id || 1}`)}
+                >
+                    BBH Mode </Button>
+            </Box>
+        );
     }
 
     return (

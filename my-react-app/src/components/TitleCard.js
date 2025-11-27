@@ -486,7 +486,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         </Button>
       </Box>
 
-      {logs && logs.length && (
+      {(logs && logs.length) ? 
         <TitleLogModal
           showLogModal={showLogModal}
           handleCloseLogModal={handleCloseLogModal}
@@ -498,7 +498,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             setEditing(obj);
           }}
         />
-      )}
+      :<></>}
 
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
