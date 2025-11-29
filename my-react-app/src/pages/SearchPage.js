@@ -7,6 +7,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   addKey,
   addTitle,
+  changeSearchPage,
+  changeSearchStr,
   selectKeysByIds,
   selectMode,
   selectSortByDate,
@@ -113,17 +115,29 @@ function findTitlesForSearch(keys) {
   return titles.filter((t) => t.d < threshold).sort((a, b) => a.d - b.d);
 }
 export default function SearchPage() {
-  const query = useQuery().get("q");
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width:600px)");
+
   // const mode = useSelector(selectMode);
+  const storeSeachStr = useSelector((state) => state.search.searchStr);
+  const storeSearchPage = useSelector((state) => state.search.searchPage);
+
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get("q") ? params.get("q") : storeSeachStr;
+  if (query !== storeSeachStr) {
+    dispatch(changeSearchStr({ searchStr: query }));
+    dispatch(changeSearchPage({ searchPage: 1 }));
+  }
 
   const [loaded, setLoaded] = useState(false);
   const sortByDate = useSelector(selectSortByDate);
   const mode = useSelector(selectMode);
   const [sortedRows, setSortedRows] = useState([]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = [
+    storeSearchPage,
+    (newPage) => dispatch(changeSearchPage({ searchPage: newPage })),
+  ];
   const [chunkData, setChunkData] = useState([]);
   const [loadingTitle, setLoadingTitle] = useState(false);
   const [totalPages, setTotalPages] = useState(null); // unknown until we detect missing file

@@ -7,6 +7,9 @@ const initialState = {
   QA : {keys: [], titles: []},
   BBH : {keys: [], titles: []},
   mode: "QA",
+  titleId: 1,
+  searchStr: "",
+  searchPage: 1,
   sortByDate: "dsc",
   tags: undefined,
   status: "idle",
@@ -58,6 +61,18 @@ export const slice = createSlice({
       const {mode} = action.payload;
       state.mode = mode;
     },
+    changeTitleId: (state, action) => {
+      const {titleId} = action.payload;
+      state.titleId = titleId;
+    },
+    changeSearchStr: (state, action) => {
+      const {searchStr} = action.payload;
+      state.searchStr = searchStr;
+    },
+    changeSearchPage: (state, action) => {
+      const {searchPage} = action.payload;
+      state.searchPage = searchPage;
+    },
     setSortByDate: (state, action) => {
       const { sortByDate } = action.payload;
       state.sortByDate = sortByDate;
@@ -98,6 +113,9 @@ export const {
   addKey,
   deleteKey,
   changeMode,
+  changeTitleId,
+  changeSearchStr,
+  changeSearchPage,
   setSortByDate,
   addTag,
   editTag,
@@ -131,6 +149,10 @@ export const selectKeyById = (id) =>
 export const selectMode = (state) => state.search.mode;
 export const selectSortByDate = (state) => state.search.sortByDate;
 export const selectTags = (state) => state.search.tags;
+
+export const selectTitleId = (state) => state.search.titleId;
+export const selectSearchStr = (state) => state.search.searchStr;
+
 export default slice.reducer;
 
 function patch(entity,changes) {

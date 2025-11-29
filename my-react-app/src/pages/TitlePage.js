@@ -1,11 +1,12 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
-import { addTitle, changeMode, editTitle, selectMode, selectTitlesByIds } from "../features/search/searchSlice";
+import { addTitle, changeMode, changeTitleId, editTitle, selectMode, selectTitleId, selectTitlesByIds } from "../features/search/searchSlice";
 import { use, useEffect, useState } from "react";
 import { getTitle, getTitleLog2, updateTitle2 } from "../services/search/keyApi";
 import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Paper, Select, Stack, TextField, useMediaQuery } from "@mui/material";
 import TitleCard, { TitleEditor } from "../components/TitleCard";
 import { rApplyPath } from "../utils/fbUtil";
+import { CustomizedInputBase } from "../components/SearchBar";
 
 export const TitlePage = () => {
     const navigate = useNavigate();
@@ -14,11 +15,28 @@ export const TitlePage = () => {
     const isMobile = useMediaQuery("(max-width:600px)");
 
     const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-    const mode = params.get("mode");
+    const storeTitleId = useSelector(selectTitleId);
+    const storeMode = useSelector(selectMode);
+    const id = params.get("id") ? parseInt(params.get("id"), 10) : storeTitleId;
+    const mode = params.get("mode") ? params.get("mode") : storeMode;
     console.log("TitlePage mode, id:", mode, id);
 
-    const titleIds = [parseInt(id, 10)];
+    if (id && storeTitleId !== id) {
+        // sync store titleId with url param id
+        dispatch(changeTitleId({ titleId: id }));
+    }
+
+    if (mode && storeMode !== mode) {
+        // sync store titleId with url param id
+        dispatch(changeMode({ mode: mode }));
+    }
+
+    const [inputId, setInputId] = useState(id);
+    useEffect(() => {
+        setInputId(id);
+    }, [id]);
+
+    const titleIds = [id];
     const titles = useSelector((state) =>
         mode ? selectTitlesByIds(state, mode, titleIds):[]
     );
@@ -91,88 +109,95 @@ export const TitlePage = () => {
     }
 
     return (
-        <>
-            <Stack
-                direction={"column"}
-                alignItems={"center"}
-                sx={{ height: "80vh", mt: 2, flexGrow: 1 }}
-                // fullWidth
-                // spacing={2}
+      <>
+        <Stack
+          direction={"column"}
+          alignItems={"center"}
+          sx={{ height: "80vh", mt: 2, flexGrow: 1 }}
+          // fullWidth
+          // spacing={2}
+        >
+          {/* control bar */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+              onClick={() => {
+                const curId = parseInt(id);
+                if (curId <= 1) return;
+                navigate(`/title?mode=${mode}&id=${curId - 1}`);
+              }}
             >
+              Trước
+            </Button>
 
-                {/* control bar */}
-                <Stack direction="row" spacing={1} alignItems="center">
-                    {/* <FormControl size="small">
-                    <InputLabel id="mode-select-label">Mode</InputLabel>
-                    <Select
-                        labelId="mode-select-label"
-                        label="Mode"
-                        value={mode}
-                        onChange={(e) => dispatch(changeMode({ mode: e.target.value }))}
-                    >
-                        <MenuItem value="QA">QA</MenuItem>
-                        <MenuItem value="BBH">BBH</MenuItem>
-                    </Select>
-                </FormControl> */}
+            {/* select mode */}
+            <FormControl size="small">
+              <InputLabel id="mode-select-label">Mode</InputLabel>
+              <Select
+                labelId="mode-select-label"
+                label="Mode"
+                value={mode}
+                onChange={(e) => navigate(`/title?mode=${e.target.value}&id=1`)}
+              >
+                <MenuItem value="QA">QA</MenuItem>
+                <MenuItem value="BBH">BBH</MenuItem>
+              </Select>
+            </FormControl>
+{/* 
+            <CustomizedInputBase sx={{with: 50}} searchStr={id} onSearch={(strId)=>{
+                const newId = parseInt(strId);
+                navigate(`/title?mode=${mode}&id=${newId}`);
+              }} ></CustomizedInputBase> */}
+            <TextField
+              label="Title ID"
+              value={inputId}
+              size="small"
+              sx={{ width: 100 }}
+              onBlur={(e) => {
+                const newId = parseInt(e.target.value);
+                navigate(`/title?mode=${mode}&id=${newId}`);
+              }}
+              onChange={(e) => {
+                setInputId(e.target.value);
+              }}
+            ></TextField>
+            <Button
+              onClick={() => {
+                const newId = parseInt(id) + 1;
+                navigate(`/title?mode=${mode}&id=${newId}`);
+              }}
+            >
+              Tiếp
+            </Button>
+          </Stack>
 
-                    <Button
-                        onClick={() => {
-                            const curId = parseInt(id);
-                            if (curId <= 1) return;
-                            navigate(`/title?mode=${mode}&id=${curId - 1}`);
-                        }}
-                    >
-                        Trước
-                    </Button>
-                    <TextField
-                        label="Title ID"
-                        value={id}
-                        size="small"
-                        onChange={(e) => {
-                            const newId = e.target.value;
-                            navigate(`/title?mode=${mode}&id=${newId}`);
-                        }}>
-                    </TextField>
-                    <Button
-                        onClick={() => {
-                            const newId = parseInt(id) + 1;
-                            navigate(`/title?mode=${mode}&id=${newId}`);
-                        }}
-                    >
-                        Tiếp
-                    </Button>
-
-                </Stack>
-
-                {/* title editor box */}
-                <Box
-                    sx={{
-                        // position: "absolute",
-                        // top: "50%",
-                        // left: "50%",
-                        // transform: "translate(-50%, -50%)",
-                        width: isMobile ? "100%" : "80%",
-                        // maxWidth: "90vw",
-                        // fullWidth: true,
-                        bgcolor: "background.paper",
-                        // boxShadow: 24,
-                        mt: isMobile ? 1 : 2,
-                        // maxHeight: isMobile ? "90vh" : "80vh",
-                        overflowY: "auto",
-                        borderRadius: 2,
-                    }}
-                >
-                    {
-                        titles[0] && <TitleEditor
-                            data={titles[0]}
-                            isMobile={isMobile}
-                            onSave={handleSave}
-                            onClose={handleClose}></TitleEditor>
-                    }
-                </Box>
-            </Stack>
-
-
-        </>
+          {/* title editor box */}
+          <Box
+            sx={{
+              // position: "absolute",
+              // top: "50%",
+              // left: "50%",
+              // transform: "translate(-50%, -50%)",
+              width: isMobile ? "100%" : "80%",
+              // maxWidth: "90vw",
+              // fullWidth: true,
+              bgcolor: "background.paper",
+              // boxShadow: 24,
+              mt: isMobile ? 1 : 2,
+              // maxHeight: isMobile ? "90vh" : "80vh",
+              overflowY: "auto",
+              borderRadius: 2,
+            }}
+          >
+            {titles[0] && (
+              <TitleEditor
+                data={titles[0]}
+                isMobile={isMobile}
+                onSave={handleSave}
+                onClose={handleClose}
+              ></TitleEditor>
+            )}
+          </Box>
+        </Stack>
+      </>
     );
 };

@@ -70,7 +70,7 @@ export function TitleSearchBar({searchStr, onSearch}) {
   </Stack>;
 }
 
-function CustomizedInputBase({searchStr, onSearch }) {
+export function CustomizedInputBase({searchStr, onSearch }) {
   const [search, setSearchStr] = useState(searchStr || "");
 
   const handleKeyDown = (e) => {
