@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import {
+  Alert,
   FormControlLabel,
   Radio,
   RadioGroup,
@@ -48,12 +49,15 @@ import AddIcon from "@mui/icons-material/Add";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
 import { rApplyPath } from "../utils/fbUtil";
 import { AlertDialog } from "./dialog/AlertDialog";
 import { DONE, ERROR } from "../constant/strings";
+import { set } from "firebase/database";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -201,6 +205,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   // log
   const [logs, setLogs] = useState();
   const [showLogModal, setShowLog] = useState(false);
+  const [openPreview, setOpenPreview] = useState(false);
 
   // title
   const [editing, setEditing] = useState(data);
@@ -233,25 +238,25 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   // --- Effects ------------------------------------------------------------
 
   // Load all tags from API (fallback to store selector if API fails)
+  console.log("allTags from store:", allTags);
   const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
   useEffect(() => {
-    let mounted = true;
     async function loadTags() {
       try {
-        const { result } = await getAllTags();
-        if (!mounted) return;
+        const { result, error } = await getAllTags();
         if (result) {
           // attempt to read friendly name fields, fallback to raw value
           dispatch(setTags({ tags: result }));
+        } else {
+          console.error("Error loading tags from API:", error);
         }
-      } catch (err) { }
+      } catch (err) { 
+        console.error("Error loading tags:", err);
+      }
     }
     if (!allTags) {
       loadTags();
     }
-    return () => {
-      mounted = false;
-    };
   }, [allTags, dispatch]);
 
   const handleParagraphChange = (index, value) => {
@@ -365,6 +370,67 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     }
   };
 
+  const handleCopy = async () => {
+    try {
+      var textToCopy = titleToString(editing);
+      await navigator.clipboard.writeText(textToCopy);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+  const handlePaste = async () => {
+    try {
+      var clipboardText = await navigator.clipboard.readText();
+      var lines = clipboardText.split(/\r?\n/);
+      lines = lines.map((line) => line.trim()).filter((line) => line !== "");
+      var newId = "";
+      var state = "init";
+      var changes = {paragraphs: []};
+      for(var i in lines) {
+        var line = lines[i];
+        switch(state) {
+          case "init":
+          case "id":
+          case "title":
+          case "path":
+            if(line.startsWith("path: ")) {
+              changes.path = line.slice(6).trim();
+              state = "path";
+            } else if (line.startsWith("id: ")) {
+              newId = parseInt(line.slice(4).trim());
+              state = "id";
+            }
+            else if (line.startsWith("title: ")) {
+              changes.title = line.slice(7).trim();
+              state = "title";
+            } else if(line.startsWith("tags: ")) {
+              changes.tags = line
+                .slice(6).split("#")
+                .map(t=>t.trim())
+                .filter(t=>t!=="");
+              state = "tags";
+            }
+            break;
+          case "tags":
+            changes.paragraphs.push(line);
+            break;
+          default:
+              break;
+        }
+      }
+      if (newId !== editing.titleId) {
+        setError({ message: "Pasting with different ID is not supported." });
+        return;
+      }
+      setEditing({...editing, ...changes});
+    } catch (err) {
+      console.error("Failed to read clipboard contents: ", err);
+      return;
+    }
+  };
+
+  const handlePreview = () => {setOpenPreview(true);};
+
   return (
     <>
       <Box
@@ -378,7 +444,17 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
           {`Edit Title: ${data.titleId}`}
         </Typography>
-        <Button onClick={handleLog}>Log</Button>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <IconButton aria-label="copy" onClick={handleCopy}>
+            <ContentCopyIcon />
+          </IconButton>
+          <IconButton aria-label="paste" onClick={handlePaste}>
+            <ContentPasteIcon />
+          </IconButton>
+          <IconButton aria-label="log" onClick={handleLog}>
+            <InfoOutlineIcon />
+          </IconButton>
+        </Box>
       </Box>
 
       {/* path */}
@@ -438,8 +514,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
               backgroundColor: isDragOver
                 ? "rgba(25,118,210,0.08)"
                 : isDragged
-                  ? "action.hover"
-                  : "transparent",
+                ? "action.hover"
+                : "transparent",
               borderRadius: 1,
               p: 1,
             }}
@@ -452,6 +528,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             onDragEnd={handleDragEnd}
           >
             <ParagraphEditor
+              key={idx}
               p={p}
               handleParagraphChange={handleParagraphChange}
               idx={idx}
@@ -468,25 +545,28 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
           gap: 2,
           flexDirection: isMobile ? "column" : "row",
         }}
       >
-        <Button variant="text" onClick={onClose} fullWidth={isMobile}>
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          onClick={() => onSave({ changes })}
-          fullWidth={isMobile}
-          disabled={Object.keys(changes).length === 0}
-        >
-          Save
-        </Button>
+        <Button onClick={() => handlePreview()}>Preview</Button>
+        <Box>
+          <Button variant="text" onClick={onClose} fullWidth={isMobile}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => onSave({ changes })}
+            fullWidth={isMobile}
+            disabled={Object.keys(changes).length === 0}
+          >
+            Save
+          </Button>
+        </Box>
       </Box>
 
-      {(logs && logs.length) ? 
+      {logs && logs.length ? (
         <TitleLogModal
           showLogModal={showLogModal}
           handleCloseLogModal={handleCloseLogModal}
@@ -498,16 +578,95 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             setEditing(obj);
           }}
         />
-      :<></>}
+      ) : (
+        <></>
+      )}
+
+{
+  <PreviewModal
+        open={openPreview}
+        onClose={() => {setOpenPreview(false)}}
+        title={editing}
+      />
+}
 
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         open={!!error}
         autoHideDuration={5000}
         onClose={() => setError(null)}
-        message={error ? `${ERROR} 「${error.message}」` : DONE}
-      />
+      >
+        <Alert
+          onClose={() => setError(null)}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {error ? error.message: ""}
+        </Alert>
+      </Snackbar>
     </>
+  );
+}
+
+function renderParagraphs(t, words) {
+  return t.paragraphs
+    .map((p) =>
+      p
+        .trim()
+        .replace("question", "Câu hỏi")
+        .replace("answer", "CCN chỉ dạy")
+        .replace(/Cô (Chủ nhiệm|CN)/i, "CCN")
+    )
+    .filter((p) => p !== "")
+    .map((s, idx) => {
+      const isSubtitle = s.match("^Câu hỏi|^CCN chỉ dạy");
+      return (
+        <Box key={idx}>
+          {isSubtitle ? (
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 600, mt: 0.5, mb: 0.5 }}
+              color="primary"
+            >
+              {s}
+            </Typography>
+          ) : (
+            <Typography variant="caption" color="text.secondary">
+              • <HighlightWords text={s.replace(/^[-\s]+/, "")} words={words} />
+            </Typography>
+          )}
+        </Box>
+      );
+    });
+}
+
+function PreviewModal({ open, onClose, title }) {
+  const isMobile = useMediaQuery("(max-width:600px)");
+  return (
+    <Modal open={open} onClose={onClose}>
+    <Box
+    sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: isMobile ? "90%" : 600,
+          maxWidth: "90vw",
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: isMobile ? 2 : 4,
+          maxHeight: isMobile ? "90vh" : "80vh",
+          overflowY: "auto",
+          borderRadius: 2,
+        }}
+    >
+      <Typography variant="h6">
+          {title.title.replace(/Question|cau/, "Câu")}
+        </Typography>
+      {renderParagraphs(title, [])}
+      </Box>
+    </Modal>
   );
 }
 
@@ -704,6 +863,7 @@ function TitleLogModal({
   );
 }
 
+
 function ParagraphEditor({
   p,
   handleParagraphChange,
@@ -713,7 +873,9 @@ function ParagraphEditor({
   removeParagraph,
   moveParagraph,
 }) {
+  console.log("ParagraphEditor", idx);
   const [isFocused, setIsFocused] = useState(false);
+  const [text, setText] = useState(p);
 
   const onMoveUp = () => {
     moveParagraph(idx, idx - 1);
@@ -723,22 +885,41 @@ function ParagraphEditor({
     moveParagraph(idx, idx + 1);
   };
 
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setText(value);    
+    // handleParagraphChange(idx, value);
+  };
+
+  const handleAutoResize = (e) => {
+    const ta = e.target;
+    requestAnimationFrame(() => {
+      ta.style.height = "auto";
+      ta.style.height = ta.scrollHeight + "px";
+    });
+  };
   return (
     <Box>
       <TextField
         multiline
         minRows={2}
         maxRows={12}
-        onInput={(e) => {
-          const ta = e.target;
-          ta.style.height = "auto";
-          ta.style.height = `${ta.scrollHeight}px`;
-        }}
+        // onInput={(e) => {
+        //   const ta = e.target;
+        //   ta.style.height = "auto";
+        //   ta.style.height = `${ta.scrollHeight}px`;
+        // }}
         onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        onBlur={() => {
+          setIsFocused(false);
+          handleParagraphChange(idx, text);
+        }}
         fullWidth
-        value={p}
-        onChange={(e) => handleParagraphChange(idx, e.target.value)}
+        value={text}
+        onChange={(e) => {
+          handleChange(e);
+          // handleAutoResize(e); // auto resize khi nhập
+        }}
         label={`Paragraph ${idx + 1}`}
         size={isMobile ? "small" : "medium"}
       />
@@ -750,9 +931,7 @@ function ParagraphEditor({
               size={isMobile ? "small" : "medium"}
               aria-label="drag handle"
             >
-              <DragIndicatorIcon
-                sx={{ transform: "rotate(90deg)" }}
-              />
+              <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
             </IconButton>
 
             <IconButton
@@ -772,7 +951,6 @@ function ParagraphEditor({
             >
               <KeyboardArrowDownIcon fontSize="small" />
             </IconButton>
-
           </Box>
         </Box>
       )}
@@ -804,6 +982,16 @@ function isSameArray(a, b) {
   return a.every((v, i) => v === b[i]);
 }
 
+function titleToString(title) {
+  return [
+    `path: ${title.path}`,
+    `id: ${title.titleId}`,
+    `title: ${title.title}`,
+    `tags: ${(title.tags || []).map(t=>`#${t}`).join(" ")}`,
+    ...title.paragraphs,
+  ].join("\r\n");
+}
+
 function TitleCard({ t, isMobile, words }) {
   console.log("TitleCard");
   const mode = useSelector(selectMode);
@@ -815,7 +1003,7 @@ function TitleCard({ t, isMobile, words }) {
   };
   const handleCopy = async () => {
     try {
-      const text = [t.path, `ID: ${t.titleId}`, ...t.paragraphs].join("\r\n");
+      const text = titleToString(t);
       await navigator.clipboard.writeText(text);
     } catch (err) {
       console.error("Copy failed:", err);
@@ -870,39 +1058,7 @@ function TitleCard({ t, isMobile, words }) {
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
         <CardContent>
-          {t.paragraphs
-            .map((p) =>
-              p
-                .trim()
-                .replace("question", "Câu hỏi")
-                .replace("answer", "CCN chỉ dạy")
-                .replace(/Cô (Chủ nhiệm|CN)/i, "CCN")
-            )
-            .filter((p) => p !== "")
-            .map((s, idx) => {
-              const isSubtitle = s.match("^Câu hỏi|^CCN chỉ dạy");
-              return (
-                <Box key={idx}>
-                  {isSubtitle ? (
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, mt: 0.5, mb: 0.5 }}
-                      color="primary"
-                    >
-                      {s}
-                    </Typography>
-                  ) : (
-                    <Typography variant="caption" color="text.secondary">
-                      •{" "}
-                      <HighlightWords
-                        text={s.replace(/^[-\s]+/, "")}
-                        words={words}
-                      />
-                    </Typography>
-                  )}
-                </Box>
-              );
-            })}
+          {renderParagraphs(t, words)}
         </CardContent>
         {expanded && (
           <Box sx={{ textAlign: "left", mt: 1, ml: 1 }}>
