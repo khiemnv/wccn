@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo, use } from "react";
 import {
   Alert,
   FormControlLabel,
@@ -49,8 +49,9 @@ import AddIcon from "@mui/icons-material/Add";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
-import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import ContentPasteIcon from "@mui/icons-material/ContentPaste";
+import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
+import CloseIcon from "@mui/icons-material/Close";
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
@@ -236,6 +237,10 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const [error, setError] = useState();
 
   // --- Effects ------------------------------------------------------------
+  // Sync khi data (props) thay đổi từ bên ngoài
+  useEffect(() => {
+    setEditing(data);
+  }, [data]);
 
   // Load all tags from API (fallback to store selector if API fails)
   console.log("allTags from store:", allTags);
@@ -250,7 +255,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         } else {
           console.error("Error loading tags from API:", error);
         }
-      } catch (err) { 
+      } catch (err) {
         console.error("Error loading tags:", err);
       }
     }
@@ -318,13 +323,14 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   };
 
   const moveParagraph = (fromIndex, toIndex) => {
+    // console.log("moveParagraph", fromIndex, toIndex);
     if (fromIndex < 0 || fromIndex >= paragraphs.length) return;
     if (toIndex < 0 || toIndex >= paragraphs.length) return;
     const updated = [...paragraphs];
     const [movedParagraph] = updated.splice(fromIndex, 1);
     updated.splice(toIndex, 0, movedParagraph);
-    setParagraphs(updated);
-  }
+    setEditing({ ...editing, paragraphs: updated });
+  };
 
   console.log("edit title modal");
 
@@ -385,29 +391,29 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       lines = lines.map((line) => line.trim()).filter((line) => line !== "");
       var newId = "";
       var state = "init";
-      var changes = {paragraphs: []};
-      for(var i in lines) {
+      var changes = { paragraphs: [] };
+      for (var i in lines) {
         var line = lines[i];
-        switch(state) {
+        switch (state) {
           case "init":
           case "id":
           case "title":
           case "path":
-            if(line.startsWith("path: ")) {
+            if (line.startsWith("path: ")) {
               changes.path = line.slice(6).trim();
               state = "path";
             } else if (line.startsWith("id: ")) {
               newId = parseInt(line.slice(4).trim());
               state = "id";
-            }
-            else if (line.startsWith("title: ")) {
+            } else if (line.startsWith("title: ")) {
               changes.title = line.slice(7).trim();
               state = "title";
-            } else if(line.startsWith("tags: ")) {
+            } else if (line.startsWith("tags: ")) {
               changes.tags = line
-                .slice(6).split("#")
-                .map(t=>t.trim())
-                .filter(t=>t!=="");
+                .slice(6)
+                .split("#")
+                .map((t) => t.trim())
+                .filter((t) => t !== "");
               state = "tags";
             }
             break;
@@ -415,22 +421,25 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             changes.paragraphs.push(line);
             break;
           default:
-              break;
+            break;
         }
       }
       if (newId !== editing.titleId) {
         setError({ message: "Pasting with different ID is not supported." });
         return;
       }
-      setEditing({...editing, ...changes});
+      setEditing({ ...editing, ...changes });
     } catch (err) {
       console.error("Failed to read clipboard contents: ", err);
       return;
     }
   };
 
-  const handlePreview = () => {setOpenPreview(true);};
+  const handlePreview = () => {
+    setOpenPreview(true);
+  };
 
+  console.log("editing", editing.paragraphs);
   return (
     <>
       <Box
@@ -457,42 +466,50 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         </Box>
       </Box>
 
-      {/* path */}
-      <TextField
-        label="Path"
-        fullWidth
-        value={path}
-        onChange={(e) => setPath(e.target.value)}
-        size={isMobile ? "small" : "medium"}
-        sx={{ mb: 2 }}
-      />
-
-      {/* Title */}
-      <TextField
-        label="Title"
-        fullWidth
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        size={isMobile ? "small" : "medium"}
-        sx={{ mb: 2 }}
-      />
-
-      {/* Tags */}
-      <Box sx={{ mb: 2 }}>
-        <Autocomplete
-          multiple
-          freeSolo
-          options={availableTags}
-          value={selectedTags}
-          onChange={(event, newValue) => setSelectedTags(newValue || [])}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Tags"
-              size={isMobile ? "small" : "medium"}
-            />
-          )}
+      <Box sx={{ m: isMobile ? 1 : 2 }}>
+        {/* path */}
+        <TextField
+          label="Path"
+          multiline
+          minRows={1}
+          maxRows={3}
+          fullWidth
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          size={isMobile ? "small" : "medium"}
+          sx={{ mb: isMobile ? 1 : 2 }}
         />
+
+        {/* Title */}
+        <TextField
+          label="Title"
+          multiline
+          minRows={1}
+          maxRows={3}
+          fullWidth
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          size={isMobile ? "small" : "medium"}
+          sx={{ mb: isMobile ? 1 : 2 }}
+        />
+
+        {/* Tags */}
+        <Box sx={{ mb: isMobile ? 1 : 2 }}>
+          <Autocomplete
+            multiple
+            freeSolo
+            options={availableTags}
+            value={selectedTags}
+            onChange={(event, newValue) => setSelectedTags(newValue || [])}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Tags"
+                size={isMobile ? "small" : "medium"}
+              />
+            )}
+          />
+        </Box>
       </Box>
 
       {/* Paragraphs */}
@@ -508,7 +525,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             key={idx}
             sx={{
               position: "relative",
-              mb: 2,
+              mb: isMobile ? 1 : 2,
               opacity: isDragged ? 0.5 : 1,
               transition: "opacity 0.2s, background-color 0.15s",
               backgroundColor: isDragOver
@@ -517,7 +534,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
                 ? "action.hover"
                 : "transparent",
               borderRadius: 1,
-              p: 1,
+              m: isMobile ? 1 : 2,
             }}
             draggable
             onDragStart={() => handleDragStart(idx)}
@@ -528,7 +545,6 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             onDragEnd={handleDragEnd}
           >
             <ParagraphEditor
-              key={idx}
               p={p}
               handleParagraphChange={handleParagraphChange}
               idx={idx}
@@ -582,13 +598,15 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         <></>
       )}
 
-{
-  <PreviewModal
-        open={openPreview}
-        onClose={() => {setOpenPreview(false)}}
-        title={editing}
-      />
-}
+      {
+        <PreviewModal
+          open={openPreview}
+          onClose={() => {
+            setOpenPreview(false);
+          }}
+          title={editing}
+        />
+      }
 
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
@@ -602,7 +620,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           variant="filled"
           sx={{ width: "100%" }}
         >
-          {error ? error.message: ""}
+          {error ? error.message : ""}
         </Alert>
       </Snackbar>
     </>
@@ -645,8 +663,8 @@ function PreviewModal({ open, onClose, title }) {
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <Modal open={open} onClose={onClose}>
-    <Box
-    sx={{
+      <Box
+        sx={{
           position: "absolute",
           top: "50%",
           left: "50%",
@@ -660,11 +678,37 @@ function PreviewModal({ open, onClose, title }) {
           overflowY: "auto",
           borderRadius: 2,
         }}
-    >
-      <Typography variant="h6">
+      >
+        {/* Close button */}
+        <IconButton
+          onClick={onClose}
+          sx={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+
+        <Typography variant="h6" sx={{ pr: 4 }}>
           {title.title.replace(/Question|cau/, "Câu")}
         </Typography>
-      {renderParagraphs(title, [])}
+
+        {renderParagraphs(title, [])}
+
+        {/* Close bottom-right */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            mt: 2,
+          }}
+        >
+          <Button variant="contained" fullWidth={isMobile} onClick={onClose}>
+            OK
+          </Button>
+        </Box>
       </Box>
     </Modal>
   );
@@ -707,7 +751,7 @@ function TitleLogModal({
           break;
         }
       }
-    } catch (ex) { }
+    } catch (ex) {}
     return version.slice(0, 2);
   }
   // restore prev version
@@ -784,8 +828,9 @@ function TitleLogModal({
           {logs &&
             logs.map((log, idx) => {
               const date = log.timestamp.toDate();
-              const formatted = `${date.getDate()}/${date.getMonth() + 1
-                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+              const formatted = `${date.getDate()}/${
+                date.getMonth() + 1
+              }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
 
               return (
                 <Box
@@ -853,7 +898,7 @@ function TitleLogModal({
             variant="contained"
             onClick={() => onRevert(JSON.parse(beforeJson))}
             fullWidth={isMobile}
-          // disabled={selected && (selected === (logs.length-1))}
+            // disabled={selected && (selected === (logs.length-1))}
           >
             Revert
           </Button>
@@ -862,7 +907,6 @@ function TitleLogModal({
     </Modal>
   );
 }
-
 
 function ParagraphEditor({
   p,
@@ -876,6 +920,9 @@ function ParagraphEditor({
   console.log("ParagraphEditor", idx);
   const [isFocused, setIsFocused] = useState(false);
   const [text, setText] = useState(p);
+  useEffect(() => {
+    setText(p);
+  }, [p]);
 
   const onMoveUp = () => {
     moveParagraph(idx, idx - 1);
@@ -887,7 +934,7 @@ function ParagraphEditor({
 
   const handleChange = (e) => {
     const value = e.target.value;
-    setText(value);    
+    setText(value);
     // handleParagraphChange(idx, value);
   };
 
@@ -899,8 +946,9 @@ function ParagraphEditor({
     });
   };
   return (
-    <Box>
+    <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
       <TextField
+        sx={{ mt: 1 }}
         multiline
         minRows={2}
         maxRows={12}
@@ -925,7 +973,14 @@ function ParagraphEditor({
       />
 
       {!isFocused && (
-        <Box sx={{ position: "absolute", top: 2, left: 2 }}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: 2,
+            left: 2,
+            // backgroundColor: "#0ee3e380"
+          }}
+        >
           <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
             <IconButton
               size={isMobile ? "small" : "medium"}
@@ -987,7 +1042,7 @@ function titleToString(title) {
     `path: ${title.path}`,
     `id: ${title.titleId}`,
     `title: ${title.title}`,
-    `tags: ${(title.tags || []).map(t=>`#${t}`).join(" ")}`,
+    `tags: ${(title.tags || []).map((t) => `#${t}`).join(" ")}`,
     ...title.paragraphs,
   ].join("\r\n");
 }
@@ -1009,7 +1064,7 @@ function TitleCard({ t, isMobile, words }) {
       console.error("Copy failed:", err);
     }
   };
-  const handleDel = () => { };
+  const handleDel = () => {};
   const handleSave = async ({ changes, patch }) => {
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
@@ -1057,9 +1112,7 @@ function TitleCard({ t, isMobile, words }) {
         </ExpandMore>
       </CardActions>
       <Collapse in={expanded} timeout="auto" unmountOnExit>
-        <CardContent>
-          {renderParagraphs(t, words)}
-        </CardContent>
+        <CardContent>{renderParagraphs(t, words)}</CardContent>
         {expanded && (
           <Box sx={{ textAlign: "left", mt: 1, ml: 1 }}>
             <Button size="small" onClick={handleExpandClick}>
