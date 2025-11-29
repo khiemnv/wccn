@@ -101,6 +101,8 @@ export default function UserManager() {
       if (form.role !== editingUser.role) {
         if (form.email === editingUser.email) {
           var roleObj = {
+            tags: form.role,
+            tags_log: form.role,
             titles: form.role,
             titles_log: form.role,
             bbh_titles: form.role,
@@ -121,6 +123,8 @@ export default function UserManager() {
         if (form.role !== "") {
           var roleObj = {
             id: form.email,
+            tags: form.role,
+            tags_log: form.role,
             titles: form.role,
             titles_log: form.role,
             bbh_titles: form.role,
@@ -152,6 +156,8 @@ export default function UserManager() {
       if (form.role !== "" && form.email !== "") {
         var roleObj = {
           id: form.email,
+          tags: form.role,
+          tags_log: form.role,
           titles: form.role,
           titles_log: form.role,
           bbh_titles: form.role,

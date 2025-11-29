@@ -1,4 +1,5 @@
 import { createSelector, createSlice } from "@reduxjs/toolkit";
+import { update } from "firebase/database";
 
 const initialState = {
   titles: [],
@@ -67,9 +68,14 @@ export const slice = createSlice({
         state.tags.push(tag);
       }
     },
-    removeTag: (state, action) => {
-      const { tag } = action.payload;
-      const index = state.tags.indexOf(tag);
+    editTag: (state, action) => {
+      const { id, changes } = action.payload;
+      const tag = state.tags.find(t=>t.id === id);
+      patch(tag, changes);
+    },
+    deleteTag: (state, action) => {
+      const { id } = action.payload;
+      const index = state.tags.findIndex(t=>t.id === id);
       if (index !== -1) {
         state.tags.splice(index, 1);
       }
@@ -94,7 +100,8 @@ export const {
   changeMode,
   setSortByDate,
   addTag,
-  removeTag,
+  editTag,
+  deleteTag,
   setTags,
   clearTags,
 } = slice.actions;

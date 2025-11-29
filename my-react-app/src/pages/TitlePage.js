@@ -16,6 +16,7 @@ export const TitlePage = () => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get("id");
     const mode = params.get("mode");
+    console.log("TitlePage mode, id:", mode, id);
 
     const titleIds = [parseInt(id, 10)];
     const titles = useSelector((state) =>
@@ -94,7 +95,9 @@ export const TitlePage = () => {
             <Stack
                 direction={"column"}
                 alignItems={"center"}
-                sx={{ height: "80vh", p: 2, flexGrow: 1 }}
+                sx={{ height: "80vh", mt: 2, flexGrow: 1 }}
+                // fullWidth
+                // spacing={2}
             >
 
                 {/* control bar */}
@@ -148,11 +151,12 @@ export const TitlePage = () => {
                         // top: "50%",
                         // left: "50%",
                         // transform: "translate(-50%, -50%)",
-                        width: isMobile ? "90%" : 600,
-                        maxWidth: "90vw",
+                        width: isMobile ? "100%" : "80%",
+                        // maxWidth: "90vw",
+                        // fullWidth: true,
                         bgcolor: "background.paper",
                         // boxShadow: 24,
-                        p: isMobile ? 2 : 4,
+                        mt: isMobile ? 1 : 2,
                         // maxHeight: isMobile ? "90vh" : "80vh",
                         overflowY: "auto",
                         borderRadius: 2,

@@ -11,6 +11,8 @@ import {
 
 import { useDispatch, useSelector } from "react-redux";
 import {
+  addTag,
+  editTag,
   editTitle,
   selectMode,
   selectTags,
@@ -59,6 +61,8 @@ import { rApplyPath } from "../utils/fbUtil";
 import { AlertDialog } from "./dialog/AlertDialog";
 import { DONE, ERROR } from "../constant/strings";
 import { set } from "firebase/database";
+import { collection, onSnapshot, query, Timestamp, where } from "firebase/firestore";
+import { db } from "../firebase/firebase";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -227,14 +231,12 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     editing.tags || [],
     (tags) => setEditing({ ...editing, tags }),
   ];
-  // All available tags (from API or from store) used to suggest options
-  const allTags = useSelector(selectTags);
+
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
   // alert dialog
-
-  const [error, setError] = useState();
+  const [alertObj, setAlertObj] = useState({open: false});
 
   // --- Effects ------------------------------------------------------------
   // Sync khi data (props) thay đổi từ bên ngoài
@@ -242,37 +244,13 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     setEditing(data);
   }, [data]);
 
-  // Load all tags from API (fallback to store selector if API fails)
-  console.log("allTags from store:", allTags);
-  const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
-  useEffect(() => {
-    async function loadTags() {
-      try {
-        const { result, error } = await getAllTags();
-        if (result) {
-          // attempt to read friendly name fields, fallback to raw value
-          dispatch(setTags({ tags: result }));
-        } else {
-          console.error("Error loading tags from API:", error);
-        }
-      } catch (err) {
-        console.error("Error loading tags:", err);
-      }
-    }
-    if (!allTags) {
-      loadTags();
-    }
-  }, [allTags, dispatch]);
-
+  // --- Handlers -----------------------------------------------------------
   const handleParagraphChange = (index, value) => {
     const updated = [...paragraphs];
     updated[index] = value;
     setParagraphs(updated);
   };
 
-  const availableTags = (tagLstFromStore || []).filter(
-    (tag) => !selectedTags.includes(tag)
-  );
   const removeParagraph = (index) =>
     setParagraphs(paragraphs.filter((_, i) => i !== index));
   const insertParagraph = (idx) => {
@@ -368,7 +346,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         result.sort((a, b) => a.timestamp - b.timestamp);
         setLogs(result);
         if (!result.length) {
-          setError({ message: "No logs available" });
+          setAlertObj({ message: "No logs available" });
         } else {
           setShowLog(true);
         }
@@ -425,7 +403,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         }
       }
       if (newId !== editing.titleId) {
-        setError({ message: "Pasting with different ID is not supported." });
+        setAlertObj({ message: "Pasting with different ID is not supported." });
         return;
       }
       setEditing({ ...editing, ...changes });
@@ -439,7 +417,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     setOpenPreview(true);
   };
 
-  console.log("editing", editing.paragraphs);
+  // console.log("editing", editing.paragraphs);
   return (
     <>
       <Box
@@ -494,22 +472,11 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         />
 
         {/* Tags */}
-        <Box sx={{ mb: isMobile ? 1 : 2 }}>
-          <Autocomplete
-            multiple
-            freeSolo
-            options={availableTags}
-            value={selectedTags}
-            onChange={(event, newValue) => setSelectedTags(newValue || [])}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Tags"
-                size={isMobile ? "small" : "medium"}
-              />
-            )}
-          />
-        </Box>
+        <TagEditor
+          isMobile={isMobile}
+          selectedTags={selectedTags}
+          setSelectedTags={setSelectedTags}
+        />
       </Box>
 
       {/* Paragraphs */}
@@ -608,22 +575,162 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         />
       }
 
+      {/* Alert */}
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        open={!!error}
+        open={alertObj.open}
         autoHideDuration={5000}
-        onClose={() => setError(null)}
+        onClose={() => setAlertObj({ open: false })}
       >
         <Alert
-          onClose={() => setError(null)}
-          severity="error"
+          onClose={() => setAlertObj({ open: false })}
+          severity={alertObj.type} // "error" | "warning" | "info" | "success"
           variant="filled"
           sx={{ width: "100%" }}
         >
-          {error ? error.message : ""}
+          {alertObj.message}
         </Alert>
       </Snackbar>
     </>
+  );
+}
+
+function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
+  const dispatch = useDispatch();
+
+  // All available tags (from API or from store) used to suggest options
+  const allTags = useSelector(selectTags);
+
+  // alert dialog
+  const [alertObj, setAlertObj] = useState({open: false});
+
+  // Load all tags from API (fallback to store selector if API fails)
+  console.log("allTags from store:", allTags);
+  const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
+  useEffect(() => {
+    async function loadTags() {
+      try {
+        const { result, error } = await getAllTags();
+        if (result) {
+          // attempt to read friendly name fields, fallback to raw value
+          dispatch(setTags({ tags: result }));
+        } else {
+          console.error("Error loading tags from API:", error);
+        }
+      } catch (err) {
+        console.error("Error loading tags:", err);
+      }
+    }
+    if (!allTags) {
+      loadTags();
+    }
+  }, [allTags, dispatch]);
+
+  // --- Subscribe -----------------------------------------------------------
+  useEffect(() => {
+    const now = Timestamp.now();
+    const q = query(
+      collection(db, "/tags_log"),
+      where("timestamp", ">=", now)
+    );
+
+    console.log("[Subscribe] Start at:", now.toDate().toLocaleString());
+
+    const unsubscribe = onSnapshot(
+      q,
+      { includeMetadataChanges: true },
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const { id: logId } = change.doc;
+          const { json, action, itemId, timestamp } = change.doc.data();
+
+          console.log(
+            `TAG log: [${logId}] ${action} [${itemId}] at ${timestamp
+              .toDate()
+              .toLocaleString()}`
+          );
+          console.log("content: ", json);
+
+          if (true) {
+            apply();
+            console.log("applied");
+          } else {
+            console.log("skipped");
+          }
+
+          function apply() {
+            try {
+              const obj = JSON.parse(json);
+              switch (action) {
+                case "create":
+                  dispatch(addTag({ tag: obj }));
+                  break;
+                case "update":
+                  dispatch(editTag({ id: itemId, changes: obj }));
+                  break;
+                default:
+                  console.warn("Unknown action:", action);
+              }
+
+              setAlertObj({
+                open: true,
+                type: "info",
+                message:
+                  "Đã cập nhật thay đổi tags: " +
+                  timestamp.toDate().toLocaleString(),
+              });
+            } catch (e) {
+              console.error("[Realtime] JSON parse error:", e, json);
+            }
+          }
+        });
+      }
+    );
+
+    return () => {
+      console.log("[Subscribe] Unsubscribed");
+      unsubscribe();
+    };
+  }, [dispatch]);
+
+  const availableTags = (tagLstFromStore || []).filter(
+    (tag) => !selectedTags.includes(tag)
+  );
+
+  return (
+    <Box sx={{ mb: isMobile ? 1 : 2 }}>
+      <Autocomplete
+        multiple
+        freeSolo
+        options={availableTags}
+        value={selectedTags}
+        onChange={(event, newValue) => setSelectedTags(newValue || [])}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Tags"
+            size={isMobile ? "small" : "medium"}
+          />
+        )}
+      />
+
+      {/* Alert */}
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        open={alertObj.open}
+        autoHideDuration={5000}
+        onClose={() => setAlertObj({ open: false })}
+      >
+        <Alert
+          onClose={() => setAlertObj({ open: false })}
+          severity={alertObj.type} // "error" | "warning" | "info" | "success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {alertObj.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 }
 
