@@ -108,6 +108,12 @@ export const TitlePage = () => {
         );
     }
 
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        navigate(`/title?mode=${mode}&id=${inputId}`);
+      }
+    };
     return (
       <>
         <Stack
@@ -159,6 +165,7 @@ export const TitlePage = () => {
               onChange={(e) => {
                 setInputId(e.target.value);
               }}
+              onKeyDown={handleKeyDown}
             ></TextField>
             <Button
               onClick={() => {
