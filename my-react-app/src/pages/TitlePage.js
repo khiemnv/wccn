@@ -204,10 +204,9 @@ const TitleIdInput = ({ id, onChangeId }) => {
     }
     , 500), [onChangeId]);
 
-
-  // useEffect(() => {
-  //     setInputId(id);
-  // }, [id]);
+  useEffect(() => {
+      setInputId(id);
+  }, [id]);
 
   const handleIdChange = (e) => {
     setInputId(e.target.value);
