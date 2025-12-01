@@ -1,6 +1,7 @@
 import { useState, useEffect, memo, use } from "react";
 import {
   Alert,
+  Chip,
   FormControlLabel,
   Radio,
   RadioGroup,
@@ -767,6 +768,7 @@ function renderParagraphs(t, words) {
 }
 
 function PreviewModal({ open, onClose, title }) {
+  console.log("PreviewModal title:", title);
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <Modal open={open} onClose={onClose}>
@@ -801,7 +803,7 @@ function PreviewModal({ open, onClose, title }) {
         <Typography variant="h6" sx={{ pr: 4 }}>
           {title.title.replace(/Question|cau/, "Câu")}
         </Typography>
-
+        {renderTags(title)}
         {renderParagraphs(title, [])}
 
         {/* Close bottom-right */}
@@ -819,6 +821,15 @@ function PreviewModal({ open, onClose, title }) {
       </Box>
     </Modal>
   );
+}
+
+function renderTags(title) {
+  return title.tags ? title.tags.map((tag, idx) => (
+    <Chip
+      sx={{ mr: 1 }}
+      label={tag}
+      key={idx}></Chip>
+  )) : <></>;
 }
 
 function TitleLogModal({
@@ -1202,6 +1213,7 @@ function TitleCard({ t, isMobile, words }) {
         <Typography variant="h6">
           {t.title.replace(/Question|cau/, "Câu")}
         </Typography>
+        {renderTags(t)}
       </CardContent>
       <CardActions>
         <Box sx={{ width: "100%", textAlign: "left" }}>
