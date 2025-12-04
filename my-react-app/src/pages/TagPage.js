@@ -28,11 +28,12 @@ import {
 } from "../services/search/keyApi";
 import { useAppDispatch } from "../app/hooks";
 import { Timestamp } from "firebase/firestore";
+import CancelIcon from '@mui/icons-material/Cancel';
 
 export default function TagPage() {
   const dispatch = useAppDispatch();
   const tags = useSelector(selectTags);
-//   console.log("Tags:", tags);
+  //   console.log("Tags:", tags);
   const [newTag, setNewTag] = useState({});
   const [editing, setEditing] = useState({});
 
@@ -91,6 +92,9 @@ export default function TagPage() {
       setEditing({});
     }
   };
+  const handleCancel = () => {
+    setEditing({});
+  }
 
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
@@ -105,11 +109,11 @@ export default function TagPage() {
       </Typography>
 
       {/* Add Tag */}
-      <Card sx={{ p: 2, mb: 3 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+      <Box sx={{ display:"flex", flexDirection: "column" }}>
+        <Typography variant="subtitle1">
           Add Tag
         </Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: "flex", m: isMobile?1:2, gap: 1 }}>
           <TextField
             fullWidth
             label="New tag"
@@ -124,26 +128,38 @@ export default function TagPage() {
             <Add />
           </Button>
         </Box>
-      </Card>
+      </Box>
 
       {/* Tag List */}
-      <Card sx={{ p: 2 }}>
-        <Typography variant="subtitle1" sx={{ mb: 2 }}>
+      <Box sx={{
+        display: "flex",
+        flexGrow: 1,
+        flexDirection: "column",
+        minHeight: "300px"
+      }}>
+        <Typography variant="subtitle1">
           Tags
         </Typography>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Box sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          minHeight: "300px",
+          overflowY: "auto",
+          p:isMobile?1:2
+        }}>
           {(tags || []).map((tagObj, index) => (
-            <Card
+            <Box
               key={index}
-              sx={{
-                p: 1.5,
+              sx={{m:0}}
+            >
+              {editing.id === tagObj.id ? (
+                <Card sx={{
+                p: 1,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-              }}
-            >
-              {editing.id === tagObj.id ? (
-                <>
+              }}>
                   <TextField
                     fullWidth
                     value={editing.tag}
@@ -155,9 +171,17 @@ export default function TagPage() {
                   <IconButton color="primary" onClick={handleSave}>
                     <Save />
                   </IconButton>
-                </>
+                  <IconButton color="error" onClick={handleCancel}>
+                    <CancelIcon />
+                  </IconButton>
+                </Card>
               ) : (
-                <>
+                <Card sx={{
+                p: 1,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}>
                   <Typography>{tagObj.tag}</Typography>
                   <Box>
                     <IconButton onClick={() => setEditing(tagObj)}>
@@ -170,12 +194,12 @@ export default function TagPage() {
                       <Delete />
                     </IconButton>
                   </Box>
-                </>
+                </Card>
               )}
-            </Card>
+            </Box>
           ))}
         </Box>
-      </Card>
+      </Box>
 
       {/* Alert */}
       <Snackbar
