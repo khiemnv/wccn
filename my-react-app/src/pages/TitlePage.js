@@ -201,7 +201,7 @@ export const TitlePage = () => {
             bgcolor: "background.paper",
             // boxShadow: 24,
             mt: isMobile ? 1 : 2,
-            // maxHeight: isMobile ? "90vh" : "80vh",
+            // maxHeight: isMobile ? "80vh" : "70vh",
             // overflowY: "auto",
             borderRadius: 2,
             display: "flex",

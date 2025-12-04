@@ -13,7 +13,34 @@ import Bai8 from "./pages/Bai8";
 import { TitlePage } from "./pages/TitlePage";
 import TagPage from "./pages/TagPage";
 
+import { useEffect } from "react";
+
+export function useMobileVh() {
+  useEffect(() => {
+    function updateVh() {
+      const vh = window.visualViewport
+        ? window.visualViewport.height * 0.01
+        : window.innerHeight * 0.01;
+
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    }
+
+    updateVh();
+
+    window.visualViewport?.addEventListener("resize", updateVh);
+    window.addEventListener("resize", updateVh);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updateVh);
+      window.removeEventListener("resize", updateVh);
+    };
+  }, []);
+}
+
+
 function App() {
+  // useMobileVh();
+
   const token = useAppSelector(selectToken);
   const isMobile = useMediaQuery('(max-width:600px)');
   const roleObj = useAppSelector(selectRoleObj);

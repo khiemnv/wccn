@@ -209,7 +209,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
           bgcolor: "background.paper",
           boxShadow: 24,
           p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "90vh" : "80vh",
+          maxHeight: isMobile ? "80vh" : "70vh",
           overflowY: "auto",
           borderRadius: 2,
           display: "flex",
@@ -898,7 +898,7 @@ function PreviewModal({ open, onClose, title }) {
           bgcolor: "background.paper",
           boxShadow: 24,
           p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "90vh" : "80vh",
+          maxHeight: isMobile ? "80vh" : "70vh",
           overflowY: "auto",
           borderRadius: 2,
           display: "flex",
@@ -1034,7 +1034,7 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
           bgcolor: "background.paper",
           boxShadow: 24,
           p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "90vh" : "80vh",
+          maxHeight: isMobile ? "80vh" : "70vh",
           overflowY: "auto",
           borderRadius: 2,
           display: "flex",
@@ -1295,12 +1295,12 @@ function TitleLogModal({
   diff.forEach(([op, data], idx) => {
     if (op === 0) {
       left.push(
-        <span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>
+        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
           {data}
         </span>
       );
       right.push(
-        <span key={idx} style={{ whiteSpace: "pre", textWrap: "auto" }}>
+        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
           {data}
         </span>
       );
@@ -1332,7 +1332,7 @@ function TitleLogModal({
           bgcolor: "background.paper",
           boxShadow: 24,
           p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "90vh" : "80vh",
+          maxHeight: isMobile ? "80vh" : "70vh",
           overflowY: "auto",
           borderRadius: 2,
           display: "flex",
