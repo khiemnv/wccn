@@ -5,6 +5,7 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
+  Paper,
   Radio,
   RadioGroup,
   Select,
@@ -249,6 +250,15 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   // alert dialog
   const [alertObj, setAlertObj] = useState({ open: false });
 
+  // replace
+  const [dict, setDict] = useState([
+    ["ĐT", "đạo tràng"],
+    ["CLB", "câu lạc bộ"],
+    ["PT", "Phật tử"],
+    ["BQT", "Bát quan trai"],
+  ].map(pair => ({ find: pair[0], replace: pair[1], selected: true })));
+  const [openDict, setOpenDict] = useState(false);
+
   // --- Effects ------------------------------------------------------------
   // Sync khi data (props) thay đổi từ bên ngoài
   useEffect(() => {
@@ -377,8 +387,19 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     }
   };
 
-  const handleReplace = () => {
-
+  const handleReplace = (pairs) => {
+    const replacedLines = paragraphs.map(line => {
+      let result = line;
+      pairs.forEach(({find, replace}) => {
+        // Replace all occurrences of the word
+        // Use word boundaries (\b) to only replace whole words
+        const regex = new RegExp(`\\b${find}\\b`, 'g');
+        result = result.replace(regex, replace);
+      });
+      return result;
+    })
+    setParagraphs(replacedLines);
+    setOpenDict(false);
   }
 
   const handleCopy = async () => {
@@ -481,7 +502,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           {`Edit Title: ${data.titleId}`}
         </Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton aria-label="replace" onClick={handleReplace}>
+          <IconButton aria-label="replace" onClick={() => setOpenDict(true)}>
             <FindReplaceIcon />
           </IconButton>
           <IconButton aria-label="copy" onClick={handleCopy}>
@@ -634,13 +655,25 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       )}
 
       {
-        <PreviewModal
+        openPreview && <PreviewModal
           open={openPreview}
           onClose={() => {
             setOpenPreview(false);
           }}
           title={editing}
         />
+      }
+
+      {
+        openDict && <ReplaceModal
+          open={openDict}
+          dict={dict}
+          setDict={setDict}
+          onClose={() => setOpenDict(false)}
+          onReplace={handleReplace}
+        >
+
+        </ReplaceModal>
       }
 
       {/* Alert */}
@@ -894,6 +927,177 @@ function PreviewModal({ open, onClose, title }) {
             OK
           </Button>
         </Box>
+      </Box>
+    </Modal>
+  );
+}
+
+// Deep comparison function
+function dictsEqual(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (
+      a[i].find !== b[i].find ||
+      a[i].replace !== b[i].replace ||
+      a[i].selected !== b[i].selected
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
+
+  // Local state for editing
+  const [localDict, setLocalDict] = useState(dict);
+
+  // Add a new empty pair
+  const handleAdd = () => {
+    setLocalDict([...localDict, { find: '', replace: '', selected: true }]);
+  };
+
+  // Remove a pair by index
+  const handleRemove = (idx) => {
+    setLocalDict(localDict.filter((_, i) => i !== idx));
+  };
+
+  // Edit a pair
+  const handleEdit = (idx, key, value) => {
+    const newDict = localDict.map((pair, i) =>
+      i === idx ? { ...pair, [key]: value } : pair
+    );
+    setLocalDict(newDict);
+  };
+
+  // Select a pair (only one can be selected)
+  const handleToggleSelect = (idx) => {
+    const newDict = localDict.map((pair, i) =>
+      i === idx ? { ...pair, selected: !pair.selected } : pair
+    );
+    setLocalDict(newDict);
+  };
+
+  // Save changes to parent
+  const handleSave = () => {
+    setDict(localDict);
+    // onClose();
+  };
+
+  // Reset local state when modal opens
+  useEffect(() => {
+    if (open) setLocalDict(dict);
+  }, [open, dict]);
+
+  
+  // Check for changes
+  const isChanged = !dictsEqual(localDict, dict);
+
+  const isMobile = useMediaQuery("(max-width:600px)");
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: isMobile ? "90%" : 600,
+          maxWidth: "90vw",
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: isMobile ? 2 : 4,
+          maxHeight: isMobile ? "90vh" : "80vh",
+          overflowY: "auto",
+          borderRadius: 2,
+          display: "flex",
+          flexDirection: "column"
+        }}
+      >
+        {/* Top right close button */}
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: (theme) => theme.palette.grey[500],
+            zIndex: 2,
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+        <Typography variant="h6" mb={2}>Edit Dictionary</Typography>
+        {localDict.map((pair, idx) => (
+          <Paper
+            key={idx}
+            elevation={pair.selected ? 3 : 1}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              mb: 1,
+              p: 1,
+              backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
+              cursor: 'pointer',
+            }}
+            onClick={() => handleToggleSelect(idx)}
+          >
+            <TextField
+              label="Find"
+              value={pair.find}
+              size="small"
+              onChange={e => handleEdit(idx, 'find', e.target.value)}
+              sx={{ mr: 1 }}
+            />
+            <TextField
+              label="Replace"
+              value={pair.replace}
+              size="small"
+              onChange={e => handleEdit(idx, 'replace', e.target.value)}
+              sx={{ mr: 1 }}
+            />
+             <IconButton onClick={e => { e.stopPropagation(); handleRemove(idx); }}>
+              <DeleteIcon color="error" />
+            </IconButton>
+          </Paper>
+        ))}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 2, // spacing between buttons
+            mt: 2,
+          }}
+        >
+          <Button onClick={handleAdd} variant="outlined">Add Pair</Button>
+          <Button onClick={handleSave} 
+          variant="contained"
+          disabled={!isChanged}
+          >Save</Button>
+        </Box>
+
+        {localDict.some(pair => pair.selected) && (
+          <Typography sx={{ mt: 2 }}>
+            Replace:
+            {localDict
+              .filter(pair => pair.selected)
+              .map(pair => ` "${pair.find}" -> "${pair.replace}"`)
+              .join('; ')}
+          </Typography>
+        )}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: 2, // spacing between buttons
+            mt: 2,
+          }}
+        >
+          <Button onClick={onClose} variant="outlined" >Cancel</Button>
+          <Button onClick={() => onReplace(localDict.filter(pair => pair.selected))} variant="contained" >Replace</Button>
+        </Box>
+       
       </Box>
     </Modal>
   );
