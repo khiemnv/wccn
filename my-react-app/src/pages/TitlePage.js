@@ -123,7 +123,7 @@ export const TitlePage = () => {
           flexGrow: 1,
           display: "flex",
           flexDirection: "column",
-          height: "100%"
+          height: "50vh"
         }}
       // fullWidth
       // spacing={2}

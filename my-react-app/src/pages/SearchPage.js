@@ -299,12 +299,10 @@ export default function SearchPage() {
     navigate(`/search?q=${encodeURIComponent(searchStr)}`);
   return (
     <Box sx={{
-      p: {
-        xs: 0, sm: 1,
-        display: "flex",
-        flexDirection: "column",
-        width: "100%"
-      }
+      p: isMobile?1:2,
+      display: "flex",
+      flexDirection: "column",
+      width: "100%"
     }}>
       <TitleSearchBar searchStr={search} onSearch={handleSearch} />
 
@@ -316,7 +314,7 @@ export default function SearchPage() {
           mt: { xs: 1, sm: 2 },
           display: "flex",
           flexDirection: "column",
-          minHeight: "300px",
+          height: "50vh",
           flexGrow: 1
         }}
       >

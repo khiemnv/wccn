@@ -22,10 +22,10 @@ function App() {
   }
 
   return (
-    <Box sx={{display:"flex", flexDirection: "column", height: "100%"}}>
+    <Box sx={{display:"flex", flexDirection: "column", height: "5vh", flexGrow: 1}}>
       <ResponsiveAppBar />
       {/* <Header /> */}
-      <main style={{ minHeight: "70vh", display:"flex", flexGrow: 1 }}>
+      <main style={{ minHeight: "50vh", display:"flex", flexGrow: 1 }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/wccn" element={<HomePage />} />
