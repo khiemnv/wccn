@@ -397,8 +397,9 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       pairs.forEach(({find, replace}) => {
         // Replace all occurrences of the word
         // Use word boundaries (\b) to only replace whole words
-        const regex = new RegExp(`\\b${find}\\b`, 'g');
-        result = result.replace(regex, replace);
+        // const regex = new RegExp(`\\b${find}\\b`, 'g');
+        // result = result.replace(regex, replace);
+        result = replaceViWd(result, find, replace);
       });
       return result;
     })
@@ -1729,3 +1730,10 @@ function TitleCard({ t, isMobile, words }) {
   );
 }
 export default TitleCard;
+
+
+function replaceViWd(text, find, replace) {
+  const VWORD = "A-Za-zÀ-Ỵà-ỵĂăÂâĐđÊêÔôƠơƯư";
+  const regex = new RegExp(`(?<![${VWORD}])${find}(?![${VWORD}])`, "gu");
+  return text.replace(regex, replace);
+}
