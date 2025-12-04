@@ -9,6 +9,7 @@ import {
   Typography,
   Snackbar,
   Alert,
+  useMediaQuery,
 } from "@mui/material";
 import { Edit, Delete, Save, Add } from "@mui/icons-material";
 import { useSelector } from "react-redux";
@@ -91,8 +92,14 @@ export default function TagPage() {
     }
   };
 
+  const isMobile = useMediaQuery("(max-width:600px)");
   return (
-    <Box sx={{ p: 3, maxWidth: 500, mx: "auto" }}>
+    <Box sx={{
+      p: isMobile ? 1 : 2,
+      display: "flex",
+      flexDirection: "column",
+      width: "100%"
+    }}>
       <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
         Tag Manager
       </Typography>

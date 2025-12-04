@@ -109,75 +109,104 @@ export const TitlePage = () => {
   }
 
   return (
-    <>
-      <Stack
-        direction={"column"}
-        alignItems={"center"}
-        sx={{ height: "80vh", mt: 2, flexGrow: 1 }}
+    <Box
+    sx={{
+          flexGrow: 1,
+          // p: isMobile?1:2,
+          display: "flex",
+          flexDirection: "column",
+        }}
+    >
+      <Box
+        // alignItems={"center"}
+        sx={{
+          flexGrow: 1,
+          display: "flex",
+          flexDirection: "column",
+          height: "100%"
+        }}
       // fullWidth
       // spacing={2}
       >
         {/* control bar */}
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Button
-            onClick={() => {
-              const curId = parseInt(id);
-              if (curId <= 1) return;
-              navigate(`/title?mode=${mode}&id=${curId - 1}`);
-            }}
-          >
-            Trước
-          </Button>
-
-          {/* select mode */}
-          <FormControl size="small">
-            <InputLabel id="mode-select-label">Mode</InputLabel>
-            <Select
-              labelId="mode-select-label"
-              label="Mode"
-              value={mode}
-              onChange={(e) => navigate(`/title?mode=${e.target.value}&id=1`)}
+        <Box 
+        sx={{pt: isMobile? 2:3,
+          display: "flex", 
+          flexDirection: "row", 
+          justifyContent:"center"}}
+        >
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+              onClick={() => {
+                const curId = parseInt(id);
+                if (curId <= 1) return;
+                navigate(`/title?mode=${mode}&id=${curId - 1}`);
+              }}
             >
-              <MenuItem value="QA">QA</MenuItem>
-              <MenuItem value="BBH">BBH</MenuItem>
-            </Select>
-          </FormControl>
-          {/* 
+              Trước
+            </Button>
+
+            {/* select mode */}
+            <FormControl size="small">
+              <InputLabel id="mode-select-label">Mode</InputLabel>
+              <Select
+                labelId="mode-select-label"
+                label="Mode"
+                value={mode}
+                onChange={(e) => navigate(`/title?mode=${e.target.value}&id=1`)}
+              >
+                <MenuItem value="QA">QA</MenuItem>
+                <MenuItem value="BBH">BBH</MenuItem>
+              </Select>
+            </FormControl>
+            {/* 
             <CustomizedInputBase sx={{with: 50}} searchStr={id} onSearch={(strId)=>{
                 const newId = parseInt(strId);
                 navigate(`/title?mode=${mode}&id=${newId}`);
               }} ></CustomizedInputBase> */}
-          <TitleIdInput
-            id={id}
-            onChangeId={handleIdChange}
-          ></TitleIdInput>
+            <TitleIdInput
+              id={id}
+              onChangeId={handleIdChange}
+            ></TitleIdInput>
 
-          <Button
-            onClick={() => {
-              const newId = parseInt(id) + 1;
-              navigate(`/title?mode=${mode}&id=${newId}`);
-            }}
-          >
-            Tiếp
-          </Button>
-        </Stack>
+            <Button
+              onClick={() => {
+                const newId = parseInt(id) + 1;
+                navigate(`/title?mode=${mode}&id=${newId}`);
+              }}
+            >
+              Tiếp
+            </Button>
+          </Stack>
+        </Box>
 
         {/* title editor box */}
-        <Box
+        {titles[0] && (
+          <TitleEditor
+            data={titles[0]}
+            isMobile={isMobile}
+            onSave={handleSave}
+            onClose={handleClose}
+          ></TitleEditor>
+        )}
+        {/* <Box
           sx={{
             // position: "absolute",
             // top: "50%",
             // left: "50%",
             // transform: "translate(-50%, -50%)",
-            width: isMobile ? "100%" : "80%",
+            // width: isMobile ? "100%" : "80%",
             // maxWidth: "90vw",
             // fullWidth: true,
             bgcolor: "background.paper",
             // boxShadow: 24,
             mt: isMobile ? 1 : 2,
             // maxHeight: isMobile ? "90vh" : "80vh",
-            overflowY: "auto",
+            // overflowY: "auto",
             borderRadius: 2,
+            display: "flex",
+            flexGrow: "9",
+            flexDirection: "column"
           }}
         >
           {titles[0] && (
@@ -188,9 +217,9 @@ export const TitlePage = () => {
               onClose={handleClose}
             ></TitleEditor>
           )}
-        </Box>
-      </Stack>
-    </>
+        </Box> */}
+      </Box>
+    </Box>
   );
 };
 

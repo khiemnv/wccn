@@ -2,9 +2,12 @@ import { useState, useEffect, memo, use } from "react";
 import {
   Alert,
   Chip,
+  FormControl,
   FormControlLabel,
+  InputLabel,
   Radio,
   RadioGroup,
+  Select,
   Snackbar,
   Stack,
   useMediaQuery,
@@ -55,6 +58,11 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import CloseIcon from "@mui/icons-material/Close";
+import MergeIcon from '@mui/icons-material/Merge';
+import SaveIcon from '@mui/icons-material/Save';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
+import FindReplaceIcon from '@mui/icons-material/FindReplace';
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
@@ -191,6 +199,8 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
           maxHeight: isMobile ? "90vh" : "80vh",
           overflowY: "auto",
           borderRadius: 2,
+          display: "flex",
+          flexDirection: "column"
         }}
       >
         <TitleEditor
@@ -237,7 +247,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
   // alert dialog
-  const [alertObj, setAlertObj] = useState({open: false});
+  const [alertObj, setAlertObj] = useState({ open: false });
 
   // --- Effects ------------------------------------------------------------
   // Sync khi data (props) thay đổi từ bên ngoài
@@ -254,6 +264,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   const removeParagraph = (index) =>
     setParagraphs(paragraphs.filter((_, i) => i !== index));
+
   const insertParagraph = (idx) => {
     const newParagraphs = [...paragraphs];
     newParagraphs.splice(idx + 1, 0, "");
@@ -310,6 +321,17 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     updated.splice(toIndex, 0, movedParagraph);
     setEditing({ ...editing, paragraphs: updated });
   };
+  const combineParagraph = (index) => {
+    if (index < 0 || index >= paragraphs.length - 1) return;
+    const combined = paragraphs[index] + " " + paragraphs[index + 1];
+    // Create a new array with the combined paragraph
+    const updated = [
+      ...paragraphs.slice(0, index),
+      combined,
+      ...paragraphs.slice(index + 2),
+    ];
+    setEditing({ ...editing, paragraphs: updated });
+  }
 
   console.log("edit title modal");
 
@@ -355,6 +377,10 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     }
   };
 
+  const handleReplace = () => {
+
+  }
+
   const handleCopy = async () => {
     try {
       var textToCopy = titleToString(editing);
@@ -363,14 +389,16 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       console.error("Failed to copy text: ", err);
     }
   };
+
   const handlePaste = async () => {
     try {
       var clipboardText = await navigator.clipboard.readText();
       var lines = clipboardText.split(/\r?\n/);
-      lines = lines.map((line) => line.trim()).filter((line) => line !== "");
+      lines = lines.map((line) => line.trim()); //.filter((line) => line !== "");
       var newId = "";
       var state = "init";
       var changes = { paragraphs: [] };
+      var curP = [];
       for (var i in lines) {
         var line = lines[i];
         switch (state) {
@@ -397,12 +425,23 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             }
             break;
           case "tags":
-            changes.paragraphs.push(line);
+            if (line === "" & curP.length > 0) {
+              changes.paragraphs.push(curP.join("\n"));
+              curP = [];
+            } else {
+              curP.push(line);
+            }
             break;
           default:
             break;
         }
       }
+
+      // add last paragraph
+      if (curP.length) {
+        changes.paragraphs.push(curP.join("\n"));
+      }
+
       if (newId !== editing.titleId) {
         setAlertObj({ message: "Pasting with different ID is not supported." });
         return;
@@ -420,7 +459,16 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   // console.log("editing", editing.paragraphs);
   return (
-    <>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        flexGrow: 1,
+        minHeight: "50vh",
+        m: isMobile ? 1 : 2,
+      }}
+    >
+      {/* header */}
       <Box
         sx={{
           display: "flex",
@@ -429,10 +477,13 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           flexDirection: "row",
         }}
       >
-        <Typography variant={isMobile ? "h6" : "h5"} mb={2}>
+        <Typography variant={isMobile ? "h6" : "h5"}>
           {`Edit Title: ${data.titleId}`}
         </Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
+          <IconButton aria-label="replace" onClick={handleReplace}>
+            <FindReplaceIcon />
+          </IconButton>
           <IconButton aria-label="copy" onClick={handleCopy}>
             <ContentCopyIcon />
           </IconButton>
@@ -445,85 +496,95 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         </Box>
       </Box>
 
-      <Box sx={{ m: isMobile ? 1 : 2 }}>
-        {/* path */}
-        <TextField
-          label="Path"
-          multiline
-          minRows={1}
-          maxRows={3}
-          fullWidth
-          value={path}
-          onChange={(e) => setPath(e.target.value)}
-          size={isMobile ? "small" : "medium"}
-          sx={{ mb: isMobile ? 1 : 2 }}
-        />
+      {/* body */}
+      <Box sx={{
+        overflowY: "auto",
+        mt: isMobile ? 1 : 2,
+        mb: isMobile ? 1 : 2,
+        flexGrow: 1
+      }}>
+        <Box sx={{ m: isMobile ? 1 : 2 }}>
+          {/* path */}
+          <TextField
+            label="Path"
+            multiline
+            minRows={1}
+            maxRows={3}
+            fullWidth
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            size={isMobile ? "small" : "medium"}
+            sx={{ mb: isMobile ? 1 : 2 }}
+          />
 
-        {/* Title */}
-        <TextField
-          label="Title"
-          multiline
-          minRows={1}
-          maxRows={3}
-          fullWidth
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          size={isMobile ? "small" : "medium"}
-          sx={{ mb: isMobile ? 1 : 2 }}
-        />
+          {/* Title */}
+          <TextField
+            label="Title"
+            multiline
+            minRows={1}
+            maxRows={3}
+            fullWidth
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            size={isMobile ? "small" : "medium"}
+            sx={{ mb: isMobile ? 1 : 2 }}
+          />
 
-        {/* Tags */}
-        <TagEditor
-          isMobile={isMobile}
-          selectedTags={selectedTags}
-          setSelectedTags={setSelectedTags}
-        />
+          {/* Tags */}
+          <TagEditor
+            isMobile={isMobile}
+            selectedTags={selectedTags}
+            setSelectedTags={setSelectedTags}
+          />
+        </Box>
+
+        {/* Paragraphs */}
+        <Typography variant={isMobile ? "subtitle1" : "h6"} mb={isMobile ? 1 : 2}>
+          Paragraphs (drag to reorder)
+        </Typography>
+
+        {paragraphs.map((p, idx) => {
+          const isDragged = draggedIndex === idx;
+          const isDragOver = dragOverIndex === idx && !isDragged;
+          return (
+            <Box
+              key={idx}
+              sx={{
+                position: "relative",
+                // mb: isMobile ? 1 : 2,
+                opacity: isDragged ? 0.5 : 1,
+                transition: "opacity 0.2s, background-color 0.15s",
+                backgroundColor: isDragOver
+                  ? "rgba(25,118,210,0.08)"
+                  : isDragged
+                    ? "action.hover"
+                    : "transparent",
+                borderRadius: 1,
+                m: isMobile ? 1 : 2,
+              }}
+              draggable
+              onDragStart={() => handleDragStart(idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDragEnter={() => setDragOverIndex(idx)}
+              onDragLeave={() => handleDragLeave(idx)}
+              onDrop={() => handleDrop(idx)}
+              onDragEnd={handleDragEnd}
+            >
+              <ParagraphEditor
+                p={p}
+                handleParagraphChange={handleParagraphChange}
+                idx={idx}
+                isMobile={isMobile}
+                insertParagraph={insertParagraph}
+                removeParagraph={removeParagraph}
+                moveParagraph={moveParagraph}
+                combineParagraph={combineParagraph}
+              />
+            </Box>
+          );
+        })}
       </Box>
 
-      {/* Paragraphs */}
-      <Typography variant={isMobile ? "subtitle1" : "h6"} mb={1}>
-        Paragraphs (drag to reorder)
-      </Typography>
-
-      {paragraphs.map((p, idx) => {
-        const isDragged = draggedIndex === idx;
-        const isDragOver = dragOverIndex === idx && !isDragged;
-        return (
-          <Box
-            key={idx}
-            sx={{
-              position: "relative",
-              mb: isMobile ? 1 : 2,
-              opacity: isDragged ? 0.5 : 1,
-              transition: "opacity 0.2s, background-color 0.15s",
-              backgroundColor: isDragOver
-                ? "rgba(25,118,210,0.08)"
-                : isDragged
-                ? "action.hover"
-                : "transparent",
-              borderRadius: 1,
-              m: isMobile ? 1 : 2,
-            }}
-            draggable
-            onDragStart={() => handleDragStart(idx)}
-            onDragOver={(e) => handleDragOver(e, idx)}
-            onDragEnter={() => setDragOverIndex(idx)}
-            onDragLeave={() => handleDragLeave(idx)}
-            onDrop={() => handleDrop(idx)}
-            onDragEnd={handleDragEnd}
-          >
-            <ParagraphEditor
-              p={p}
-              handleParagraphChange={handleParagraphChange}
-              idx={idx}
-              isMobile={isMobile}
-              insertParagraph={insertParagraph}
-              removeParagraph={removeParagraph}
-              moveParagraph={moveParagraph}
-            />
-          </Box>
-        );
-      })}
 
       {/* Actions */}
       <Box
@@ -531,18 +592,24 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           display: "flex",
           justifyContent: "space-between",
           gap: 2,
-          flexDirection: isMobile ? "column" : "row",
+          // flexDirection: isMobile ? "column" : "row",
+          flexDirection: "row",
         }}
       >
-        <Button onClick={() => handlePreview()}>Preview</Button>
+        <Button
+          onClick={() => handlePreview()}>Preview</Button>
         <Box>
-          <Button variant="text" onClick={onClose} fullWidth={isMobile}>
+          <Button
+            variant="text"
+            onClick={onClose}
+          // fullWidth={isMobile}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={() => onSave({ changes })}
-            fullWidth={isMobile}
+            // fullWidth={isMobile}
             disabled={Object.keys(changes).length === 0}
           >
             Save
@@ -592,7 +659,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           {alertObj.message}
         </Alert>
       </Snackbar>
-    </>
+    </Box>
   );
 }
 
@@ -603,7 +670,7 @@ function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
   const allTags = useSelector(selectTags);
 
   // alert dialog
-  const [alertObj, setAlertObj] = useState({open: false});
+  const [alertObj, setAlertObj] = useState({ open: false });
 
   // Load all tags from API (fallback to store selector if API fails)
   console.log("allTags from store:", allTags);
@@ -758,7 +825,7 @@ function renderParagraphs(t, words) {
               {s}
             </Typography>
           ) : (
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "pre" }}>
               • <HighlightWords text={s.replace(/^[-\s]+/, "")} words={words} />
             </Typography>
           )}
@@ -786,6 +853,8 @@ function PreviewModal({ open, onClose, title }) {
           maxHeight: isMobile ? "90vh" : "80vh",
           overflowY: "auto",
           borderRadius: 2,
+          display: "flex",
+          flexDirection: "column"
         }}
       >
         {/* Close button */}
@@ -803,18 +872,25 @@ function PreviewModal({ open, onClose, title }) {
         <Typography variant="h6" sx={{ pr: 4 }}>
           {title.title.replace(/Question|cau/, "Câu")}
         </Typography>
-        {renderTags(title)}
-        {renderParagraphs(title, [])}
+
+        <Box sx={{ display: "flex", flexDirection: "row" }}>
+          {renderTags(title)}
+        </Box>
+
+        <Box sx={{ overflowY: "auto", mt: isMobile ? 1 : 2, mb: isMobile ? 1 : 2 }}>
+          {renderParagraphs(title, [])}
+        </Box>
 
         {/* Close bottom-right */}
         <Box
           sx={{
             display: "flex",
             justifyContent: "flex-end",
-            mt: 2,
           }}
         >
-          <Button variant="contained" fullWidth={isMobile} onClick={onClose}>
+          <Button variant="contained"
+            fullWidth={isMobile}
+            onClick={onClose}>
             OK
           </Button>
         </Box>
@@ -844,6 +920,22 @@ function TitleLogModal({
   const [selected, setSelected] = useState(logs.length - 1);
   const [data, setData] = useState(base);
 
+  const [options, setOptions] = useState([]);
+  function sortLogs(logs) {
+    function tsToStr(ts) {
+      const date = ts.toDate();
+      const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+      return formatted;
+    }
+    const sortedLogs = logs
+      .map((log, idx) => ({ idx, seconds: log.timestamp.seconds, label: tsToStr(log.timestamp) }));
+    sortedLogs.sort((a, b) => b.seconds - a.seconds);
+    return sortedLogs;
+  }
+
+  useEffect(() => {
+    setOptions(sortLogs(logs));
+  }, [logs])
   function titleToStr(title) {
     return [
       title.path,
@@ -869,7 +961,7 @@ function TitleLogModal({
           break;
         }
       }
-    } catch (ex) {}
+    } catch (ex) { }
     return version.slice(0, 2);
   }
   // restore prev version
@@ -932,23 +1024,65 @@ function TitleLogModal({
           maxHeight: isMobile ? "90vh" : "80vh",
           overflowY: "auto",
           borderRadius: 2,
+          display: "flex",
+          flexDirection: "column"
         }}
       >
-        <div
+        {/* header */}
+        <FormControl size="small">
+          <InputLabel id="verison-select-label">Version</InputLabel>
+          <Select
+            labelId="verison-select-label"
+            label="Version"
+            value={selected}
+            onChange={(e) => handleUndo(e.target.value)}
+            renderValue={(option) => {
+              const idx = option;
+              const date = logs[idx].timestamp.toDate();
+              const formatted = `${date.getDate()}/${date.getMonth() + 1
+                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+              return formatted;
+            }}
+          >
+            {logs &&
+              options.map(({ idx, label }) => {
+                return (
+                  <MenuItem
+                    key={idx}
+                    sx={{
+                      display: "flex",
+                      direction: "row",
+                      alignItems: "center",
+                    }}
+                    value={idx}
+                  // onClick={() => handleUndo(idx)}
+                  >
+                    <Radio
+                      checked={idx === selected}
+                    ></Radio>
+                    <Typography>{label}</Typography>
+                  </MenuItem>
+                );
+              })}
+          </Select>
+
+        </FormControl>
+        {/* <div
           style={{
             width: "100%",
             display: "flex",
             flexDirection: "row",
             flexWrap: "wrap",
             overflow: "auto",
+            maxHeight: "30vh",
+            minHeight: "10vh"
           }}
         >
           {logs &&
             logs.map((log, idx) => {
               const date = log.timestamp.toDate();
-              const formatted = `${date.getDate()}/${
-                date.getMonth() + 1
-              }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+              const formatted = `${date.getDate()}/${date.getMonth() + 1
+                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
 
               return (
                 <Box
@@ -967,29 +1101,52 @@ function TitleLogModal({
                 </Box>
               );
             })}
-        </div>
+        </div> */}
 
-        <div style={{ width: "100%", display: "flex", flexDirection: "row" }}>
-          <div
-            style={{
-              width: "50%",
-              border: "1px, solid",
-              padding: "0.5rem",
-              margin: "1px",
-            }}
-          >
-            {left}
-          </div>
-          <div
-            style={{
-              width: "50%",
-              border: "1px, solid",
-              padding: "0.5rem",
-              margin: "1px",
-            }}
-          >
-            {right}
-          </div>
+        {/* body */}
+        <div style={{ width: "100%", display: "flex", flexDirection: "row", overflowY: "auto", margin: "8px 0 8px 0" }}>
+          <Box sx={{
+            display: "flex",
+            flexGrow: 1,
+            flexDirection: "column",
+            height: "fit-content",
+          }}>
+
+            <Box
+              sx={{
+                border: '1px solid',
+                mr: 0.5,
+                p: 0.5,
+                height: 'fit-content',
+                borderRadius: '0.5rem',
+                whiteSpace: 'pre',
+                minHeight: '300px'
+              }}
+            >
+              {left}
+            </Box>
+          </Box>
+          <Box sx={{
+            display: "flex",
+            flexGrow: 1,
+            flexDirection: "column",
+            height: "fit-content",
+          }}>
+            <Box
+              sx={{
+                border: '1px solid',
+                mr: 0.5,
+                p: 0.5,
+                height: 'fit-content',
+                borderRadius: "0.5rem",
+                whiteSpace: 'pre',
+                minHeight: '300px'
+              }}
+            >
+              {right}
+            </Box>
+          </Box>
+
         </div>
         {/* <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
         {beforeStr}
@@ -1001,22 +1158,22 @@ function TitleLogModal({
             display: "flex",
             justifyContent: "flex-end",
             gap: 2,
-            flexDirection: isMobile ? "column" : "row",
-            mt: "0.5rem",
+            // flexDirection: isMobile ? "column" : "row",
+            // mt: "0.5rem",
           }}
         >
           <Button
             variant="text"
             onClick={handleCloseLogModal}
-            fullWidth={isMobile}
+          // fullWidth={isMobile}
           >
             Cancel
           </Button>
           <Button
             variant="contained"
             onClick={() => onRevert(JSON.parse(beforeJson))}
-            fullWidth={isMobile}
-            // disabled={selected && (selected === (logs.length-1))}
+          // fullWidth={isMobile}
+          // disabled={selected && (selected === (logs.length-1))}
           >
             Revert
           </Button>
@@ -1034,12 +1191,20 @@ function ParagraphEditor({
   insertParagraph,
   removeParagraph,
   moveParagraph,
+  combineParagraph,
 }) {
   console.log("ParagraphEditor", idx);
   const [isFocused, setIsFocused] = useState(false);
-  const [text, setText] = useState(p);
+  // const [text, setText] = useState(p);
+
+  // Holds all history values, starting with an empty string
+  const [history, setHistory] = useState(['']);
+  // Current position in history
+  const [currentIndex, setCurrentIndex] = useState(0);
+
   useEffect(() => {
-    setText(p);
+    setHistory([p]);
+    setCurrentIndex(0);
   }, [p]);
 
   const onMoveUp = () => {
@@ -1050,23 +1215,45 @@ function ParagraphEditor({
     moveParagraph(idx, idx + 1);
   };
 
+  // Current text value
+  const text = history[currentIndex];
+
   const handleChange = (e) => {
-    const value = e.target.value;
-    setText(value);
-    // handleParagraphChange(idx, value);
+    const newValue = e.target.value;
+
+    // Remove future history if we type after undo
+    const newHistory = history.slice(0, currentIndex + 1);
+
+    setHistory([...newHistory, newValue]);
+    setCurrentIndex(newHistory.length); // point to the new value
   };
 
-  const handleAutoResize = (e) => {
-    const ta = e.target;
-    requestAnimationFrame(() => {
-      ta.style.height = "auto";
-      ta.style.height = ta.scrollHeight + "px";
-    });
+  // Undo (go back in history)
+  const handleUndo = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
   };
+
+  // Redo (go forward in history)
+  const handleRedo = () => {
+    if (currentIndex < history.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  const editMode = history.length > 1;
+
   return (
     <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
       <TextField
-        sx={{ mt: 1 }}
+        sx={{
+          // mt: 1,
+          '& .MuiInputBase-input': {
+            paddingTop: 2,         // padding inside textarea
+            paddingBottom: 2,         // padding inside textarea
+          }
+        }}
         multiline
         minRows={2}
         maxRows={12}
@@ -1078,7 +1265,7 @@ function ParagraphEditor({
         onFocus={() => setIsFocused(true)}
         onBlur={() => {
           setIsFocused(false);
-          handleParagraphChange(idx, text);
+          // handleParagraphChange(idx, text);
         }}
         fullWidth
         value={text}
@@ -1089,8 +1276,49 @@ function ParagraphEditor({
         label={`Paragraph ${idx + 1}`}
         size={isMobile ? "small" : "medium"}
       />
+      {editMode && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 2,
+            right: 2,
+            // backgroundColor: "#0ee3e380"
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
+            <IconButton
+              disabled={history.length === 1}
+              size={isMobile ? "small" : "medium"}
+              aria-label="save"
+              onClick={() => handleParagraphChange(idx, text)}
+              color="primary"
+            >
+              <SaveIcon fontSize="small" />
+            </IconButton>
 
-      {!isFocused && (
+            <IconButton
+              disabled={currentIndex === 0}
+              size={isMobile ? "small" : "medium"}
+              aria-label="undo"
+              onClick={handleUndo}
+              color="primary"
+            >
+              <UndoIcon fontSize="small" />
+            </IconButton>
+
+            <IconButton
+              disabled={currentIndex === (history.length - 1)}
+              size={isMobile ? "small" : "medium"}
+              aria-label="redo"
+              onClick={handleRedo}
+              color="primary"
+            >
+              <RedoIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
+      {!editMode && (
         <Box
           sx={{
             position: "absolute",
@@ -1127,9 +1355,16 @@ function ParagraphEditor({
           </Box>
         </Box>
       )}
-      {!isFocused && (
+      {!editMode && (
         <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
           <Box sx={{ display: "flex", gap: 0.5 }}>
+            <IconButton
+              onClick={() => combineParagraph(idx)}
+              size={isMobile ? "small" : "medium"}
+              title="Combine with paragraph after this"
+            >
+              <MergeIcon color="primary" />
+            </IconButton>
             <IconButton
               onClick={() => insertParagraph(idx)}
               size={isMobile ? "small" : "medium"}
@@ -1161,8 +1396,8 @@ function titleToString(title) {
     `id: ${title.titleId}`,
     `title: ${title.title}`,
     `tags: ${(title.tags || []).map((t) => `#${t}`).join(" ")}`,
-    ...title.paragraphs,
-  ].join("\r\n");
+    title.paragraphs.join("\n\n"),
+  ].join("\n");
 }
 
 function TitleCard({ t, isMobile, words }) {
@@ -1182,7 +1417,7 @@ function TitleCard({ t, isMobile, words }) {
       console.error("Copy failed:", err);
     }
   };
-  const handleDel = () => {};
+  const handleDel = () => { };
   const handleSave = async ({ changes, patch }) => {
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);

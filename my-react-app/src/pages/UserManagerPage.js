@@ -21,6 +21,7 @@ import {
   FormControl,
   InputLabel,
   Stack,
+  useMediaQuery,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -194,8 +195,16 @@ export default function UserManager() {
     }
   };
 
+  const isMobile = useMediaQuery("(max-width:600px)");
   return (
-    <Box p={3}>
+    <Box
+      sx={{
+        p: isMobile ? 1 : 2,
+        display: "flex",
+        flexDirection: "column",
+        width: "100%"
+      }}
+    >
       <Typography variant="h5" gutterBottom>
         User Management
       </Typography>

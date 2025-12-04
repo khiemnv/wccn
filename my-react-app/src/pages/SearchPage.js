@@ -298,7 +298,14 @@ export default function SearchPage() {
   const handleSearch = (searchStr) =>
     navigate(`/search?q=${encodeURIComponent(searchStr)}`);
   return (
-    <Box sx={{ p: { xs: 0, sm: 1 } }}>
+    <Box sx={{
+      p: {
+        xs: 0, sm: 1,
+        display: "flex",
+        flexDirection: "column",
+        width: "100%"
+      }
+    }}>
       <TitleSearchBar searchStr={search} onSearch={handleSearch} />
 
       <Paper

@@ -7,7 +7,7 @@ import { selectRoleObj, selectToken } from "./features/auth/authSlice";
 import LoginPage from "./pages/LoginPage";
 import SearchPage from "./pages/SearchPage";
 import { ResponsiveAppBar } from "./components/SearchBar";
-import { useMediaQuery } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
 import UserManager from "./pages/UserManagerPage";
 import Bai8 from "./pages/Bai8";
 import { TitlePage } from "./pages/TitlePage";
@@ -22,10 +22,10 @@ function App() {
   }
 
   return (
-    <div>
+    <Box sx={{display:"flex", flexDirection: "column", height: "100%"}}>
       <ResponsiveAppBar />
       {/* <Header /> */}
-      <main style={{ padding: isMobile ? "0px" : "20px", minHeight: "70vh" }}>
+      <main style={{ minHeight: "70vh", display:"flex", flexGrow: 1 }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/wccn" element={<HomePage />} />
@@ -40,7 +40,7 @@ function App() {
         </Routes>
       </main>
       {/* <Footer /> */}
-    </div>
+    </Box>
   );
 }
 

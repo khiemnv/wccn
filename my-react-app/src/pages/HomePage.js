@@ -1,5 +1,6 @@
 import React from "react";
 import PostCard from "../components/PostCard";
+import { Box } from "@mui/material";
 
 const latestPosts = [
   {
@@ -16,7 +17,14 @@ const latestPosts = [
 
 function HomePage() {
   return (
-    <div>
+    <Box
+      sx={{
+        p: 2,
+        flexGrow: 1,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <section>
         <h2>Giới thiệu</h2>
         <p>
@@ -33,7 +41,7 @@ function HomePage() {
           ))}
         </div>
       </section>
-    </div>
+    </Box>
   );
 }
 
