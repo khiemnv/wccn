@@ -1,6 +1,7 @@
 import { useState, useEffect, memo, use } from "react";
 import {
   Alert,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
@@ -9,12 +10,16 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
+  ListItemIcon,
+  ListItemText,
   Paper,
   Radio,
   RadioGroup,
   Select,
   Snackbar,
   Stack,
+  Switch,
+  Tooltip,
   useMediaQuery,
 } from "@mui/material";
 
@@ -68,6 +73,9 @@ import SaveIcon from '@mui/icons-material/Save';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import FindReplaceIcon from '@mui/icons-material/FindReplace';
+import FunctionsIcon from '@mui/icons-material/Functions'; // dùng cho regex
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
@@ -256,11 +264,12 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   // replace
   const [dict, setDict] = useState([
+    ["\\s+([.,:;?!])\\s*", "$1 ", true],
     ["ĐT", "đạo tràng"],
     ["CLB", "câu lạc bộ"],
     ["PT", "Phật tử"],
     ["BQT", "Bát quan trai"],
-  ].map(pair => ({ find: pair[0], replace: pair[1], selected: true })));
+  ].map(pair => ({ find: pair[0], replace: pair[1], isReg: pair[2] ? true : false, selected: true })));
   const [openDict, setOpenDict] = useState(false);
 
   // --- Effects ------------------------------------------------------------
@@ -394,12 +403,13 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const handleReplace = (pairs) => {
     const replacedLines = paragraphs.map(line => {
       let result = line;
-      pairs.forEach(({find, replace}) => {
-        // Replace all occurrences of the word
-        // Use word boundaries (\b) to only replace whole words
-        // const regex = new RegExp(`\\b${find}\\b`, 'g');
-        // result = result.replace(regex, replace);
-        result = replaceViWd(result, find, replace);
+      pairs.forEach(({ find, replace, isReg }) => {
+        if (isReg) {
+          const regex = new RegExp(find, "gu");
+          result = result.replace(regex, replace);
+        } else {
+          result = replaceViWd(result, find, replace);
+        }
       });
       return result;
     })
@@ -957,6 +967,18 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
   // Local state for editing
   const [localDict, setLocalDict] = useState(dict);
 
+  // Menu state: one menu per pair (using index)
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [menuIdx, setMenuIdx] = useState(null);
+  const handleMenuOpen = (event, idx) => {
+    setAnchorEl(event.currentTarget);
+    setMenuIdx(idx);
+  };
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuIdx(null);
+  };
+
   // Add a new empty pair
   const handleAdd = () => {
     setLocalDict([...localDict, { find: '', replace: '', selected: true }]);
@@ -994,7 +1016,7 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
     if (open) setLocalDict(dict);
   }, [open, dict]);
 
-  
+
   // Check for changes
   const isChanged = !dictsEqual(localDict, dict);
 
@@ -1043,28 +1065,93 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
               alignItems: 'center',
               mb: 1,
               p: 1,
-              backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
+              // backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
               cursor: 'pointer',
             }}
-            onClick={() => handleToggleSelect(idx)}
+          // onClick={() => handleToggleSelect(idx)}
           >
+            {/* <Tooltip title="Selected">
+              <Checkbox
+                checked={pair.selected}
+                onChange={e => handleEdit(idx, "selected", e.target.checked)}
+                size="small"
+              />
+            </Tooltip> */}
             <TextField
               label="Find"
               value={pair.find}
               size="small"
               onChange={e => handleEdit(idx, 'find', e.target.value)}
-              sx={{ mr: 1 }}
+              sx={{
+                mr: 1,
+                width: { xs: 80, sm: 120, md: 140 }, // responsive width
+                flexShrink: 0
+              }}
             />
             <TextField
               label="Replace"
               value={pair.replace}
               size="small"
               onChange={e => handleEdit(idx, 'replace', e.target.value)}
-              sx={{ mr: 1 }}
+              sx={{
+                mr: 1,
+                minWidth: 80,
+                flexGrow: 1,         // grow ra
+                flexBasis: 0,        // chiếm phần còn lại
+              }}
             />
-             <IconButton onClick={e => { e.stopPropagation(); handleRemove(idx); }}>
-              <DeleteIcon color="error" />
+            <IconButton
+              size="small"
+              onClick={e => handleMenuOpen(e, idx)}
+              sx={{ flexShrink: 0 }}
+            >
+              <MoreVertIcon />
             </IconButton>
+            {/* Menu cho từng dòng */}
+            <Menu
+              anchorEl={anchorEl}
+              open={menuIdx === idx}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            >
+              <MenuItem
+                onClick={() => {
+                  handleEdit(idx, "selected", !pair.selected);
+                  handleMenuClose();
+                }}
+              >
+                <ListItemIcon>
+                  <Checkbox
+                    checked={pair.selected}
+                    icon={<CheckBoxOutlineBlankIcon />}
+                    checkedIcon={<CheckBoxIcon />}
+                    size="small"
+                    sx={{ p: 0, m: 0 }}
+                  />
+                </ListItemIcon>
+                <ListItemText primary="Selected" />
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleEdit(idx, "isReg", !pair.isReg);
+                  handleMenuClose();
+                }}
+              >
+                <ListItemIcon>
+                  <FunctionsIcon color={pair.isReg ? "primary" : "inherit"} />
+                </ListItemIcon>
+                <ListItemText primary="Regex" />
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleRemove(idx)}
+              >
+                <ListItemIcon>
+                  <DeleteIcon color="error" />
+                </ListItemIcon>
+                <ListItemText primary="Xóa" />
+              </MenuItem>
+            </Menu>
           </Paper>
         ))}
         <Box
@@ -1075,10 +1162,10 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
             mt: 2,
           }}
         >
-          <Button onClick={handleAdd} variant="outlined">Add Pair</Button>
-          <Button onClick={handleSave} 
-          variant="contained"
-          disabled={!isChanged}
+          <Button onClick={handleAdd} variant="outlined">Add</Button>
+          <Button onClick={handleSave}
+            variant="contained"
+            disabled={!isChanged}
           >Save</Button>
         </Box>
 
@@ -1102,7 +1189,7 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
           <Button onClick={onClose} variant="outlined" >Cancel</Button>
           <Button onClick={() => onReplace(localDict.filter(pair => pair.selected))} variant="contained" >Replace</Button>
         </Box>
-       
+
       </Box>
     </Modal>
   );
@@ -1613,7 +1700,7 @@ function ParagraphEditor({
         <DialogTitle id="alert-dialog-title">{"UN-SAVED CONFIRM"}</DialogTitle>
         <DialogContent>{"Save editing?(YES/NO)"}</DialogContent>
         <DialogActions>
-          <Button onClick={()=>setSaveConfirm(false)}>{"NO"}</Button>
+          <Button onClick={() => setSaveConfirm(false)}>{"NO"}</Button>
           <Button
             onClick={() => {
               setSaveConfirm(false);
