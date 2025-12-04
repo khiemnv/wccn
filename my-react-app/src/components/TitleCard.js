@@ -2,6 +2,10 @@ import { useState, useEffect, memo, use } from "react";
 import {
   Alert,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   FormControlLabel,
   InputLabel,
@@ -333,7 +337,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   };
   const combineParagraph = (index) => {
     if (index < 0 || index >= paragraphs.length - 1) return;
-    const combined = paragraphs[index] + " " + paragraphs[index + 1];
+    const combined = paragraphs[index] + "\n" + paragraphs[index + 1];
     // Create a new array with the combined paragraph
     const updated = [
       ...paragraphs.slice(0, index),
@@ -1408,6 +1412,8 @@ function ParagraphEditor({
   // Current position in history
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const [saveConfirm, setSaveConfirm] = useState(false);
+
   useEffect(() => {
     setHistory([p]);
     setCurrentIndex(0);
@@ -1450,6 +1456,14 @@ function ParagraphEditor({
 
   const editMode = history.length > 1;
 
+  const handleBlur = () => {
+    // if (editMode) {
+    //   setSaveConfirm(true);
+    // }
+  }
+  const handleSave = () => {
+    handleParagraphChange(idx, text);
+  }
   return (
     <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
       <TextField
@@ -1461,7 +1475,7 @@ function ParagraphEditor({
           }
         }}
         multiline
-        minRows={2}
+        minRows={1}
         maxRows={12}
         // onInput={(e) => {
         //   const ta = e.target;
@@ -1471,6 +1485,7 @@ function ParagraphEditor({
         onFocus={() => setIsFocused(true)}
         onBlur={() => {
           setIsFocused(false);
+          handleBlur();
           // handleParagraphChange(idx, text);
         }}
         fullWidth
@@ -1496,7 +1511,7 @@ function ParagraphEditor({
               disabled={history.length === 1}
               size={isMobile ? "small" : "medium"}
               aria-label="save"
-              onClick={() => handleParagraphChange(idx, text)}
+              onClick={handleSave}
               color="primary"
             >
               <SaveIcon fontSize="small" />
@@ -1587,6 +1602,28 @@ function ParagraphEditor({
           </Box>
         </Box>
       )}
+
+      {saveConfirm && <Dialog
+        open={saveConfirm}
+        onClose={() => setSaveConfirm(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"UN-SAVED CONFIRM"}</DialogTitle>
+        <DialogContent>{"Save editing?(YES/NO)"}</DialogContent>
+        <DialogActions>
+          <Button onClick={()=>setSaveConfirm(false)}>{"NO"}</Button>
+          <Button
+            onClick={() => {
+              setSaveConfirm(false);
+              handleSave();
+            }}
+            autoFocus
+          >
+            {"YES"}
+          </Button>
+        </DialogActions>
+      </Dialog>}
     </Box>
   );
 }
