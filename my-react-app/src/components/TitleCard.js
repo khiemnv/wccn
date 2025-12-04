@@ -1056,104 +1056,119 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
           <CloseIcon />
         </IconButton>
         <Typography variant="h6" mb={2}>Edit Dictionary</Typography>
-        {localDict.map((pair, idx) => (
-          <Paper
-            key={idx}
-            elevation={pair.selected ? 3 : 1}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              mb: 1,
-              p: 1,
-              // backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
-              cursor: 'pointer',
-            }}
-          // onClick={() => handleToggleSelect(idx)}
-          >
-            {/* <Tooltip title="Selected">
+        
+        {/* pair */}
+        <Box
+        sx={{
+          display: "flex",
+          height: "50vh",
+          flexGrow: 1,
+          overflowY: "auto",
+          flexDirection: "column"
+        }}
+        >
+          {localDict.map((pair, idx) => (
+            <Paper
+              key={idx}
+              elevation={pair.selected ? 3 : 1}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mb: 1,
+                p: 1,
+                // backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
+                cursor: 'pointer',
+              }}
+            // onClick={() => handleToggleSelect(idx)}
+            >
+              {/* <Tooltip title="Selected">
               <Checkbox
                 checked={pair.selected}
                 onChange={e => handleEdit(idx, "selected", e.target.checked)}
                 size="small"
               />
             </Tooltip> */}
-            <TextField
-              label="Find"
-              value={pair.find}
-              size="small"
-              onChange={e => handleEdit(idx, 'find', e.target.value)}
-              sx={{
-                mr: 1,
-                width: { xs: 80, sm: 120, md: 140 }, // responsive width
-                flexShrink: 0
-              }}
-            />
-            <TextField
-              label="Replace"
-              value={pair.replace}
-              size="small"
-              onChange={e => handleEdit(idx, 'replace', e.target.value)}
-              sx={{
-                mr: 1,
-                minWidth: 80,
-                flexGrow: 1,         // grow ra
-                flexBasis: 0,        // chiếm phần còn lại
-              }}
-            />
-            <IconButton
-              size="small"
-              onClick={e => handleMenuOpen(e, idx)}
-              sx={{ flexShrink: 0 }}
-            >
-              <MoreVertIcon />
-            </IconButton>
-            {/* Menu cho từng dòng */}
-            <Menu
-              anchorEl={anchorEl}
-              open={menuIdx === idx}
-              onClose={handleMenuClose}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-            >
-              <MenuItem
-                onClick={() => {
-                  handleEdit(idx, "selected", !pair.selected);
-                  handleMenuClose();
+              <TextField
+                label="Find"
+                value={pair.find}
+                size="small"
+                onChange={e => handleEdit(idx, 'find', e.target.value)}
+                sx={{
+                  mr: 1,
+                  width: { xs: 80, sm: 120, md: 140 }, // responsive width
+                  flexShrink: 0
                 }}
-              >
-                <ListItemIcon>
-                  <Checkbox
-                    checked={pair.selected}
-                    icon={<CheckBoxOutlineBlankIcon />}
-                    checkedIcon={<CheckBoxIcon />}
-                    size="small"
-                    sx={{ p: 0, m: 0 }}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="Selected" />
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleEdit(idx, "isReg", !pair.isReg);
-                  handleMenuClose();
+              />
+              <TextField
+                label="Replace"
+                value={pair.replace}
+                size="small"
+                onChange={e => handleEdit(idx, 'replace', e.target.value)}
+                sx={{
+                  mr: 1,
+                  minWidth: 80,
+                  flexGrow: 1,         // grow ra
+                  flexBasis: 0,        // chiếm phần còn lại
                 }}
+              />
+              <IconButton
+                size="small"
+                onClick={e => handleMenuOpen(e, idx)}
+                sx={{ flexShrink: 0 }}
               >
-                <ListItemIcon>
-                  <FunctionsIcon color={pair.isReg ? "primary" : "inherit"} />
-                </ListItemIcon>
-                <ListItemText primary="Regex" />
-              </MenuItem>
-              <MenuItem
-                onClick={() => handleRemove(idx)}
+                <MoreVertIcon />
+              </IconButton>
+              {/* Menu cho từng dòng */}
+              <Menu
+                anchorEl={anchorEl}
+                open={menuIdx === idx}
+                onClose={handleMenuClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
               >
-                <ListItemIcon>
-                  <DeleteIcon color="error" />
-                </ListItemIcon>
-                <ListItemText primary="Xóa" />
-              </MenuItem>
-            </Menu>
-          </Paper>
-        ))}
+                <MenuItem
+                  onClick={() => {
+                    handleEdit(idx, "selected", !pair.selected);
+                    handleMenuClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    <Checkbox
+                      checked={pair.selected}
+                      icon={<CheckBoxOutlineBlankIcon />}
+                      checkedIcon={<CheckBoxIcon />}
+                      size="small"
+                      sx={{ p: 0, m: 0 }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText primary="Selected" />
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleEdit(idx, "isReg", !pair.isReg);
+                    handleMenuClose();
+                  }}
+                >
+                  <ListItemIcon>
+                    <FunctionsIcon color={pair.isReg ? "primary" : "inherit"} />
+                  </ListItemIcon>
+                  <ListItemText primary="Regex" />
+                </MenuItem>
+                <MenuItem
+                  onClick={() => handleRemove(idx)}
+                >
+                  <ListItemIcon>
+                    <DeleteIcon color="error" />
+                  </ListItemIcon>
+                  <ListItemText primary="Xóa" />
+                </MenuItem>
+              </Menu>
+            </Paper>
+          ))}   
+        </Box>
+
+
+        {/* add and save buttons */}
         <Box
           sx={{
             display: 'flex',
@@ -1417,7 +1432,7 @@ function TitleLogModal({
                 height: 'fit-content',
                 borderRadius: '0.5rem',
                 whiteSpace: 'pre-line',
-                minHeight: '300px'
+                minHeight: '50vh'
               }}
             >
               {left}
@@ -1438,7 +1453,7 @@ function TitleLogModal({
                 height: 'fit-content',
                 borderRadius: "0.5rem",
                 whiteSpace: 'pre-line',
-                minHeight: '300px'
+                minHeight: '50vh'
               }}
             >
               {right}

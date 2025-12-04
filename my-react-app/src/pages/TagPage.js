@@ -135,7 +135,7 @@ export default function TagPage() {
         display: "flex",
         flexGrow: 1,
         flexDirection: "column",
-        minHeight: "300px"
+        minHeight: "50vh"
       }}>
         <Typography variant="subtitle1">
           Tags
@@ -144,7 +144,7 @@ export default function TagPage() {
           display: "flex",
           flexDirection: "column",
           gap: 1,
-          minHeight: "300px",
+          minHeight: "50vh",
           overflowY: "auto",
           p:isMobile?1:2
         }}>

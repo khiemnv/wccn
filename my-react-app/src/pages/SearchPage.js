@@ -348,7 +348,7 @@ export default function SearchPage() {
 
         {/* body */}
         <Box
-          sx={{ overflowY: "auto", minHeight: "300px" }}
+          sx={{ overflowY: "auto", minHeight: "50vh" }}
         >
           <Grid
             container
