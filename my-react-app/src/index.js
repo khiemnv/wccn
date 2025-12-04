@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { onAuthStateChanged2 } from "./firebase/firebase";
 import { login, logout } from "./features/auth/authSlice";
 import { getRole } from "./services/role/roleApi";
+import './index.css';
 
 const AuthProvider = ({ children }) => {
   const dispatch = useAppDispatch();

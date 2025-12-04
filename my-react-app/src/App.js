@@ -22,7 +22,7 @@ function App() {
   }
 
   return (
-    <Box sx={{display:"flex", flexDirection: "column", height: "5vh", flexGrow: 1}}>
+    <Box sx={{display:"flex", flexDirection: "column", height: "50vh", flexGrow: 1}}>
       <ResponsiveAppBar />
       {/* <Header /> */}
       <main style={{ minHeight: "50vh", display:"flex", flexGrow: 1 }}>
