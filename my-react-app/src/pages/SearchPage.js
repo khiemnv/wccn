@@ -310,8 +310,17 @@ export default function SearchPage() {
 
       <Paper
         elevation={2}
-        sx={{ p: { xs: 1, sm: 2 }, mb: { xs: 1, sm: 2 }, mt: { xs: 1, sm: 2 } }}
+        sx={{
+          p: { xs: 1, sm: 2 },
+          mb: { xs: 1, sm: 2 },
+          mt: { xs: 1, sm: 2 },
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "300px",
+          flexGrow: 1
+        }}
       >
+        {/* header */}
         <Stack
           sx={{ paddingBottom: 1 }}
           direction={false ? "column" : "row"}
@@ -338,13 +347,23 @@ export default function SearchPage() {
           {loadingTitle && <CircularProgress size={CHUNK_SIZE} />}
           {error && <Typography color="error">Error: {error}</Typography>}
         </Stack>
-        <Grid container spacing={isMobile ? 1 : 2}>
-          {(titles || []).map((t) => (
-            <Grid item xs={12} sm={6} md={4} key={t.titleId}>
-              <TitleCard t={t} isMobile={isMobile} words={words}></TitleCard>
-            </Grid>
-          ))}
-        </Grid>
+
+        {/* body */}
+        <Box
+          sx={{ overflowY: "auto", minHeight: "300px" }}
+        >
+          <Grid
+            container
+            spacing={isMobile ? 1 : 2}
+          >
+            {(titles || []).map((t) => (
+              <Grid item xs={12} sm={6} md={4} key={t.titleId}>
+                <TitleCard t={t} isMobile={isMobile} words={words}></TitleCard>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+        
       </Paper>
     </Box>
   );

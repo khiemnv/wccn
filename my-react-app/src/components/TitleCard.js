@@ -858,7 +858,7 @@ function renderParagraphs(t, words) {
               {s}
             </Typography>
           ) : (
-            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "pre" }}>
+            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
               • <HighlightWords text={s.replace(/^[-\s]+/, "")} words={words} />
             </Typography>
           )}
@@ -1314,6 +1314,7 @@ function TitleLogModal({
             flexGrow: 1,
             flexDirection: "column",
             height: "fit-content",
+            width: "50%",
           }}>
 
             <Box
@@ -1323,7 +1324,7 @@ function TitleLogModal({
                 p: 0.5,
                 height: 'fit-content',
                 borderRadius: '0.5rem',
-                whiteSpace: 'pre',
+                whiteSpace: 'pre-line',
                 minHeight: '300px'
               }}
             >
@@ -1335,6 +1336,7 @@ function TitleLogModal({
             flexGrow: 1,
             flexDirection: "column",
             height: "fit-content",
+            width: "50%",
           }}>
             <Box
               sx={{
@@ -1343,7 +1345,7 @@ function TitleLogModal({
                 p: 0.5,
                 height: 'fit-content',
                 borderRadius: "0.5rem",
-                whiteSpace: 'pre',
+                whiteSpace: 'pre-line',
                 minHeight: '300px'
               }}
             >
