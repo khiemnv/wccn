@@ -39,7 +39,7 @@ export function snapshotToArray(snapshot) {
       });
     });
     var [before, results] = dmp.patch_apply(patches, after);
-    console.log("rApplyPath: ", results);
+    // console.log("rApplyPath: ", results);
     if (results.every(r=>r)){
       return {result: before};
     }

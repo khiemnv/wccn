@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, use, useCallback } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import {
   Alert,
   Checkbox,
@@ -8,18 +8,13 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  FormControlLabel,
   InputLabel,
   ListItemIcon,
   ListItemText,
   Paper,
   Radio,
-  RadioGroup,
   Select,
   Snackbar,
-  Stack,
-  Switch,
-  Tooltip,
   useMediaQuery,
 } from "@mui/material";
 
@@ -80,11 +75,9 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
 import { rApplyPath } from "../utils/fbUtil";
-import { AlertDialog } from "./dialog/AlertDialog";
-import { DONE, ERROR } from "../constant/strings";
-import { set } from "firebase/database";
 import { collection, onSnapshot, query, Timestamp, where } from "firebase/firestore";
 import { db } from "../firebase/firebase";
+import { DiffView } from "./DiffView";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -378,7 +371,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   var changes = {};
   var t = data;
-  var edited = { ...editing};
+  var edited = { ...editing };
   ["title", "path"].forEach((field) => {
     if (edited[field] !== t[field]) {
       changes[field] = edited[field];
@@ -723,146 +716,146 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 }
 
 const TagEditor = memo(
-function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
-  console.log("TagEditor");
+  function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
+    console.log("TagEditor");
 
-  const dispatch = useDispatch();
+    const dispatch = useDispatch();
 
-  // All available tags (from API or from store) used to suggest options
-  const allTags = useSelector(selectTags);
+    // All available tags (from API or from store) used to suggest options
+    const allTags = useSelector(selectTags);
 
-  // alert dialog
-  const [alertObj, setAlertObj] = useState({ open: false });
+    // alert dialog
+    const [alertObj, setAlertObj] = useState({ open: false });
 
-  // Load all tags from API (fallback to store selector if API fails)
-  // console.log("allTags from store:", allTags);
-  const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
-  useEffect(() => {
-    async function loadTags() {
-      try {
-        const { result, error } = await getAllTags();
-        if (result) {
-          // attempt to read friendly name fields, fallback to raw value
-          dispatch(setTags({ tags: result }));
-        } else {
-          console.error("Error loading tags from API:", error);
-        }
-      } catch (err) {
-        console.error("Error loading tags:", err);
-      }
-    }
-    if (!allTags) {
-      loadTags();
-    }
-  }, [allTags, dispatch]);
-
-  // --- Subscribe -----------------------------------------------------------
-  useEffect(() => {
-    const now = Timestamp.now();
-    const q = query(
-      collection(db, "/tags_log"),
-      where("timestamp", ">=", now)
-    );
-
-    console.log("[Subscribe] Start at:", now.toDate().toLocaleString());
-
-    const unsubscribe = onSnapshot(
-      q,
-      { includeMetadataChanges: true },
-      (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          const { id: logId } = change.doc;
-          const { json, action, itemId, timestamp } = change.doc.data();
-
-          console.log(
-            `TAG log: [${logId}] ${action} [${itemId}] at ${timestamp
-              .toDate()
-              .toLocaleString()}`
-          );
-          console.log("content: ", json);
-
-          if (true) {
-            apply();
-            console.log("applied");
+    // Load all tags from API (fallback to store selector if API fails)
+    // console.log("allTags from store:", allTags);
+    const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
+    useEffect(() => {
+      async function loadTags() {
+        try {
+          const { result, error } = await getAllTags();
+          if (result) {
+            // attempt to read friendly name fields, fallback to raw value
+            dispatch(setTags({ tags: result }));
           } else {
-            console.log("skipped");
+            console.error("Error loading tags from API:", error);
           }
-
-          function apply() {
-            try {
-              const obj = JSON.parse(json);
-              switch (action) {
-                case "create":
-                  dispatch(addTag({ tag: obj }));
-                  break;
-                case "update":
-                  dispatch(editTag({ id: itemId, changes: obj }));
-                  break;
-                default:
-                  console.warn("Unknown action:", action);
-              }
-
-              setAlertObj({
-                open: true,
-                type: "info",
-                message:
-                  "Đã cập nhật thay đổi tags: " +
-                  timestamp.toDate().toLocaleString(),
-              });
-            } catch (e) {
-              console.error("[Realtime] JSON parse error:", e, json);
-            }
-          }
-        });
+        } catch (err) {
+          console.error("Error loading tags:", err);
+        }
       }
+      if (!allTags) {
+        loadTags();
+      }
+    }, [allTags, dispatch]);
+
+    // --- Subscribe -----------------------------------------------------------
+    useEffect(() => {
+      const now = Timestamp.now();
+      const q = query(
+        collection(db, "/tags_log"),
+        where("timestamp", ">=", now)
+      );
+
+      console.log("[Subscribe] Start at:", now.toDate().toLocaleString());
+
+      const unsubscribe = onSnapshot(
+        q,
+        { includeMetadataChanges: true },
+        (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            const { id: logId } = change.doc;
+            const { json, action, itemId, timestamp } = change.doc.data();
+
+            console.log(
+              `TAG log: [${logId}] ${action} [${itemId}] at ${timestamp
+                .toDate()
+                .toLocaleString()}`
+            );
+            console.log("content: ", json);
+
+            if (true) {
+              apply();
+              console.log("applied");
+            } else {
+              console.log("skipped");
+            }
+
+            function apply() {
+              try {
+                const obj = JSON.parse(json);
+                switch (action) {
+                  case "create":
+                    dispatch(addTag({ tag: obj }));
+                    break;
+                  case "update":
+                    dispatch(editTag({ id: itemId, changes: obj }));
+                    break;
+                  default:
+                    console.warn("Unknown action:", action);
+                }
+
+                setAlertObj({
+                  open: true,
+                  type: "info",
+                  message:
+                    "Đã cập nhật thay đổi tags: " +
+                    timestamp.toDate().toLocaleString(),
+                });
+              } catch (e) {
+                console.error("[Realtime] JSON parse error:", e, json);
+              }
+            }
+          });
+        }
+      );
+
+      return () => {
+        console.log("[Subscribe] Unsubscribed");
+        unsubscribe();
+      };
+    }, [dispatch]);
+
+    const availableTags = (tagLstFromStore || []).filter(
+      (tag) => !selectedTags || !selectedTags.includes(tag)
     );
 
-    return () => {
-      console.log("[Subscribe] Unsubscribed");
-      unsubscribe();
-    };
-  }, [dispatch]);
+    return (
+      <Box sx={{ mb: isMobile ? 1 : 2 }}>
+        <Autocomplete
+          multiple
+          freeSolo
+          options={availableTags}
+          value={selectedTags || []}
+          onChange={(event, newValue) => setSelectedTags(newValue || [])}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Tags"
+              size={isMobile ? "small" : "medium"}
+            />
+          )}
+        />
 
-  const availableTags = (tagLstFromStore || []).filter(
-    (tag) => !selectedTags || !selectedTags.includes(tag)
-  );
-
-  return (
-    <Box sx={{ mb: isMobile ? 1 : 2 }}>
-      <Autocomplete
-        multiple
-        freeSolo
-        options={availableTags}
-        value={selectedTags || []}
-        onChange={(event, newValue) => setSelectedTags(newValue || [])}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Tags"
-            size={isMobile ? "small" : "medium"}
-          />
-        )}
-      />
-
-      {/* Alert */}
-      <Snackbar
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        open={alertObj.open}
-        autoHideDuration={5000}
-        onClose={() => setAlertObj({ open: false })}
-      >
-        <Alert
+        {/* Alert */}
+        <Snackbar
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          open={alertObj.open}
+          autoHideDuration={5000}
           onClose={() => setAlertObj({ open: false })}
-          severity={alertObj.type} // "error" | "warning" | "info" | "success"
-          variant="filled"
-          sx={{ width: "100%" }}
         >
-          {alertObj.message}
-        </Alert>
-      </Snackbar>
-    </Box>
-  );
-})
+          <Alert
+            onClose={() => setAlertObj({ open: false })}
+            severity={alertObj.type} // "error" | "warning" | "info" | "success"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {alertObj.message}
+          </Alert>
+        </Snackbar>
+      </Box>
+    );
+  })
 
 function renderParagraphs(t, words) {
   return t.paragraphs
@@ -1072,16 +1065,16 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
           <CloseIcon />
         </IconButton>
         <Typography variant="h6" mb={2}>Edit Dictionary</Typography>
-        
+
         {/* pair */}
         <Box
-        sx={{
-          display: "flex",
-          height: "50vh",
-          flexGrow: 1,
-          overflowY: "auto",
-          flexDirection: "column"
-        }}
+          sx={{
+            display: "flex",
+            height: "50vh",
+            flexGrow: 1,
+            overflowY: "auto",
+            flexDirection: "column"
+          }}
         >
           {localDict.map((pair, idx) => (
             <Paper
@@ -1180,7 +1173,7 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
                 </MenuItem>
               </Menu>
             </Paper>
-          ))}   
+          ))}
         </Box>
 
 
@@ -1235,35 +1228,74 @@ function renderTags(title) {
   )) : <></>;
 }
 
+function sortLogs(logs) {
+  const sortedLogs = logs
+    .map((log, idx) => (
+      {
+        idx,
+        seconds: log.timestamp.seconds,
+        label: tsToStr(log.timestamp)
+      }));
+  sortedLogs.sort((a, b) => b.seconds - a.seconds);
+  return sortedLogs;
+}
+
+function tsToStr(ts) {
+  const date = ts.toDate();
+  const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+  return formatted;
+}
+
 function TitleLogModal({
   showLogModal,
   handleCloseLogModal,
   isMobile,
   logs,
   base,
-  onRevert,
+  onRevert
 }) {
   console.log("title log modal");
 
-  const [selected, setSelected] = useState(logs.length - 1);
-  const [data, setData] = useState(base);
-
-  const [options, setOptions] = useState([]);
-  function sortLogs(logs) {
-    function tsToStr(ts) {
-      const date = ts.toDate();
-      const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
-      return formatted;
-    }
-    const sortedLogs = logs
-      .map((log, idx) => ({ idx, seconds: log.timestamp.seconds, label: tsToStr(log.timestamp) }));
-    sortedLogs.sort((a, b) => b.seconds - a.seconds);
-    return sortedLogs;
-  }
+  const [selected, setSelected] = useState(0);
+  const [his, setHis] = useState();
+  // const [options, setOptions] = useState([]);
+  const [alertObj, setAlertObj] = useState({ open: false });
 
   useEffect(() => {
-    setOptions(sortLogs(logs));
-  }, [logs])
+    var prev = JSON.stringify(base);
+    var lst = []
+    try {
+      for (var i = logs.length - 1; i >= 0; i--) {
+        var patch = logs[i].patch;
+        var { result } = rApplyPath(prev, patch);
+        // console.log(i, patch, beforeJson);
+        if (result) {
+          prev = result;
+          lst.push({
+            content: result,
+            note: patch,
+            editor: "",
+            time: tsToStr(logs[i].timestamp),
+            version: `v${i + 1}`,
+            idx: i
+          }); // content
+        } else {
+          setAlertObj({ message: `Conflict at: v${i + 1}` });
+          break;
+        }
+        setHis(lst);
+      }
+    } catch (ex) { }
+  }, [base, logs])
+
+  if (!his || !his.length) {
+    return <></>
+  }
+
+  const options = his.map(({ time }, idx) => ({ idx, label: time }))
+
+  // console.log("his", his)
+
   function titleToStr(title) {
     return [
       title.path,
@@ -1276,65 +1308,41 @@ function TitleLogModal({
   function handleUndo(idx) {
     setSelected(idx);
   }
-  function calcDiff(idx, afterJson) {
-    var version = [afterJson];
-    try {
-      for (var i = logs.length - 1; i >= idx; i--) {
-        var patch = logs[i].patch;
-        var { result } = rApplyPath(version[0], patch);
-        // console.log(i, patch, beforeJson);
-        if (result) {
-          version.splice(0, 0, result);
-        } else {
-          break;
-        }
-      }
-    } catch (ex) { }
-    return version.slice(0, 2);
-  }
-  // restore prev version
-  var baseJson = JSON.stringify(base);
-  var [beforeJson, afterJson] = calcDiff(selected, baseJson);
 
-  if (!beforeJson && !afterJson) {
-    return <div>Error</div>;
-  }
+  // function calcDiff(idx, afterJson) {
+  //   var version = [afterJson];
+  //   try {
+  //     for (var i = logs.length - 1; i >= idx; i--) {
+  //       var patch = logs[i].patch;
+  //       var { result } = rApplyPath(version[0], patch);
+  //       // console.log(i, patch, beforeJson);
+  //       if (result) {
+  //         version.splice(0, 0, result);
+  //       } else {
+  //         break;
+  //       }
+  //     }
+  //   } catch (ex) { }
+  //   return version.slice(0, 2);
+  // }
+
+  // restore prev version
+  // var baseJson = JSON.stringify(base);
+  // var [beforeJson, afterJson] = calcDiff(selected, baseJson);
+
+  // if (!beforeJson || !afterJson) {
+  //   return <div>Error</div>;
+  // }
+  // console.log(his, selected)
+  const afterJson = selected === 0 ?
+    JSON.stringify(base)
+    : his[selected - 1].content;
+  const beforeJson = his[selected].content;
 
   // create diff
-  var dmp = new diff_match_patch();
   var beforeStr = titleToStr(JSON.parse(beforeJson));
   var afterStr = titleToStr(JSON.parse(afterJson));
-  var diff = dmp.diff_main(beforeStr, afterStr);
 
-  // console.log(dmp.diff_prettyHtml(diff))
-  var left = [];
-  var right = [];
-  diff.forEach(([op, data], idx) => {
-    if (op === 0) {
-      left.push(
-        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
-          {data}
-        </span>
-      );
-      right.push(
-        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
-          {data}
-        </span>
-      );
-    } else if (op === 1) {
-      right.push(
-        <ins key={idx} style={{ background: "#0ee60eff" }}>
-          {data}
-        </ins>
-      );
-    } else {
-      left.push(
-        <del key={idx} style={{ background: "#e4db8bff" }}>
-          {data}
-        </del>
-      );
-    }
-  });
   // const [selected, setSelected] = useState(0);
   return (
     <Modal open={showLogModal} onClose={handleCloseLogModal}>
@@ -1357,44 +1365,72 @@ function TitleLogModal({
         }}
       >
         {/* header */}
-        <FormControl size="small">
-          <InputLabel id="verison-select-label">Version</InputLabel>
-          <Select
-            labelId="verison-select-label"
-            label="Version"
-            value={selected}
-            onChange={(e) => handleUndo(e.target.value)}
-            renderValue={(option) => {
-              const idx = option;
-              const date = logs[idx].timestamp.toDate();
-              const formatted = `${date.getDate()}/${date.getMonth() + 1
-                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
-              return formatted;
+        <Box sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          justifyItems: "center"
+        }}
+        >
+          <Typography variant="h6">{"Lịch sử chỉnh sửa"}</Typography>
+          <IconButton
+            aria-label="close"
+            onClick={handleCloseLogModal}
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+              zIndex: 2,
             }}
           >
-            {logs &&
-              options.map(({ idx, label }) => {
-                return (
-                  <MenuItem
-                    key={idx}
-                    sx={{
-                      display: "flex",
-                      direction: "row",
-                      alignItems: "center",
-                    }}
-                    value={idx}
-                  // onClick={() => handleUndo(idx)}
-                  >
-                    <Radio
-                      checked={idx === selected}
-                    ></Radio>
-                    <Typography>{label}</Typography>
-                  </MenuItem>
-                );
-              })}
-          </Select>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Box direction={"row"}
+          spacing={isMobile ? 1 : 2}
+          sx={{ justifyContent: "space-between" }}
+          display={"flex"}
+        >
+          <FormControl size="small">
+            <InputLabel id="verison-select-label">Version</InputLabel>
+            <Select
+              sx={{ width: "fit-content" }}
+              labelId="verison-select-label"
+              label="Version"
+              value={selected}
+              onChange={(e) => handleUndo(e.target.value)}
+              renderValue={(option) => {
+                const idx = option;
+                const date = logs[idx].timestamp.toDate();
+                const formatted = `${date.getDate()}/${date.getMonth() + 1
+                  }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+                return formatted;
+              }}
+            >
+              {logs &&
+                options.map(({ idx, label }) => {
+                  return (
+                    <MenuItem
+                      key={idx}
+                      sx={{
+                        display: "flex",
+                        direction: "row",
+                        alignItems: "center",
+                      }}
+                      value={idx}
+                    // onClick={() => handleUndo(idx)}
+                    >
+                      <Radio
+                        checked={idx === selected}
+                      ></Radio>
+                      <Typography>{label}</Typography>
+                    </MenuItem>
+                  );
+                })}
+            </Select>
 
-        </FormControl>
+          </FormControl>
+          {alertObj && <Typography color="error">
+            {alertObj.message}
+          </Typography>}
+        </Box>
         {/* <div
           style={{
             width: "100%",
@@ -1432,52 +1468,24 @@ function TitleLogModal({
         </div> */}
 
         {/* body */}
-        <div style={{ width: "100%", display: "flex", flexDirection: "row", overflowY: "auto", margin: "8px 0 8px 0" }}>
-          <Box sx={{
+        {/* {OldDiffComp(beforeStr, afterStr)} */}
+        <Card
+          sx={{
+            width: "100%",
             display: "flex",
-            flexGrow: 1,
-            flexDirection: "column",
-            height: "fit-content",
-            width: "50%",
-          }}>
+            flexDirection: "row",
+            overflowY: "auto",
+            mt: 1,
+            mb: 1,
+          }}
+        >
+          {/* nội dung bên trong */}
+          <DiffView
+            oldText={beforeStr}
+            newText={afterStr}
+          ></DiffView>
+        </Card>
 
-            <Box
-              sx={{
-                border: '1px solid',
-                mr: 0.5,
-                p: 0.5,
-                height: 'fit-content',
-                borderRadius: '0.5rem',
-                whiteSpace: 'pre-line',
-                minHeight: '50vh'
-              }}
-            >
-              {left}
-            </Box>
-          </Box>
-          <Box sx={{
-            display: "flex",
-            flexGrow: 1,
-            flexDirection: "column",
-            height: "fit-content",
-            width: "50%",
-          }}>
-            <Box
-              sx={{
-                border: '1px solid',
-                mr: 0.5,
-                p: 0.5,
-                height: 'fit-content',
-                borderRadius: "0.5rem",
-                whiteSpace: 'pre-line',
-                minHeight: '50vh'
-              }}
-            >
-              {right}
-            </Box>
-          </Box>
-
-        </div>
         {/* <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
         {beforeStr}
       </div> */}
@@ -1514,240 +1522,321 @@ function TitleLogModal({
 }
 
 const ParagraphEditor = memo(
-   function ParagraphEditor({
-  p,
-  handleParagraphChange,
-  idx,
-  isMobile,
-  insertParagraph,
-  removeParagraph,
-  moveParagraph,
-  combineParagraph,
-}) {
-  console.log("ParagraphEditor", idx);
-  const [isFocused, setIsFocused] = useState(false);
-  // const [text, setText] = useState(p);
+  function ParagraphEditor({
+    p,
+    handleParagraphChange,
+    idx,
+    isMobile,
+    insertParagraph,
+    removeParagraph,
+    moveParagraph,
+    combineParagraph,
+  }) {
+    console.log("ParagraphEditor", idx);
+    const [isFocused, setIsFocused] = useState(false);
+    // const [text, setText] = useState(p);
 
-  // Holds all history values, starting with an empty string
-  const [history, setHistory] = useState(['']);
-  // Current position in history
-  const [currentIndex, setCurrentIndex] = useState(0);
+    // Holds all history values, starting with an empty string
+    const [history, setHistory] = useState(['']);
+    // Current position in history
+    const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [saveConfirm, setSaveConfirm] = useState(false);
+    const [saveConfirm, setSaveConfirm] = useState(false);
 
-  useEffect(() => {
-    setHistory([p]);
-    setCurrentIndex(0);
-  }, [p]);
+    useEffect(() => {
+      setHistory([p]);
+      setCurrentIndex(0);
+    }, [p]);
 
-  const onMoveUp = () => {
-    moveParagraph(idx, idx - 1);
-  };
+    const onMoveUp = () => {
+      moveParagraph(idx, idx - 1);
+    };
 
-  const onMoveDown = () => {
-    moveParagraph(idx, idx + 1);
-  };
+    const onMoveDown = () => {
+      moveParagraph(idx, idx + 1);
+    };
 
-  // Current text value
-  const text = history[currentIndex];
+    // Current text value
+    const text = history[currentIndex];
 
-  const handleChange = (e) => {
-    const newValue = e.target.value;
+    const handleChange = (e) => {
+      const newValue = e.target.value;
 
-    // Remove future history if we type after undo
-    const newHistory = history.slice(0, currentIndex + 1);
+      // Remove future history if we type after undo
+      const newHistory = history.slice(0, currentIndex + 1);
 
-    setHistory([...newHistory, newValue]);
-    setCurrentIndex(newHistory.length); // point to the new value
-  };
+      setHistory([...newHistory, newValue]);
+      setCurrentIndex(newHistory.length); // point to the new value
+    };
 
-  // Undo (go back in history)
-  const handleUndo = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+    // Undo (go back in history)
+    const handleUndo = () => {
+      if (currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1);
+      }
+    };
+
+    // Redo (go forward in history)
+    const handleRedo = () => {
+      if (currentIndex < history.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      }
+    };
+
+    const editMode = history.length > 1;
+
+    const handleBlur = () => {
+      // if (editMode) {
+      //   setSaveConfirm(true);
+      // }
     }
-  };
-
-  // Redo (go forward in history)
-  const handleRedo = () => {
-    if (currentIndex < history.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+    const handleSave = () => {
+      handleParagraphChange(idx, text);
     }
-  };
-
-  const editMode = history.length > 1;
-
-  const handleBlur = () => {
-    // if (editMode) {
-    //   setSaveConfirm(true);
-    // }
-  }
-  const handleSave = () => {
-    handleParagraphChange(idx, text);
-  }
-  return (
-    <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
-      <TextField
-        sx={{
-          // mt: 1,
-          '& .MuiInputBase-input': {
-            paddingTop: 2,         // padding inside textarea
-            paddingBottom: 2,         // padding inside textarea
-          }
-        }}
-        multiline
-        minRows={1}
-        maxRows={12}
-        // onInput={(e) => {
-        //   const ta = e.target;
-        //   ta.style.height = "auto";
-        //   ta.style.height = `${ta.scrollHeight}px`;
-        // }}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => {
-          setIsFocused(false);
-          handleBlur();
-          // handleParagraphChange(idx, text);
-        }}
-        fullWidth
-        value={text}
-        onChange={(e) => {
-          handleChange(e);
-          // handleAutoResize(e); // auto resize khi nhập
-        }}
-        label={`Paragraph ${idx + 1}`}
-        size={isMobile ? "small" : "medium"}
-      />
-      {editMode && (
-        <Box
+    return (
+      <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
+        <TextField
           sx={{
-            position: "absolute",
-            top: 2,
-            right: 2,
-            // backgroundColor: "#0ee3e380"
+            // mt: 1,
+            '& .MuiInputBase-input': {
+              paddingTop: 2,         // padding inside textarea
+              paddingBottom: 2,         // padding inside textarea
+            }
           }}
-        >
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
-            <IconButton
-              disabled={history.length === 1}
-              size={isMobile ? "small" : "medium"}
-              aria-label="save"
-              onClick={handleSave}
-              color="primary"
-            >
-              <SaveIcon fontSize="small" />
-            </IconButton>
-
-            <IconButton
-              disabled={currentIndex === 0}
-              size={isMobile ? "small" : "medium"}
-              aria-label="undo"
-              onClick={handleUndo}
-              color="primary"
-            >
-              <UndoIcon fontSize="small" />
-            </IconButton>
-
-            <IconButton
-              disabled={currentIndex === (history.length - 1)}
-              size={isMobile ? "small" : "medium"}
-              aria-label="redo"
-              onClick={handleRedo}
-              color="primary"
-            >
-              <RedoIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        </Box>
-      )}
-      {!editMode && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 2,
-            left: 2,
-            // backgroundColor: "#0ee3e380"
+          multiline
+          minRows={1}
+          maxRows={12}
+          // onInput={(e) => {
+          //   const ta = e.target;
+          //   ta.style.height = "auto";
+          //   ta.style.height = `${ta.scrollHeight}px`;
+          // }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            setIsFocused(false);
+            handleBlur();
+            // handleParagraphChange(idx, text);
           }}
-        >
-          <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
-            <IconButton
-              size={isMobile ? "small" : "medium"}
-              aria-label="drag handle"
-            >
-              <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
-            </IconButton>
-
-            <IconButton
-              size={isMobile ? "small" : "medium"}
-              aria-label="move up"
-              onClick={onMoveUp}
-              color="primary"
-            >
-              <KeyboardArrowUpIcon fontSize="small" />
-            </IconButton>
-
-            <IconButton
-              size={isMobile ? "small" : "medium"}
-              aria-label="move down"
-              onClick={onMoveDown}
-              color="primary"
-            >
-              <KeyboardArrowDownIcon fontSize="small" />
-            </IconButton>
-          </Box>
-        </Box>
-      )}
-      {!editMode && (
-        <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
-          <Box sx={{ display: "flex", gap: 0.5 }}>
-            <IconButton
-              onClick={() => combineParagraph(idx)}
-              size={isMobile ? "small" : "medium"}
-              title="Combine with paragraph after this"
-            >
-              <MergeIcon color="primary" />
-            </IconButton>
-            <IconButton
-              onClick={() => insertParagraph(idx)}
-              size={isMobile ? "small" : "medium"}
-              title="Insert new paragraph after this"
-            >
-              <AddIcon color="primary" />
-            </IconButton>
-            <IconButton
-              onClick={() => removeParagraph(idx)}
-              size={isMobile ? "small" : "medium"}
-            >
-              <DeleteIcon color="error" />
-            </IconButton>
-          </Box>
-        </Box>
-      )}
-
-      {saveConfirm && <Dialog
-        open={saveConfirm}
-        onClose={() => setSaveConfirm(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{"UN-SAVED CONFIRM"}</DialogTitle>
-        <DialogContent>{"Save editing?(YES/NO)"}</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSaveConfirm(false)}>{"NO"}</Button>
-          <Button
-            onClick={() => {
-              setSaveConfirm(false);
-              handleSave();
+          fullWidth
+          value={text}
+          onChange={(e) => {
+            handleChange(e);
+            // handleAutoResize(e); // auto resize khi nhập
+          }}
+          label={`Paragraph ${idx + 1}`}
+          size={isMobile ? "small" : "medium"}
+        />
+        {editMode && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 2,
+              right: 2,
+              // backgroundColor: "#0ee3e380"
             }}
-            autoFocus
           >
-            {"YES"}
-          </Button>
-        </DialogActions>
-      </Dialog>}
+            <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
+              <IconButton
+                disabled={history.length === 1}
+                size={isMobile ? "small" : "medium"}
+                aria-label="save"
+                onClick={handleSave}
+                color="primary"
+              >
+                <SaveIcon fontSize="small" />
+              </IconButton>
+
+              <IconButton
+                disabled={currentIndex === 0}
+                size={isMobile ? "small" : "medium"}
+                aria-label="undo"
+                onClick={handleUndo}
+                color="primary"
+              >
+                <UndoIcon fontSize="small" />
+              </IconButton>
+
+              <IconButton
+                disabled={currentIndex === (history.length - 1)}
+                size={isMobile ? "small" : "medium"}
+                aria-label="redo"
+                onClick={handleRedo}
+                color="primary"
+              >
+                <RedoIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+        {!editMode && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 2,
+              left: 2,
+              // backgroundColor: "#0ee3e380"
+            }}
+          >
+            <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
+              <IconButton
+                size={isMobile ? "small" : "medium"}
+                aria-label="drag handle"
+              >
+                <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
+              </IconButton>
+
+              <IconButton
+                size={isMobile ? "small" : "medium"}
+                aria-label="move up"
+                onClick={onMoveUp}
+                color="primary"
+              >
+                <KeyboardArrowUpIcon fontSize="small" />
+              </IconButton>
+
+              <IconButton
+                size={isMobile ? "small" : "medium"}
+                aria-label="move down"
+                onClick={onMoveDown}
+                color="primary"
+              >
+                <KeyboardArrowDownIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+        {!editMode && (
+          <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              <IconButton
+                onClick={() => combineParagraph(idx)}
+                size={isMobile ? "small" : "medium"}
+                title="Combine with paragraph after this"
+              >
+                <MergeIcon color="primary" />
+              </IconButton>
+              <IconButton
+                onClick={() => insertParagraph(idx)}
+                size={isMobile ? "small" : "medium"}
+                title="Insert new paragraph after this"
+              >
+                <AddIcon color="primary" />
+              </IconButton>
+              <IconButton
+                onClick={() => removeParagraph(idx)}
+                size={isMobile ? "small" : "medium"}
+              >
+                <DeleteIcon color="error" />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+
+        {saveConfirm && <Dialog
+          open={saveConfirm}
+          onClose={() => setSaveConfirm(false)}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{"UN-SAVED CONFIRM"}</DialogTitle>
+          <DialogContent>{"Save editing?(YES/NO)"}</DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSaveConfirm(false)}>{"NO"}</Button>
+            <Button
+              onClick={() => {
+                setSaveConfirm(false);
+                handleSave();
+              }}
+              autoFocus
+            >
+              {"YES"}
+            </Button>
+          </DialogActions>
+        </Dialog>}
+      </Box>
+    );
+  })
+function OldDiffComp(beforeStr, afterStr) {
+  var dmp = new diff_match_patch();
+  var diff = dmp.diff_main(beforeStr, afterStr);
+
+  // console.log(dmp.diff_prettyHtml(diff))
+  var left = [];
+  var right = [];
+  diff.forEach(([op, data], idx) => {
+    if (op === 0) {
+      left.push(
+        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
+          {data}
+        </span>
+      );
+      right.push(
+        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
+          {data}
+        </span>
+      );
+    } else if (op === 1) {
+      right.push(
+        <ins key={idx} style={{ background: "#0ee60eff" }}>
+          {data}
+        </ins>
+      );
+    } else {
+      left.push(
+        <del key={idx} style={{ background: "#e4db8bff" }}>
+          {data}
+        </del>
+      );
+    }
+  });
+  return <div style={{ width: "100%", display: "flex", flexDirection: "row", overflowY: "auto", margin: "8px 0 8px 0" }}>
+    <Box sx={{
+      display: "flex",
+      flexGrow: 1,
+      flexDirection: "column",
+      height: "fit-content",
+      width: "50%",
+    }}>
+
+      <Box
+        sx={{
+          border: '1px solid',
+          mr: 0.5,
+          p: 0.5,
+          height: 'fit-content',
+          borderRadius: '0.5rem',
+          whiteSpace: 'pre-line',
+          minHeight: '50vh'
+        }}
+      >
+        {left}
+      </Box>
     </Box>
-  );
-})
+    <Box sx={{
+      display: "flex",
+      flexGrow: 1,
+      flexDirection: "column",
+      height: "fit-content",
+      width: "50%",
+    }}>
+      <Box
+        sx={{
+          border: '1px solid',
+          mr: 0.5,
+          p: 0.5,
+          height: 'fit-content',
+          borderRadius: "0.5rem",
+          whiteSpace: 'pre-line',
+          minHeight: '50vh'
+        }}
+      >
+        {right}
+      </Box>
+    </Box>
+
+  </div>;
+}
+
 function isSameArray(a, b) {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
