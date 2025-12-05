@@ -1,12 +1,10 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { addTitle, changeMode, changeTitleId, editTitle, selectMode, selectTitleId, selectTitlesByIds } from "../features/search/searchSlice";
-import { use, useEffect, useMemo, useState } from "react";
-import { getTitle, getTitleLog2, updateTitle2 } from "../services/search/keyApi";
-import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Modal, Paper, Select, Stack, TextField, useMediaQuery } from "@mui/material";
-import TitleCard, { TitleEditor } from "../components/TitleCard";
-import { rApplyPath } from "../utils/fbUtil";
-import { CustomizedInputBase } from "../components/SearchBar";
+import { useEffect, useMemo, useState } from "react";
+import { getTitle, updateTitle2 } from "../services/search/keyApi";
+import { Box, Button, FormControl, InputLabel, MenuItem, Select, Stack, TextField, useMediaQuery } from "@mui/material";
+import { TitleEditor } from "../components/TitleCard";
 import debounce from "debounce";
 
 export const TitlePage = () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback } from "react";
+import { useState, useEffect, memo, useCallback, useRef } from "react";
 import {
   Alert,
   Checkbox,
@@ -15,6 +15,7 @@ import {
   Radio,
   Select,
   Snackbar,
+  Stack,
   useMediaQuery,
 } from "@mui/material";
 
@@ -31,6 +32,7 @@ import {
   getAllTags,
   getTitleLog2,
   updateTitle2,
+  updateTitleLog2,
 } from "../services/search/keyApi";
 import {
   Box,
@@ -74,7 +76,7 @@ import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
-import { rApplyPath } from "../utils/fbUtil";
+import { calcPath, decodeDiffText, rApplyPath, stableStringify } from "../utils/fbUtil";
 import { collection, onSnapshot, query, Timestamp, where } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { DiffView } from "./DiffView";
@@ -256,14 +258,23 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const [alertObj, setAlertObj] = useState({ open: false });
 
   // replace
-  const [dict, setDict] = useState([
-    ["\\s+([.,:;?!])\\s*", "$1 ", true],
-    ["ĐT", "đạo tràng"],
-    ["CLB", "câu lạc bộ"],
-    ["PT", "Phật tử"],
-    ["BQT", "Bát quan trai"],
-  ].map(pair => ({ find: pair[0], replace: pair[1], isReg: pair[2] ? true : false, selected: true })));
+  const [dict, setDict] = useState([]);
   const [openDict, setOpenDict] = useState(false);
+  useEffect(() => {
+    const data = [
+      ["\\s+([.,:;?!])\\s*", "$1 ", true],
+      ["ĐT", "đạo tràng"],
+      ["CLB", "câu lạc bộ"],
+      ["PT", "Phật tử"],
+      ["BQT", "Bát quan trai"],
+    ].map(pair => ({
+      find: pair[0],
+      replace: pair[1],
+      isReg: pair[2] ? true : false,
+      selected: true
+    }));
+    setDict(data);
+  }, []);
 
   // --- Effects ------------------------------------------------------------
   // Sync khi data (props) thay đổi từ bên ngoài
@@ -370,18 +381,16 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   }
 
   var changes = {};
-  var t = data;
-  var edited = { ...editing };
   ["title", "path"].forEach((field) => {
-    if (edited[field] !== t[field]) {
-      changes[field] = edited[field];
+    if (editing[field] !== data[field]) {
+      changes[field] = editing[field];
     }
   });
-  if (!isSameArray(edited.paragraphs, t.paragraphs)) {
-    changes.paragraphs = edited.paragraphs;
+  if (!isSameArray(editing.paragraphs, data.paragraphs)) {
+    changes.paragraphs = editing.paragraphs;
   }
-  if (!isSameArray(edited.tags || [], t.tags || [])) {
-    changes.tags = edited.tags;
+  if (!isSameArray(editing.tags || [], data.tags || [])) {
+    changes.tags = editing.tags;
   }
 
   // log
@@ -395,10 +404,10 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       var { result } = await getTitleLog2(data.id);
       // console.log("log: ", result)
       if (result) {
-        result.sort((a, b) => a.timestamp - b.timestamp);
+        result.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
         setLogs(result);
         if (!result.length) {
-          setAlertObj({ message: "No logs available" });
+          setAlertObj({ open: true, type: "warning", message: "No logs available" });
         } else {
           setShowLog(true);
         }
@@ -1246,6 +1255,167 @@ function tsToStr(ts) {
   return formatted;
 }
 
+// Helper to style diffs
+const PatchDecorator = (patchText) => {
+  // Helper to determine line type and style accordingly
+  function getLineStyle(line) {
+    if (line.startsWith('+') && !line.startsWith('+++')) {
+      // Addition
+      return { background: "#e8f5e9", color: "#388e3c", fontWeight: 'bold' };
+    }
+    if (line.startsWith('-') && !line.startsWith('---')) {
+      // Deletion
+      return { background: "#ffebee", color: "#d32f2f", fontWeight: 'bold' };
+    }
+    if (line.startsWith('@@')) {
+      // Hunk header
+      return { background: "#e3f2fd", color: "#1976d2", fontWeight: 'bold' };
+    }
+    if (line.startsWith('diff') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++')) {
+      // Metadata
+      return { background: "#f5f5f5", color: "#616161", fontStyle: 'italic' };
+    }
+    // Context
+    return {};
+  }
+
+  const lines = patchText.split('\n');
+
+  return (
+    <Paper sx={{ p: 2, overflow: "auto", fontFamily: "monospace", maxHeight: 400 }}>
+      {lines.map((line, idx) => (
+        <Typography
+          key={idx}
+          component="div"
+          sx={{
+            whiteSpace: "pre-line",
+            ...getLineStyle(line),
+          }}
+        >
+          {line}
+        </Typography>
+      ))}
+    </Paper>
+  );
+}
+function reorderObject(obj, order) {
+  const newObj = {};
+
+  for (const key of order) {
+    if (key in obj) {
+      newObj[key] = obj[key];
+    }
+  }
+
+  // Optional: add keys not in order[]
+  for (const key of Object.keys(obj)) {
+    if (!(key in newObj)) {
+      newObj[key] = obj[key];
+    }
+  }
+
+  return newObj;
+}
+function ResolveConflict({patch, afterJson, onApply, onClose}) {
+  
+  const [selectionLength, setSelectionLength] = useState(0);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const inputRef = useRef(null);
+
+  const [json, setJson] = useState(afterJson);
+  const [error, setError] = useState("");
+  useEffect(()=>{setJson(afterJson)}, [afterJson]);
+
+  function handleCheck() {
+    var {result, error} = rApplyPath(json, patch);
+    if (result && isValidJSON(result)) {
+      onApply(result);
+    } else {
+      setError(error);
+    }
+  }
+  function handleClose() {
+    onClose();
+  }
+  const handleSelection = () => {
+    const input = inputRef.current;
+    if (input) {
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      setSelectionLength(end - start);
+      setCursorPosition(start);
+    }
+  };
+  
+  function handleReorder() {
+    const order = [ "title", "paragraphs", "titleId", "path", "id", "tags"];
+    var newObj=JSON.parse(json);
+    setJson(JSON.stringify(reorderObject(newObj, order)))
+  }
+
+  return <Box sx={{display:"flex", flexDirection:"column", width: "100%"}}>
+    {/* <TextField
+      multiline={true}
+      maxRows={10}
+      value={decodeDiffText(patch)}
+    >
+    </TextField> */}
+    {PatchDecorator(decodeDiffText(patch))}
+    <TextField
+      multiline={true}
+      maxRows={10}
+      value={json}
+      onChange={(e)=>setJson(e.target.value)}
+      inputRef={inputRef}
+      onSelect={handleSelection}
+      onKeyUp={handleSelection}
+      onClick={handleSelection}
+    >
+    </TextField>
+    {error && <TextField color="error" value={"Error: [" + error + "]"}></TextField>}
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 2,
+      }}>
+        {/* button */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-start",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
+        <Button
+          onClick={handleClose}
+        >Close</Button>
+        <Button
+          onClick={handleReorder}
+        >Reorder</Button>
+        <Button
+          variant="contained"
+          onClick={handleCheck}
+        >Check</Button>
+      </Box>
+      {/* selection, cursor */}
+      <Typography>{`S: ${selectionLength} P: ${cursorPosition}`}</Typography>
+    </Box>
+    
+  </Box>
+}
+function isValidJSON(str) {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    console.log(e);
+    console.log(str);
+    return false;
+  }
+}
 function TitleLogModal({
   showLogModal,
   handleCloseLogModal,
@@ -1259,17 +1429,18 @@ function TitleLogModal({
   const [selected, setSelected] = useState(0);
   const [his, setHis] = useState();
   // const [options, setOptions] = useState([]);
-  const [alertObj, setAlertObj] = useState({ open: false });
+  const [errObj, setErrObj] = useState();
+  const [openResolve, setOpenResolve] = useState(false);
 
   useEffect(() => {
-    var prev = JSON.stringify(base);
+    var prev = stableStringify(base);
     var lst = []
     try {
       for (var i = logs.length - 1; i >= 0; i--) {
         var patch = logs[i].patch;
         var { result } = rApplyPath(prev, patch);
         // console.log(i, patch, beforeJson);
-        if (result) {
+        if (result && isValidJSON(result)) {
           prev = result;
           lst.push({
             content: result,
@@ -1280,15 +1451,15 @@ function TitleLogModal({
             idx: i
           }); // content
         } else {
-          setAlertObj({ message: `Conflict at: v${i + 1}` });
+          setErrObj({ idx: i });
           break;
         }
-        setHis(lst);
       }
+      setHis(lst);
     } catch (ex) { }
   }, [base, logs])
 
-  if (!his || !his.length) {
+  if (!his) {
     return <></>
   }
 
@@ -1296,17 +1467,66 @@ function TitleLogModal({
 
   // console.log("his", his)
 
-  function titleToStr(title) {
-    return [
-      title.path,
-      title.id,
-      (title.tags || []).join(", "),
-      ...title.paragraphs,
-    ].join("\n");
-  }
-
   function handleUndo(idx) {
     setSelected(idx);
+  }
+
+  async function handleResolve(prev) {
+    try {
+      var lst = [...his];
+      // console.log(prev)
+      // udpate db
+      var after = lst.length? lst[lst.length-1].content:null;
+      var beforeObj = JSON.parse(prev)
+      var newPatch = calcPath(beforeObj, after ? JSON.parse(after) : base);
+      var logId = logs[errObj.idx].id;
+      var updateRes = await updateTitleLog2(logId, {patch: newPatch});
+      console.log(`update v${errObj.idx+1}: `, logId, updateRes);
+
+      lst.push({
+        content: prev,
+        note: logs[errObj.idx].patch,
+        editor: "",
+        time: tsToStr(logs[errObj.idx].timestamp),
+        version: `v${errObj.idx + 1}`,
+        idx: errObj.idx,
+        resolved: true
+      })
+
+      var err = null;
+      for (var i = errObj.idx - 1; i >= 0; i--) {
+        var patch = logs[i].patch;
+        var { result } = rApplyPath(prev, patch);
+        // console.log(i, patch, beforeJson);
+        if (result && isValidJSON(result)) {
+          // udpate db
+          after = prev;
+          newPatch = calcPath(JSON.parse(result), JSON.parse(after));
+          logId = logs[i].id;
+          updateRes = await updateTitleLog2(logId, {patch: newPatch});
+          console.log(`update v${i+1}: `, logId, updateRes);
+
+          prev = result;
+          lst.push({
+            content: result,
+            note: patch,
+            editor: "",
+            time: tsToStr(logs[i].timestamp),
+            version: `v${i + 1}`,
+            idx: i,
+            resolved: true
+          }); // content
+        } else {
+          err = { idx: i };
+          break;
+        }
+      }
+      setHis(lst);
+      setErrObj(err);
+      setOpenResolve(false);
+    } catch (ex) {
+      console.log(ex)
+    }
   }
 
   // function calcDiff(idx, afterJson) {
@@ -1337,11 +1557,11 @@ function TitleLogModal({
   const afterJson = selected === 0 ?
     JSON.stringify(base)
     : his[selected - 1].content;
-  const beforeJson = his[selected].content;
+  const beforeJson = his.length? his[selected].content: null;
 
   // create diff
-  var beforeStr = titleToStr(JSON.parse(beforeJson));
-  var afterStr = titleToStr(JSON.parse(afterJson));
+  var beforeStr = beforeJson ? titleToString(JSON.parse(beforeJson)): "";
+  var afterStr = titleToString(JSON.parse(afterJson));
 
   // const [selected, setSelected] = useState(0);
   return (
@@ -1427,8 +1647,11 @@ function TitleLogModal({
             </Select>
 
           </FormControl>
-          {alertObj && <Typography color="error">
-            {alertObj.message}
+          {errObj && <Typography 
+            color="error"
+            onClick={()=>setOpenResolve(true)}
+          >
+            {`Conflit at: v${errObj.idx+1}`}
           </Typography>}
         </Box>
         {/* <div
@@ -1479,11 +1702,16 @@ function TitleLogModal({
             mb: 1,
           }}
         >
-          {/* nội dung bên trong */}
-          <DiffView
+          {/* diff view */}
+          {openResolve ? <ResolveConflict
+            afterJson={his.length?his[his.length - 1].content:stableStringify(base)}
+            patch={logs[errObj.idx].patch}
+            onApply={handleResolve}
+            onClose={()=>setOpenResolve(false)}
+          /> : <DiffView
             oldText={beforeStr}
             newText={afterStr}
-          ></DiffView>
+          />}
         </Card>
 
         {/* <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>

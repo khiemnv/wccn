@@ -191,6 +191,15 @@ export class BaseApi {
       return { error: ex.message };
     }
   }
+  async updateLog(logId, changes) {
+  try {
+    const ref = doc(db, this.collectionName + "_log", logId);
+    await updateDoc(ref, changes);
+    return { result: true };
+  } catch (ex) {
+    return { error: ex.message };
+  }
+}
   /**
    *
    * @param {object} entity {id, ...}

@@ -59,9 +59,9 @@ function App() {
           <Route path="/category/:slug" element={<CategoryPage />} />
           <Route path="/post/:slug" element={<PostDetail />} />
           <Route path="/search" element={<SearchPage />} />
-          <Route path="/Bai8" element={<Bai8 />} />
-          <Route path="/Title" element={<TitlePage />} />
-          <Route path="/Tag" element={<TagPage />} />
+          <Route path="/bai8" element={<Bai8 />} />
+          <Route path="/title" element={<TitlePage />} />
+          <Route path="/tag" element={<TagPage />} />
 
           {roleObj && roleObj.sys === "admin" && <Route path="/usermanager" element={<UserManager />} />}
         </Routes>

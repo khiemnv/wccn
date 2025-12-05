@@ -9,6 +9,7 @@ import RestoreIcon from '@mui/icons-material/Restore';
 import "react-diff-view/style/index.css";
 import { diff_match_patch } from 'diff-match-patch';
 import { Diff, Hunk, parseDiff } from 'react-diff-view';
+import { createUnifiedDiff } from '../utils/fbUtil';
 
 // const editHistories = [
 //   { version: 'v5', time: '2025-12-03 10:21', editor: 'Nguyễn Văn A', note: 'Sửa tiêu đề', content: 'Tiêu đề mới\nNội dung A\nKết luận' },
@@ -16,58 +17,6 @@ import { Diff, Hunk, parseDiff } from 'react-diff-view';
 //   { version: 'v3', time: '2025-11-30 14:03', editor: 'Lê Văn C', note: 'Xóa đoạn văn', content: 'Tiêu đề cũ\nNội dung cũ\nKết luận' },
 // ];
 
-function createUnifiedDiff(oldStr, newStr, fileName = "file.txt") {
-    const dmp = new diff_match_patch();
-    const diffs = dmp.diff_main(oldStr, newStr);
-    dmp.diff_cleanupSemantic(diffs);
-
-    const oldLines = oldStr.split("\n");
-    const newLines = newStr.split("\n");
-
-    let oldLineNum = 1;
-    let newLineNum = 1;
-
-    // Unified diff header
-    let result = `--- a/${fileName}\n+++ b/${fileName}\n`;
-
-    // Start first hunk
-    let hunk = [];
-    let hunkOldStart = oldLineNum;
-    let hunkNewStart = newLineNum;
-
-    diffs.forEach(([op, text]) => {
-        const lines = text.split("\n");
-
-        if (op === 0) {
-            // equal
-            lines.forEach((line, i) => {
-                hunk.push(` ${line}`);
-                oldLineNum++;
-                newLineNum++;
-            });
-        } else if (op === -1) {
-            // delete
-            lines.forEach((line) => {
-                hunk.push(`-${line}`);
-                oldLineNum++;
-            });
-        } else if (op === 1) {
-            // add
-            lines.forEach((line) => {
-                hunk.push(`+${line}`);
-                newLineNum++;
-            });
-        }
-    });
-
-    const oldCount = oldLines.length;
-    const newCount = newLines.length;
-
-    result += `@@ -${hunkOldStart},${oldCount} +${hunkNewStart},${newCount} @@\n`;
-    result += hunk.join("\n");
-
-    return result;
-}
 export function DiffView({ oldText, newText }) {
     // console.log([oldText, newText]);
     var patch = createUnifiedDiff(oldText, newText);
