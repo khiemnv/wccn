@@ -666,8 +666,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         </Box>
       </Box>
 
-      {logs && logs.length ? (
-        <TitleLogModal
+      {
+        showLogModal && <TitleLogModal
           showLogModal={showLogModal}
           handleCloseLogModal={handleCloseLogModal}
           isMobile={isMobile}
@@ -678,9 +678,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             setEditing(obj);
           }}
         />
-      ) : (
-        <></>
-      )}
+      }
 
       {
         openPreview && <PreviewModal
