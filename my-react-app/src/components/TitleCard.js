@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, use } from "react";
+import { useState, useEffect, memo, use, useCallback } from "react";
 import {
   Alert,
   Checkbox,
@@ -279,20 +279,28 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   }, [data]);
 
   // --- Handlers -----------------------------------------------------------
-  const handleParagraphChange = (index, value) => {
-    const updated = [...paragraphs];
-    updated[index] = value;
-    setParagraphs(updated);
-  };
+  const handleParagraphChange = useCallback((index, value) => {
+    setEditing(prev => {
+      const updated = [...prev.paragraphs];
+      updated[index] = value;
+      return { ...prev, paragraphs: updated };
+    })
+  }, []);
 
-  const removeParagraph = (index) =>
-    setParagraphs(paragraphs.filter((_, i) => i !== index));
+  const removeParagraph = useCallback((index) =>
+    setEditing(prev => {
+      const updated = prev.paragraphs.filter((_, i) => i !== index);
+      return { ...prev, paragraphs: updated };
+    }),
+    []);
 
-  const insertParagraph = (idx) => {
-    const newParagraphs = [...paragraphs];
-    newParagraphs.splice(idx + 1, 0, "");
-    setParagraphs(newParagraphs);
-  };
+  const insertParagraph = useCallback((idx) => {
+    setEditing(prev => {
+      const updated = [...prev.paragraphs];
+      updated.splice(idx + 1, 0, "");
+      return { ...prev, paragraphs: updated };
+    })
+  }, []);
 
   const handleDragStart = (index) => {
     setDraggedIndex(index);
@@ -335,26 +343,31 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     setDragOverIndex(null);
   };
 
-  const moveParagraph = (fromIndex, toIndex) => {
-    // console.log("moveParagraph", fromIndex, toIndex);
-    if (fromIndex < 0 || fromIndex >= paragraphs.length) return;
-    if (toIndex < 0 || toIndex >= paragraphs.length) return;
-    const updated = [...paragraphs];
-    const [movedParagraph] = updated.splice(fromIndex, 1);
-    updated.splice(toIndex, 0, movedParagraph);
-    setEditing({ ...editing, paragraphs: updated });
-  };
-  const combineParagraph = (index) => {
-    if (index < 0 || index >= paragraphs.length - 1) return;
-    const combined = paragraphs[index] + "\n" + paragraphs[index + 1];
-    // Create a new array with the combined paragraph
-    const updated = [
-      ...paragraphs.slice(0, index),
-      combined,
-      ...paragraphs.slice(index + 2),
-    ];
-    setEditing({ ...editing, paragraphs: updated });
-  }
+  const moveParagraph = useCallback((fromIndex, toIndex) => {
+    setEditing(prev => {
+      const paragraphs = prev.paragraphs;
+      if (fromIndex < 0 || fromIndex >= paragraphs.length) return prev;
+      if (toIndex < 0 || toIndex >= paragraphs.length) return prev;
+      const updated = [...paragraphs];
+      const [movedParagraph] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, movedParagraph);
+      return { ...prev, paragraphs: updated };
+    });
+  }, []);
+
+  const combineParagraph = useCallback((index) => {
+    setEditing(prev => {
+      const paragraphs = prev.paragraphs;
+      if (index < 0 || index >= paragraphs.length - 1) return prev;
+      const combined = paragraphs[index] + "\n" + paragraphs[index + 1];
+      const updated = [
+        ...paragraphs.slice(0, index),
+        combined,
+        ...paragraphs.slice(index + 2),
+      ];
+      return { ...prev, paragraphs: updated };
+    });
+  }, []);
 
   console.log("edit title modal");
 
@@ -1496,7 +1509,8 @@ function TitleLogModal({
   );
 }
 
-function ParagraphEditor({
+const ParagraphEditor = memo(
+   function ParagraphEditor({
   p,
   handleParagraphChange,
   idx,
@@ -1729,8 +1743,7 @@ function ParagraphEditor({
       </Dialog>}
     </Box>
   );
-}
-
+})
 function isSameArray(a, b) {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
