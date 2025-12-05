@@ -250,11 +250,11 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     editing.paragraphs,
     (paragraphs) => setEditing({ ...editing, paragraphs }),
   ];
+
   // Selected tags for this title (editable by the user)
-  const [selectedTags, setSelectedTags] = [
-    editing.tags || [],
-    (tags) => setEditing({ ...editing, tags }),
-  ];
+  const setSelectedTags = useCallback((tags) =>
+    setEditing((prev) => ({ ...prev, tags })), []
+  );
 
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -378,7 +378,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   var changes = {};
   var t = data;
-  var edited = { path, title, paragraphs, tags: selectedTags };
+  var edited = { ...editing};
   ["title", "path"].forEach((field) => {
     if (edited[field] !== t[field]) {
       changes[field] = edited[field];
@@ -582,7 +582,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           {/* Tags */}
           <TagEditor
             isMobile={isMobile}
-            selectedTags={selectedTags}
+            selectedTags={editing.tags}
             setSelectedTags={setSelectedTags}
           />
         </Box>
@@ -724,7 +724,10 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   );
 }
 
+const TagEditor = memo(
 function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
+  console.log("TagEditor");
+
   const dispatch = useDispatch();
 
   // All available tags (from API or from store) used to suggest options
@@ -734,7 +737,7 @@ function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
   const [alertObj, setAlertObj] = useState({ open: false });
 
   // Load all tags from API (fallback to store selector if API fails)
-  console.log("allTags from store:", allTags);
+  // console.log("allTags from store:", allTags);
   const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
   useEffect(() => {
     async function loadTags() {
@@ -823,7 +826,7 @@ function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
   }, [dispatch]);
 
   const availableTags = (tagLstFromStore || []).filter(
-    (tag) => !selectedTags.includes(tag)
+    (tag) => !selectedTags || !selectedTags.includes(tag)
   );
 
   return (
@@ -832,7 +835,7 @@ function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
         multiple
         freeSolo
         options={availableTags}
-        value={selectedTags}
+        value={selectedTags || []}
         onChange={(event, newValue) => setSelectedTags(newValue || [])}
         renderInput={(params) => (
           <TextField
@@ -861,7 +864,7 @@ function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
       </Snackbar>
     </Box>
   );
-}
+})
 
 function renderParagraphs(t, words) {
   return t.paragraphs
@@ -896,7 +899,8 @@ function renderParagraphs(t, words) {
 }
 
 function PreviewModal({ open, onClose, title }) {
-  console.log("PreviewModal title:", title);
+  console.log("PreviewModal");
+
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <Modal open={open} onClose={onClose}>
@@ -976,6 +980,7 @@ function dictsEqual(a, b) {
 }
 
 function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
+  console.log("ReplaceModal");
 
   // Local state for editing
   const [localDict, setLocalDict] = useState(dict);
@@ -1241,6 +1246,7 @@ function TitleLogModal({
   onRevert,
 }) {
   console.log("title log modal");
+
   const [selected, setSelected] = useState(logs.length - 1);
   const [data, setData] = useState(base);
 
