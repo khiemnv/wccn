@@ -39,7 +39,7 @@ export function useMobileVh() {
 
 
 function App() {
-  // useMobileVh();
+  useMobileVh();
 
   const token = useAppSelector(selectToken);
   const isMobile = useMediaQuery('(max-width:600px)');

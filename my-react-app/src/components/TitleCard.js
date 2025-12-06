@@ -51,7 +51,7 @@ import {
   Modal,
   Autocomplete,
 } from "@mui/material";
-import HighlightWords from "./HighlightWords";
+import HighlightWords, { EditableHighlight } from "./HighlightWords";
 
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -80,6 +80,7 @@ import { calcPath, decodeDiffText, rApplyPath, stableStringify } from "../utils/
 import { collection, onSnapshot, query, Timestamp, where } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { DiffView } from "./DiffView";
+import ChipDragSort from "./DraggableChip";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -192,33 +193,14 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: isMobile ? "90%" : 600,
-          maxWidth: "90vw",
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "80vh" : "70vh",
-          overflowY: "auto",
-          borderRadius: 2,
-          display: "flex",
-          flexDirection: "column"
-        }}
-      >
-        <TitleEditor
-          isMobile={isMobile}
-          data={data}
-          onClose={onClose}
-          onSave={handleSave}
-        />
-      </Box>
-    </Modal>
+    <MyModal open={open} onClose={onClose}>
+      <TitleEditor
+        isMobile={isMobile}
+        data={data}
+        onClose={onClose}
+        onSave={handleSave}
+      />
+    </MyModal>
   );
 }
 
@@ -903,64 +885,45 @@ function PreviewModal({ open, onClose, title }) {
 
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
-    <Modal open={open} onClose={onClose}>
-      <Box
+    <MyModal open={open} onClose={onClose}>
+      {/* Close button */}
+      <IconButton
+        onClick={onClose}
         sx={{
           position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: isMobile ? "90%" : 600,
-          maxWidth: "90vw",
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "80vh" : "70vh",
-          overflowY: "auto",
-          borderRadius: 2,
-          display: "flex",
-          flexDirection: "column"
+          top: 8,
+          right: 8,
         }}
       >
-        {/* Close button */}
-        <IconButton
-          onClick={onClose}
-          sx={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
+        <CloseIcon />
+      </IconButton>
 
-        <Typography variant="h6" sx={{ pr: 4 }}>
-          {title.title.replace(/Question|cau/, "Câu")}
-        </Typography>
+      <Typography variant="h6" sx={{ pr: 4 }}>
+        {title.title.replace(/Question|cau/, "Câu")}
+      </Typography>
 
-        <Box sx={{ display: "flex", flexDirection: "row" }}>
-          {renderTags(title)}
-        </Box>
-
-        <Box sx={{ overflowY: "auto", mt: isMobile ? 1 : 2, mb: isMobile ? 1 : 2 }}>
-          {renderParagraphs(title, [])}
-        </Box>
-
-        {/* Close bottom-right */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-          }}
-        >
-          <Button variant="contained"
-            fullWidth={isMobile}
-            onClick={onClose}>
-            OK
-          </Button>
-        </Box>
+      <Box sx={{ display: "flex", flexDirection: "row" }}>
+        {renderTags(title)}
       </Box>
-    </Modal>
+
+      <Box sx={{ overflowY: "auto", mt: isMobile ? 1 : 2, mb: isMobile ? 1 : 2 }}>
+        {renderParagraphs(title, [])}
+      </Box>
+
+      {/* Close bottom-right */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Button variant="contained"
+          fullWidth={isMobile}
+          onClick={onClose}>
+          OK
+        </Button>
+      </Box>
+    </MyModal>
   );
 }
 
@@ -1040,191 +1003,172 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
 
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
-    <Modal open={open} onClose={onClose}>
+    <MyModal open={open} onClose={onClose}>
+
+      {/* Top right close button */}
+      <IconButton
+        aria-label="close"
+        onClick={onClose}
+        sx={{
+          position: 'absolute',
+          right: 8,
+          top: 8,
+          color: (theme) => theme.palette.grey[500],
+          zIndex: 2,
+        }}
+      >
+        <CloseIcon />
+      </IconButton>
+      <Typography variant="h6" mb={2}>Edit Dictionary</Typography>
+
+      {/* pair */}
       <Box
         sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: isMobile ? "90%" : 600,
-          maxWidth: "90vw",
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "80vh" : "70vh",
-          overflowY: "auto",
-          borderRadius: 2,
           display: "flex",
+          height: "50vh",
+          flexGrow: 1,
+          overflowY: "auto",
           flexDirection: "column"
         }}
       >
-        {/* Top right close button */}
-        <IconButton
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-            zIndex: 2,
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-        <Typography variant="h6" mb={2}>Edit Dictionary</Typography>
-
-        {/* pair */}
-        <Box
-          sx={{
-            display: "flex",
-            height: "50vh",
-            flexGrow: 1,
-            overflowY: "auto",
-            flexDirection: "column"
-          }}
-        >
-          {localDict.map((pair, idx) => (
-            <Paper
-              key={idx}
-              elevation={pair.selected ? 3 : 1}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                mb: 1,
-                p: 1,
-                // backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
-                cursor: 'pointer',
-              }}
-            // onClick={() => handleToggleSelect(idx)}
-            >
-              {/* <Tooltip title="Selected">
+        {localDict.map((pair, idx) => (
+          <Paper
+            key={idx}
+            elevation={pair.selected ? 3 : 1}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              mb: 1,
+              p: 1,
+              // backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
+              cursor: 'pointer',
+            }}
+          // onClick={() => handleToggleSelect(idx)}
+          >
+            {/* <Tooltip title="Selected">
               <Checkbox
                 checked={pair.selected}
                 onChange={e => handleEdit(idx, "selected", e.target.checked)}
                 size="small"
               />
             </Tooltip> */}
-              <TextField
-                label="Find"
-                value={pair.find}
-                size="small"
-                onChange={e => handleEdit(idx, 'find', e.target.value)}
-                sx={{
-                  mr: 1,
-                  width: { xs: 80, sm: 120, md: 140 }, // responsive width
-                  flexShrink: 0
+            <TextField
+              label="Find"
+              value={pair.find}
+              size="small"
+              onChange={e => handleEdit(idx, 'find', e.target.value)}
+              sx={{
+                mr: 1,
+                width: { xs: 80, sm: 120, md: 140 }, // responsive width
+                flexShrink: 0
+              }}
+            />
+            <TextField
+              label="Replace"
+              value={pair.replace}
+              size="small"
+              onChange={e => handleEdit(idx, 'replace', e.target.value)}
+              sx={{
+                mr: 1,
+                minWidth: 80,
+                flexGrow: 1,         // grow ra
+                flexBasis: 0,        // chiếm phần còn lại
+              }}
+            />
+            <IconButton
+              size="small"
+              onClick={e => handleMenuOpen(e, idx)}
+              sx={{ flexShrink: 0 }}
+            >
+              <MoreVertIcon />
+            </IconButton>
+            {/* Menu cho từng dòng */}
+            <Menu
+              anchorEl={anchorEl}
+              open={menuIdx === idx}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+            >
+              <MenuItem
+                onClick={() => {
+                  handleEdit(idx, "selected", !pair.selected);
+                  handleMenuClose();
                 }}
-              />
-              <TextField
-                label="Replace"
-                value={pair.replace}
-                size="small"
-                onChange={e => handleEdit(idx, 'replace', e.target.value)}
-                sx={{
-                  mr: 1,
-                  minWidth: 80,
-                  flexGrow: 1,         // grow ra
-                  flexBasis: 0,        // chiếm phần còn lại
+              >
+                <ListItemIcon>
+                  <Checkbox
+                    checked={pair.selected}
+                    icon={<CheckBoxOutlineBlankIcon />}
+                    checkedIcon={<CheckBoxIcon />}
+                    size="small"
+                    sx={{ p: 0, m: 0 }}
+                  />
+                </ListItemIcon>
+                <ListItemText primary="Selected" />
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  handleEdit(idx, "isReg", !pair.isReg);
+                  handleMenuClose();
                 }}
-              />
-              <IconButton
-                size="small"
-                onClick={e => handleMenuOpen(e, idx)}
-                sx={{ flexShrink: 0 }}
               >
-                <MoreVertIcon />
-              </IconButton>
-              {/* Menu cho từng dòng */}
-              <Menu
-                anchorEl={anchorEl}
-                open={menuIdx === idx}
-                onClose={handleMenuClose}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                <ListItemIcon>
+                  <FunctionsIcon color={pair.isReg ? "primary" : "inherit"} />
+                </ListItemIcon>
+                <ListItemText primary="Regex" />
+              </MenuItem>
+              <MenuItem
+                onClick={() => handleRemove(idx)}
               >
-                <MenuItem
-                  onClick={() => {
-                    handleEdit(idx, "selected", !pair.selected);
-                    handleMenuClose();
-                  }}
-                >
-                  <ListItemIcon>
-                    <Checkbox
-                      checked={pair.selected}
-                      icon={<CheckBoxOutlineBlankIcon />}
-                      checkedIcon={<CheckBoxIcon />}
-                      size="small"
-                      sx={{ p: 0, m: 0 }}
-                    />
-                  </ListItemIcon>
-                  <ListItemText primary="Selected" />
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleEdit(idx, "isReg", !pair.isReg);
-                    handleMenuClose();
-                  }}
-                >
-                  <ListItemIcon>
-                    <FunctionsIcon color={pair.isReg ? "primary" : "inherit"} />
-                  </ListItemIcon>
-                  <ListItemText primary="Regex" />
-                </MenuItem>
-                <MenuItem
-                  onClick={() => handleRemove(idx)}
-                >
-                  <ListItemIcon>
-                    <DeleteIcon color="error" />
-                  </ListItemIcon>
-                  <ListItemText primary="Xóa" />
-                </MenuItem>
-              </Menu>
-            </Paper>
-          ))}
-        </Box>
-
-
-        {/* add and save buttons */}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: 2, // spacing between buttons
-            mt: 2,
-          }}
-        >
-          <Button onClick={handleAdd} variant="outlined">Add</Button>
-          <Button onClick={handleSave}
-            variant="contained"
-            disabled={!isChanged}
-          >Save</Button>
-        </Box>
-
-        {localDict.some(pair => pair.selected) && (
-          <Typography sx={{ mt: 2 }}>
-            Replace:
-            {localDict
-              .filter(pair => pair.selected)
-              .map(pair => ` "${pair.find}" -> "${pair.replace}"`)
-              .join('; ')}
-          </Typography>
-        )}
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: 2, // spacing between buttons
-            mt: 2,
-          }}
-        >
-          <Button onClick={onClose} variant="outlined" >Cancel</Button>
-          <Button onClick={() => onReplace(localDict.filter(pair => pair.selected))} variant="contained" >Replace</Button>
-        </Box>
-
+                <ListItemIcon>
+                  <DeleteIcon color="error" />
+                </ListItemIcon>
+                <ListItemText primary="Xóa" />
+              </MenuItem>
+            </Menu>
+          </Paper>
+        ))}
       </Box>
-    </Modal>
+
+
+      {/* add and save buttons */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 2, // spacing between buttons
+          mt: 2,
+        }}
+      >
+        <Button onClick={handleAdd} variant="outlined">Add</Button>
+        <Button onClick={handleSave}
+          variant="contained"
+          disabled={!isChanged}
+        >Save</Button>
+      </Box>
+
+      {localDict.some(pair => pair.selected) && (
+        <Typography sx={{ mt: 2 }}>
+          Replace:
+          {localDict
+            .filter(pair => pair.selected)
+            .map(pair => ` "${pair.find}" -> "${pair.replace}"`)
+            .join('; ')}
+        </Typography>
+      )}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          gap: 2, // spacing between buttons
+          mt: 2,
+        }}
+      >
+        <Button onClick={onClose} variant="outlined" >Cancel</Button>
+        <Button onClick={() => onReplace(localDict.filter(pair => pair.selected))} variant="contained" >Replace</Button>
+      </Box>
+    </MyModal>
   );
 }
 
@@ -1256,45 +1200,53 @@ function tsToStr(ts) {
 }
 
 // Helper to style diffs
-const PatchDecorator = (patchText) => {
-  // Helper to determine line type and style accordingly
-  function getLineStyle(line) {
-    if (line.startsWith('+') && !line.startsWith('+++')) {
-      // Addition
-      return { background: "#e8f5e9", color: "#388e3c", fontWeight: 'bold' };
+const PatchDecorator = (patchText, onHunk) => {
+  const [content, setContent] = useState("")
+  useEffect(() => {
+    var hunkList = [];
+    // Helper to determine line type and style accordingly
+    function formatLine(line, idx, onHunk) {
+      // Context
+      var style = {};
+      var onClick = () => { };
+      if (line.startsWith('+') && !line.startsWith('+++')) {
+        // Addition
+        style = { background: "#e8f5e9", color: "#388e3c", fontWeight: 'bold' };
+      }
+      if (line.startsWith('-') && !line.startsWith('---')) {
+        // Deletion
+        style = { background: "#ffebee", color: "#d32f2f", fontWeight: 'bold' };
+      }
+      if (line.startsWith('@@')) {
+        // Hunk header
+        style = { background: "#e3f2fd", color: "#1976d2", fontWeight: 'bold' };
+        onClick = () => { onHunk([line]) }
+        hunkList.push(line)
+      }
+      if (line.startsWith('diff') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++')) {
+        // Metadata
+        style = { background: "#f5f5f5", color: "#616161", fontStyle: 'italic' };
+      }
+      return <Typography
+        key={idx}
+        component="div"
+        sx={{
+          whiteSpace: "pre-line",
+          ...style
+        }}
+        onClick={onClick}
+      >
+        {line}
+      </Typography>
     }
-    if (line.startsWith('-') && !line.startsWith('---')) {
-      // Deletion
-      return { background: "#ffebee", color: "#d32f2f", fontWeight: 'bold' };
-    }
-    if (line.startsWith('@@')) {
-      // Hunk header
-      return { background: "#e3f2fd", color: "#1976d2", fontWeight: 'bold' };
-    }
-    if (line.startsWith('diff') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++')) {
-      // Metadata
-      return { background: "#f5f5f5", color: "#616161", fontStyle: 'italic' };
-    }
-    // Context
-    return {};
-  }
 
-  const lines = patchText.split('\n');
-
+    const lines = patchText.split('\n');
+    var content = lines.map((line, idx) => formatLine(line, idx, onHunk))
+    setContent(content)
+  }, [patchText, onHunk]);
   return (
     <Paper sx={{ p: 2, overflow: "auto", fontFamily: "monospace", maxHeight: 400 }}>
-      {lines.map((line, idx) => (
-        <Typography
-          key={idx}
-          component="div"
-          sx={{
-            whiteSpace: "pre-line",
-            ...getLineStyle(line),
-          }}
-        >
-          {line}
-        </Typography>
-      ))}
+      {content}
     </Paper>
   );
 }
@@ -1316,22 +1268,24 @@ function reorderObject(obj, order) {
 
   return newObj;
 }
-function ResolveConflict({patch, afterJson, onApply, onClose}) {
-  
+function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
+
   const [selectionLength, setSelectionLength] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [hunkList, setHunkList] = useState([]);
   const inputRef = useRef(null);
+  const [order, setOrder] = useState(["title", "path", "paragraphs", "tags", "titleId", "id"]);
 
   const [json, setJson] = useState(afterJson);
-  const [error, setError] = useState("");
-  useEffect(()=>{setJson(afterJson)}, [afterJson]);
+  const [status, setStatus] = useState({});
+  useEffect(() => { setJson(afterJson) }, [afterJson]);
 
   function handleCheck() {
-    var {result, error} = rApplyPath(json, patch);
+    var { result, error } = rApplyPath(json, patch);
     if (result && isValidJSON(result)) {
       onApply(result);
     } else {
-      setError(error);
+      setStatus({ error });
     }
   }
   function handleClose() {
@@ -1346,42 +1300,101 @@ function ResolveConflict({patch, afterJson, onApply, onClose}) {
       setCursorPosition(start);
     }
   };
-  
+
   function handleReorder() {
-    const order = [ "title", "paragraphs", "titleId", "path", "id", "tags"];
-    var newObj=JSON.parse(json);
-    setJson(JSON.stringify(reorderObject(newObj, order)))
+    try {
+      var newObj = JSON.parse(json);
+      var newJson = JSON.stringify(reorderObject(newObj, order));
+      setJson(newJson);
+      var { result, error } = rApplyPath(newJson, patch);
+      if (result && isValidJSON(result)) {
+        setStatus({ success: "OK" })
+      } else {
+        setStatus({ error })
+      }
+    } catch (ex) {
+      console.log(ex)
+    }
+  }
+  function handleChangeOrder(lst) {
+    setOrder(lst)
+    var newObj = JSON.parse(json);
+    var newJson = JSON.stringify(reorderObject(newObj, lst));
+    setJson(newJson);
+    var { result, error } = rApplyPath(newJson, patch);
+    if (result && isValidJSON(result)) {
+      setStatus({ success: "OK" })
+    } else {
+      setStatus({ error })
+    }
   }
 
-  return <Box sx={{display:"flex", flexDirection:"column", width: "100%"}}>
-    {/* <TextField
+  const handleHunk = useCallback(function handleHunk(hunkList) {
+    // @@ -61,19 +61,8 @@
+    setHunkList(hunkList);
+    console.log(hunkList);
+  }, [])
+
+  return (
+    <MyModal
+      open={open}
+      close={onClose}
+    >
+      {/* header */}
+      <Box sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        justifyItems: "center"
+      }}
+      >
+        <Typography variant="h6">{"Resolve conflict"}</Typography>
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            color: (theme) => theme.palette.grey[500],
+            zIndex: 2,
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      {/* Body */}
+      <DialogContent
+        sx={{
+          p: 1
+        }}
+      >
+        {/* <TextField
       multiline={true}
       maxRows={10}
       value={decodeDiffText(patch)}
     >
     </TextField> */}
-    {PatchDecorator(decodeDiffText(patch))}
-    <TextField
-      multiline={true}
-      maxRows={10}
-      value={json}
-      onChange={(e)=>setJson(e.target.value)}
-      inputRef={inputRef}
-      onSelect={handleSelection}
-      onKeyUp={handleSelection}
-      onClick={handleSelection}
-    >
-    </TextField>
-    {error && <TextField color="error" value={"Error: [" + error + "]"}></TextField>}
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 2,
-      }}>
-        {/* button */}
-      <Box
+        {PatchDecorator(decodeDiffText(patch), handleHunk)}
+
+        <Box sx={{ display: "flex", position: "relative", pt: 1 }}>
+          {/* <TextField
+            multiline={true}
+            maxRows={10}
+            value={json}
+            onChange={(e) => setJson(e.target.value)}
+            inputRef={inputRef}
+            onSelect={handleSelection}
+            onKeyUp={handleSelection}
+            onClick={handleSelection}
+            fullWidth
+          >
+          </TextField> */}
+          <EditableHighlight value={json}
+            hunkList={hunkList}
+            onChange={(value) => setJson(value)}
+          ></EditableHighlight>
+        </Box>
+      </DialogContent >
+
+      {/* ACTION */}
+      <DialogActions
         sx={{
           display: "flex",
           justifyContent: "flex-start",
@@ -1390,21 +1403,49 @@ function ResolveConflict({patch, afterJson, onApply, onClose}) {
         }}
       >
         <Button
-          onClick={handleClose}
-        >Close</Button>
-        <Button
           onClick={handleReorder}
         >Reorder</Button>
-        <Button
-          variant="contained"
-          onClick={handleCheck}
-        >Check</Button>
+        <ChipDragSort
+          value={order}
+          onChange={handleChangeOrder}
+        ></ChipDragSort>
+
+      </DialogActions>
+      {/* ⭐ TITLEBAR BAR Ở DƯỚI */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          // borderTop: "1px solid #ddd",
+          p: 1,
+          justifyContent: "space-between",
+        }}
+      >
+        <Box>
+          {status.error && `Error: [${status.error}]`}
+          {status.success && `Success: [${status.success}]`}
+        </Box>
+        {/* <Box>{`S: ${selectionLength} P: ${cursorPosition}`}</Box> */}
+        {/* button FIX, CLOSE */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-start",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <Button
+            onClick={handleClose}
+          >Close</Button>
+          <Button
+            variant="contained"
+            onClick={handleCheck}
+          >Fix</Button>
+        </Box>
       </Box>
-      {/* selection, cursor */}
-      <Typography>{`S: ${selectionLength} P: ${cursorPosition}`}</Typography>
-    </Box>
-    
-  </Box>
+    </MyModal>
+  )
 }
 function isValidJSON(str) {
   try {
@@ -1430,7 +1471,7 @@ function TitleLogModal({
   const [his, setHis] = useState();
   // const [options, setOptions] = useState([]);
   const [errObj, setErrObj] = useState();
-  const [openResolve, setOpenResolve] = useState(false);
+  const [openResModal, setOpenResModal] = useState(false);
 
   useEffect(() => {
     var prev = stableStringify(base);
@@ -1476,12 +1517,12 @@ function TitleLogModal({
       var lst = [...his];
       // console.log(prev)
       // udpate db
-      var after = lst.length? lst[lst.length-1].content:null;
+      var after = lst.length ? lst[lst.length - 1].content : null;
       var beforeObj = JSON.parse(prev)
       var newPatch = calcPath(beforeObj, after ? JSON.parse(after) : base);
       var logId = logs[errObj.idx].id;
-      var updateRes = await updateTitleLog2(logId, {patch: newPatch});
-      console.log(`update v${errObj.idx+1}: `, logId, updateRes);
+      var updateRes = await updateTitleLog2(logId, { patch: newPatch });
+      console.log(`update v${errObj.idx + 1}: `, logId, updateRes);
 
       lst.push({
         content: prev,
@@ -1503,8 +1544,8 @@ function TitleLogModal({
           after = prev;
           newPatch = calcPath(JSON.parse(result), JSON.parse(after));
           logId = logs[i].id;
-          updateRes = await updateTitleLog2(logId, {patch: newPatch});
-          console.log(`update v${i+1}: `, logId, updateRes);
+          updateRes = await updateTitleLog2(logId, { patch: newPatch });
+          console.log(`update v${i + 1}: `, logId, updateRes);
 
           prev = result;
           lst.push({
@@ -1523,7 +1564,7 @@ function TitleLogModal({
       }
       setHis(lst);
       setErrObj(err);
-      setOpenResolve(false);
+      setOpenResModal(false);
     } catch (ex) {
       console.log(ex)
     }
@@ -1557,104 +1598,86 @@ function TitleLogModal({
   const afterJson = selected === 0 ?
     JSON.stringify(base)
     : his[selected - 1].content;
-  const beforeJson = his.length? his[selected].content: null;
+  const beforeJson = his.length ? his[selected].content : null;
 
   // create diff
-  var beforeStr = beforeJson ? titleToString(JSON.parse(beforeJson)): "";
+  var beforeStr = beforeJson ? titleToString(JSON.parse(beforeJson)) : "";
   var afterStr = titleToString(JSON.parse(afterJson));
 
   // const [selected, setSelected] = useState(0);
   return (
-    <Modal open={showLogModal} onClose={handleCloseLogModal}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: isMobile ? "90%" : 600,
-          maxWidth: "90vw",
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: isMobile ? 2 : 4,
-          maxHeight: isMobile ? "80vh" : "70vh",
-          overflowY: "auto",
-          borderRadius: 2,
-          display: "flex",
-          flexDirection: "column"
-        }}
+    <MyModal open={showLogModal} onClose={handleCloseLogModal}>
+      {/* header */}
+      <Box sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        justifyItems: "center"
+      }}
       >
-        {/* header */}
-        <Box sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          justifyItems: "center"
-        }}
+        <Typography variant="h6">{"Lịch sử chỉnh sửa"}</Typography>
+        <IconButton
+          aria-label="close"
+          onClick={handleCloseLogModal}
+          sx={{
+            color: (theme) => theme.palette.grey[500],
+            zIndex: 2,
+          }}
         >
-          <Typography variant="h6">{"Lịch sử chỉnh sửa"}</Typography>
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseLogModal}
-            sx={{
-              color: (theme) => theme.palette.grey[500],
-              zIndex: 2,
+          <CloseIcon />
+        </IconButton>
+      </Box>
+      <Box direction={"row"}
+        spacing={isMobile ? 1 : 2}
+        sx={{ justifyContent: "space-between" }}
+        display={"flex"}
+      >
+        <FormControl size="small">
+          <InputLabel id="verison-select-label">Version</InputLabel>
+          <Select
+            sx={{ width: "fit-content" }}
+            labelId="verison-select-label"
+            label="Version"
+            value={selected}
+            onChange={(e) => handleUndo(e.target.value)}
+            renderValue={(option) => {
+              const idx = option;
+              const date = logs[idx].timestamp.toDate();
+              const formatted = `${date.getDate()}/${date.getMonth() + 1
+                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+              return formatted;
             }}
           >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-        <Box direction={"row"}
-          spacing={isMobile ? 1 : 2}
-          sx={{ justifyContent: "space-between" }}
-          display={"flex"}
-        >
-          <FormControl size="small">
-            <InputLabel id="verison-select-label">Version</InputLabel>
-            <Select
-              sx={{ width: "fit-content" }}
-              labelId="verison-select-label"
-              label="Version"
-              value={selected}
-              onChange={(e) => handleUndo(e.target.value)}
-              renderValue={(option) => {
-                const idx = option;
-                const date = logs[idx].timestamp.toDate();
-                const formatted = `${date.getDate()}/${date.getMonth() + 1
-                  }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
-                return formatted;
-              }}
-            >
-              {logs &&
-                options.map(({ idx, label }) => {
-                  return (
-                    <MenuItem
-                      key={idx}
-                      sx={{
-                        display: "flex",
-                        direction: "row",
-                        alignItems: "center",
-                      }}
-                      value={idx}
-                    // onClick={() => handleUndo(idx)}
-                    >
-                      <Radio
-                        checked={idx === selected}
-                      ></Radio>
-                      <Typography>{label}</Typography>
-                    </MenuItem>
-                  );
-                })}
-            </Select>
+            {logs &&
+              options.map(({ idx, label }) => {
+                return (
+                  <MenuItem
+                    key={idx}
+                    sx={{
+                      display: "flex",
+                      direction: "row",
+                      alignItems: "center",
+                    }}
+                    value={idx}
+                  // onClick={() => handleUndo(idx)}
+                  >
+                    <Radio
+                      checked={idx === selected}
+                    ></Radio>
+                    <Typography>{label}</Typography>
+                  </MenuItem>
+                );
+              })}
+          </Select>
 
-          </FormControl>
-          {errObj && <Typography 
-            color="error"
-            onClick={()=>setOpenResolve(true)}
-          >
-            {`Conflit at: v${errObj.idx+1}`}
-          </Typography>}
-        </Box>
-        {/* <div
+        </FormControl>
+        {errObj && <Typography
+          color="error"
+          onClick={() => setOpenResModal(true)}
+        >
+          {`Conflit at: v${errObj.idx + 1}`}
+        </Typography>}
+      </Box>
+      {/* <div
           style={{
             width: "100%",
             display: "flex",
@@ -1690,62 +1713,62 @@ function TitleLogModal({
             })}
         </div> */}
 
-        {/* body */}
-        {/* {OldDiffComp(beforeStr, afterStr)} */}
-        <Card
-          sx={{
-            width: "100%",
-            display: "flex",
-            flexDirection: "row",
-            overflowY: "auto",
-            mt: 1,
-            mb: 1,
-          }}
-        >
-          {/* diff view */}
-          {openResolve ? <ResolveConflict
-            afterJson={his.length?his[his.length - 1].content:stableStringify(base)}
-            patch={logs[errObj.idx].patch}
-            onApply={handleResolve}
-            onClose={()=>setOpenResolve(false)}
-          /> : <DiffView
-            oldText={beforeStr}
-            newText={afterStr}
-          />}
-        </Card>
+      {/* body */}
+      {/* {OldDiffComp(beforeStr, afterStr)} */}
+      <Card
+        sx={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "row",
+          overflowY: "auto",
+          mt: 1,
+          mb: 1,
+        }}
+      >
+        {/* diff view */}
+        {openResModal ? <ResolveModal
+          open={openResModal}
+          afterJson={his.length ? his[his.length - 1].content : stableStringify(base)}
+          patch={logs[errObj.idx].patch}
+          onApply={handleResolve}
+          onClose={() => setOpenResModal(false)}
+        /> : <DiffView
+          oldText={beforeStr}
+          newText={afterStr}
+        />}
+      </Card>
 
-        {/* <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
+      {/* <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
         {beforeStr}
       </div> */}
 
-        {/* Actions */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 2,
-            // flexDirection: isMobile ? "column" : "row",
-            // mt: "0.5rem",
-          }}
+      {/* Actions */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: 2,
+          // flexDirection: isMobile ? "column" : "row",
+          // mt: "0.5rem",
+        }}
+      >
+        <Button
+          variant="text"
+          onClick={handleCloseLogModal}
+        // fullWidth={isMobile}
         >
-          <Button
-            variant="text"
-            onClick={handleCloseLogModal}
-          // fullWidth={isMobile}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => onRevert(JSON.parse(beforeJson))}
-          // fullWidth={isMobile}
-          // disabled={selected && (selected === (logs.length-1))}
-          >
-            Revert
-          </Button>
-        </Box>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => onRevert(JSON.parse(beforeJson))}
+        // fullWidth={isMobile}
+        // disabled={selected && (selected === (logs.length-1))}
+        >
+          Revert
+        </Button>
       </Box>
-    </Modal>
+    </MyModal>
   );
 }
 
@@ -1984,6 +2007,34 @@ const ParagraphEditor = memo(
       </Box>
     );
   })
+
+function MyModal({ open, onClose, children: Element }) {
+  const isMobile = useMediaQuery('(max-width:600px)');
+  return <Modal open={open} onClose={onClose}>
+    <Box
+      sx={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: isMobile ? "90%" : 600,
+        maxWidth: "90vw",
+        bgcolor: "background.paper",
+        boxShadow: 24,
+        p: isMobile ? 2 : 4,
+        maxHeight: isMobile ? "calc(var(--vh) * 90)" : "calc(var(--vh) * 80)",
+        overflowY: "auto",
+        borderRadius: 2,
+        display: "flex",
+        flexDirection: "column"
+      }}
+    >
+      {Element}
+    </Box>
+  </Modal>
+}
+
+
 function OldDiffComp(beforeStr, afterStr) {
   var dmp = new diff_match_patch();
   var diff = dmp.diff_main(beforeStr, afterStr);
