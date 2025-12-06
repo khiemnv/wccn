@@ -16,6 +16,7 @@ import {
   Select,
   Snackbar,
   Stack,
+  Tooltip,
   useMediaQuery,
 } from "@mui/material";
 
@@ -24,8 +25,10 @@ import {
   addTag,
   editTag,
   editTitle,
+  selectDict,
   selectMode,
   selectTags,
+  setDict,
   setTags,
 } from "../features/search/searchSlice";
 import {
@@ -81,6 +84,7 @@ import { collection, onSnapshot, query, Timestamp, where } from "firebase/firest
 import { db } from "../firebase/firebase";
 import { DiffView } from "./DiffView";
 import ChipDragSort from "./DraggableChip";
+import { useAppDispatch } from "../app/hooks";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -240,23 +244,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const [alertObj, setAlertObj] = useState({ open: false });
 
   // replace
-  const [dict, setDict] = useState([]);
   const [openDict, setOpenDict] = useState(false);
-  useEffect(() => {
-    const data = [
-      ["\\s+([.,:;?!])\\s*", "$1 ", true],
-      ["ĐT", "đạo tràng"],
-      ["CLB", "câu lạc bộ"],
-      ["PT", "Phật tử"],
-      ["BQT", "Bát quan trai"],
-    ].map(pair => ({
-      find: pair[0],
-      replace: pair[1],
-      isReg: pair[2] ? true : false,
-      selected: true
-    }));
-    setDict(data);
-  }, []);
 
   // --- Effects ------------------------------------------------------------
   // Sync khi data (props) thay đổi từ bên ngoài
@@ -677,8 +665,6 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       {
         openDict && <ReplaceModal
           open={openDict}
-          dict={dict}
-          setDict={setDict}
           onClose={() => setOpenDict(false)}
           onReplace={handleReplace}
         >
@@ -934,7 +920,8 @@ function dictsEqual(a, b) {
     if (
       a[i].find !== b[i].find ||
       a[i].replace !== b[i].replace ||
-      a[i].selected !== b[i].selected
+      a[i].selected !== b[i].selected ||
+      a[i].isReg !== b[i].isReg
     ) {
       return false;
     }
@@ -942,8 +929,10 @@ function dictsEqual(a, b) {
   return true;
 }
 
-function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
+function ReplaceModal({ open, onReplace, onClose }) {
   console.log("ReplaceModal");
+  const dispatch = useAppDispatch();
+  const dict = useSelector(selectDict);
 
   // Local state for editing
   const [localDict, setLocalDict] = useState(dict);
@@ -988,7 +977,7 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
 
   // Save changes to parent
   const handleSave = () => {
-    setDict(localDict);
+    dispatch(setDict({dict: localDict}));
     // onClose();
   };
 
@@ -1045,13 +1034,13 @@ function ReplaceModal({ open, onReplace, onClose, dict, setDict }) {
             }}
           // onClick={() => handleToggleSelect(idx)}
           >
-            {/* <Tooltip title="Selected">
+            <Tooltip title="Selected">
               <Checkbox
                 checked={pair.selected}
                 onChange={e => handleEdit(idx, "selected", e.target.checked)}
                 size="small"
               />
-            </Tooltip> */}
+            </Tooltip>
             <TextField
               label="Find"
               value={pair.find}
@@ -1421,9 +1410,13 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
           justifyContent: "space-between",
         }}
       >
-        <Box>
-          {status.error && `Error: [${status.error}]`}
-          {status.success && `Success: [${status.success}]`}
+        <Box sx={{ display: "flex", overflow: "auto" }}>
+          <Typography color="error"
+            sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+          >{status.error && `Error: [${status.error}]`}</Typography>
+          <Typography color="success"
+            sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
+          >{status.success && `Success: [${status.success}]`}</Typography>
         </Box>
         {/* <Box>{`S: ${selectionLength} P: ${cursorPosition}`}</Box> */}
         {/* button FIX, CLOSE */}

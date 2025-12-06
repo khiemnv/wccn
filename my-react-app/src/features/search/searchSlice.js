@@ -1,6 +1,37 @@
 import { createSelector, createSlice } from "@reduxjs/toolkit";
 import { update } from "firebase/database";
-
+const dict = [
+    {
+        "find": "\\s+([.,:;?!])\\s*",
+        "replace": "$1 ",
+        "isReg": true,
+        "selected": true
+    },
+    {
+        "find": "ĐT",
+        "replace": "đạo tràng",
+        "isReg": false,
+        "selected": true
+    },
+    {
+        "find": "CLB",
+        "replace": "câu lạc bộ",
+        "isReg": false,
+        "selected": true
+    },
+    {
+        "find": "PT|Pt",
+        "replace": "Phật tử",
+        "isReg": true,
+        "selected": true
+    },
+    {
+        "find": "BQT",
+        "replace": "Bát quan trai",
+        "isReg": false,
+        "selected": true
+    }
+]
 const initialState = {
   titles: [],
   keys: [],
@@ -13,6 +44,7 @@ const initialState = {
   sortByDate: "dsc",
   tags: undefined,
   status: "idle",
+  dict: dict
 };
 
 export const slice = createSlice({
@@ -102,6 +134,10 @@ export const slice = createSlice({
     clearTags: (state) => {
       state.tags = [];
     },
+    setDict: (state, action) => {
+      const { dict } = action.payload;
+      state.dict = dict;    
+    }
   },
 });
 
@@ -122,6 +158,7 @@ export const {
   deleteTag,
   setTags,
   clearTags,
+  setDict,
 } = slice.actions;
 const selectSearch = (state) => state.search;
 const selectModePara = (state, mode) => mode;
@@ -152,6 +189,7 @@ export const selectTags = (state) => state.search.tags;
 
 export const selectTitleId = (state) => state.search.titleId;
 export const selectSearchStr = (state) => state.search.searchStr;
+export const selectDict = (state) => state.search.dict;
 
 export default slice.reducer;
 
