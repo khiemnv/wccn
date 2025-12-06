@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback, useRef } from "react";
+import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
 import {
   Alert,
   Checkbox,
@@ -85,6 +85,7 @@ import { db } from "../firebase/firebase";
 import { DiffView } from "./DiffView";
 import ChipDragSort from "./DraggableChip";
 import { useAppDispatch } from "../app/hooks";
+import debounce from "debounce";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -227,10 +228,12 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     editing.title,
     (title) => setEditing({ ...editing, title }),
   ];
-  const [paragraphs, setParagraphs] = [
-    editing.paragraphs,
-    (paragraphs) => setEditing({ ...editing, paragraphs }),
-  ];
+  const paragraphs = editing.paragraphs;
+  const setParagraphs = useCallback((updated) => {
+    setEditing((prev) => {
+      return { ...prev, paragraphs: updated };
+    });
+  }, []);
 
   // Selected tags for this title (editable by the user)
   const setSelectedTags = useCallback((tags) =>
@@ -276,9 +279,9 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     })
   }, []);
 
-  const handleDragStart = (index) => {
+  const handleDragStart = useCallback((index) => {
     setDraggedIndex(index);
-  };
+  }, []);
 
   const handleDragOver = (e, index) => {
     e.preventDefault();
@@ -300,22 +303,22 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     setDragOverIndex(null);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback( () => {
     // If a drag ended while over an item but drop wasn't fired,
     // ensure we still reorder based on the current dragOverIndex.
-    if (
-      draggedIndex !== null &&
-      dragOverIndex !== null &&
-      draggedIndex !== dragOverIndex
-    ) {
-      const updated = [...paragraphs];
-      const [draggedParagraph] = updated.splice(draggedIndex, 1);
-      updated.splice(dragOverIndex, 0, draggedParagraph);
-      setParagraphs(updated);
-    }
+    // if (
+    //   draggedIndex !== null &&
+    //   dragOverIndex !== null &&
+    //   draggedIndex !== dragOverIndex
+    // ) {
+    //   const updated = [...paragraphs];
+    //   const [draggedParagraph] = updated.splice(draggedIndex, 1);
+    //   updated.splice(dragOverIndex, 0, draggedParagraph);
+    //   setParagraphs(updated);
+    // }
     setDraggedIndex(null);
     setDragOverIndex(null);
-  };
+  }, []);
 
   const moveParagraph = useCallback((fromIndex, toIndex) => {
     setEditing(prev => {
@@ -583,13 +586,10 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
                 borderRadius: 1,
                 m: isMobile ? 1 : 2,
               }}
-              draggable
-              onDragStart={() => handleDragStart(idx)}
               onDragOver={(e) => handleDragOver(e, idx)}
               onDragEnter={() => setDragOverIndex(idx)}
               onDragLeave={() => handleDragLeave(idx)}
               onDrop={() => handleDrop(idx)}
-              onDragEnd={handleDragEnd}
             >
               <ParagraphEditor
                 p={p}
@@ -600,6 +600,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
                 removeParagraph={removeParagraph}
                 moveParagraph={moveParagraph}
                 combineParagraph={combineParagraph}
+                handleDragStart={handleDragStart}
+                handleDragEnd={handleDragEnd}
               />
             </Box>
           );
@@ -1017,7 +1019,8 @@ function ReplaceModal({ open, onReplace, onClose }) {
           height: "50vh",
           flexGrow: 1,
           overflowY: "auto",
-          flexDirection: "column"
+          flexDirection: "column",
+          minHeight: "200px"
         }}
       >
         {localDict.map((pair, idx) => (
@@ -1138,7 +1141,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
       </Box>
 
       {localDict.some(pair => pair.selected) && (
-        <Typography sx={{ mt: 2 }}>
+        <Typography sx={{ mt: 2, overflow: "auto" }}>
           Replace:
           {localDict
             .filter(pair => pair.selected)
@@ -1775,13 +1778,16 @@ const ParagraphEditor = memo(
     removeParagraph,
     moveParagraph,
     combineParagraph,
+    handleDragStart,
+    handleDragEnd
   }) {
     console.log("ParagraphEditor", idx);
     const [isFocused, setIsFocused] = useState(false);
-    // const [text, setText] = useState(p);
+    const [text, setText] = useState(p);
 
     // Holds all history values, starting with an empty string
-    const [history, setHistory] = useState(['']);
+    const [history, setHistory] = useState([p]);
+ 
     // Current position in history
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -1801,22 +1807,29 @@ const ParagraphEditor = memo(
     };
 
     // Current text value
-    const text = history[currentIndex];
+    // const text = history[currentIndex];
 
     const handleChange = (e) => {
       const newValue = e.target.value;
+      setText(newValue);
 
+      debouncedHis(newValue);
+    };
+    const debouncedHis = useMemo(() => debounce(
+    (newValue) => {
       // Remove future history if we type after undo
       const newHistory = history.slice(0, currentIndex + 1);
-
       setHistory([...newHistory, newValue]);
       setCurrentIndex(newHistory.length); // point to the new value
-    };
+      console.log("update his:", newHistory)
+    }
+    , 500), [currentIndex, history]);
 
     // Undo (go back in history)
     const handleUndo = () => {
       if (currentIndex > 0) {
         setCurrentIndex(currentIndex - 1);
+        setText(history[currentIndex - 1])
       }
     };
 
@@ -1824,6 +1837,7 @@ const ParagraphEditor = memo(
     const handleRedo = () => {
       if (currentIndex < history.length - 1) {
         setCurrentIndex(currentIndex + 1);
+        setText(history[currentIndex + 1]);
       }
     };
 
@@ -1836,6 +1850,7 @@ const ParagraphEditor = memo(
     }
     const handleSave = () => {
       handleParagraphChange(idx, text);
+      setHistory([])
     }
     return (
       <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
@@ -1925,6 +1940,9 @@ const ParagraphEditor = memo(
               <IconButton
                 size={isMobile ? "small" : "medium"}
                 aria-label="drag handle"
+                 draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragEnd={handleDragEnd}
               >
                 <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
               </IconButton>
@@ -2015,7 +2033,8 @@ function MyModal({ open, onClose, children: Element }) {
         bgcolor: "background.paper",
         boxShadow: 24,
         p: isMobile ? 2 : 4,
-        maxHeight: isMobile ? "calc(var(--vh) * 90)" : "calc(var(--vh) * 80)",
+        // maxHeight: isMobile ? "calc(var(--vh) * 90)" : "calc(var(--vh) * 80)",
+        maxHeight: "80vh",
         overflowY: "auto",
         borderRadius: 2,
         display: "flex",
