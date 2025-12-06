@@ -521,12 +521,14 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       </Box>
 
       {/* body */}
-      <Box sx={{
-        overflowY: "auto",
-        mt: isMobile ? 1 : 2,
-        mb: isMobile ? 1 : 2,
-        flexGrow: 1
-      }}>
+      <Box
+        sx={{
+          overflowY: "auto",
+          mt: isMobile ? 1 : 2,
+          mb: isMobile ? 1 : 2,
+          flexGrow: 1,
+        }}
+      >
         <Box sx={{ m: isMobile ? 1 : 2 }}>
           {/* path */}
           <TextField
@@ -563,7 +565,10 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         </Box>
 
         {/* Paragraphs */}
-        <Typography variant={isMobile ? "subtitle1" : "h6"} mb={isMobile ? 1 : 2}>
+        <Typography
+          variant={isMobile ? "subtitle1" : "h6"}
+          mb={isMobile ? 1 : 2}
+        >
           Paragraphs (drag to reorder)
         </Typography>
 
@@ -581,8 +586,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
                 backgroundColor: isDragOver
                   ? "rgba(25,118,210,0.08)"
                   : isDragged
-                    ? "action.hover"
-                    : "transparent",
+                  ? "action.hover"
+                  : "transparent",
                 borderRadius: 1,
                 m: isMobile ? 1 : 2,
               }}
@@ -608,7 +613,6 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         })}
       </Box>
 
-
       {/* Actions */}
       <Box
         sx={{
@@ -619,13 +623,15 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           flexDirection: "row",
         }}
       >
-        <Button
-          onClick={() => handlePreview()}>Preview</Button>
+        <Button onClick={() => handlePreview()}>Preview</Button>
         <Box>
           <Button
             variant="text"
-            onClick={onClose}
-          // fullWidth={isMobile}
+            onClick={() => {
+              setEditing(data);
+              onClose();
+            }}
+            // fullWidth={isMobile}
           >
             Cancel
           </Button>
@@ -640,8 +646,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         </Box>
       </Box>
 
-      {
-        showLogModal && <TitleLogModal
+      {showLogModal && (
+        <TitleLogModal
           showLogModal={showLogModal}
           handleCloseLogModal={handleCloseLogModal}
           isMobile={isMobile}
@@ -652,27 +658,25 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
             setEditing(obj);
           }}
         />
-      }
+      )}
 
-      {
-        openPreview && <PreviewModal
+      {openPreview && (
+        <PreviewModal
           open={openPreview}
           onClose={() => {
             setOpenPreview(false);
           }}
           title={editing}
         />
-      }
+      )}
 
-      {
-        openDict && <ReplaceModal
+      {openDict && (
+        <ReplaceModal
           open={openDict}
           onClose={() => setOpenDict(false)}
           onReplace={handleReplace}
-        >
-
-        </ReplaceModal>
-      }
+        ></ReplaceModal>
+      )}
 
       {/* Alert */}
       <Snackbar
