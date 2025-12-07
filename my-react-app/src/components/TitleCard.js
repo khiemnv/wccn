@@ -76,6 +76,7 @@ import FindReplaceIcon from '@mui/icons-material/FindReplace';
 import FunctionsIcon from '@mui/icons-material/Functions'; // dùng cho regex
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import ClearIcon from '@mui/icons-material/Clear';
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
@@ -1854,8 +1855,11 @@ const ParagraphEditor = memo(
       // }
     }
     const handleSave = () => {
-      handleParagraphChange(idx, text);
-      setHistory([])
+      if (text !== p) {
+        handleParagraphChange(idx, text);
+      } else {
+        setHistory([p])
+      }
     }
     return (
       <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
@@ -1907,7 +1911,9 @@ const ParagraphEditor = memo(
                 onClick={handleSave}
                 color="primary"
               >
-                <SaveIcon fontSize="small" />
+                {false ?
+                  <ClearIcon fontSize="small" color="error" /> :
+                  <SaveIcon fontSize="small" />}
               </IconButton>
 
               <IconButton
@@ -1915,7 +1921,7 @@ const ParagraphEditor = memo(
                 size={isMobile ? "small" : "medium"}
                 aria-label="undo"
                 onClick={handleUndo}
-                color="primary"
+                // color="secondary"
               >
                 <UndoIcon fontSize="small" />
               </IconButton>
@@ -1925,7 +1931,7 @@ const ParagraphEditor = memo(
                 size={isMobile ? "small" : "medium"}
                 aria-label="redo"
                 onClick={handleRedo}
-                color="primary"
+                // color="secondary"
               >
                 <RedoIcon fontSize="small" />
               </IconButton>
