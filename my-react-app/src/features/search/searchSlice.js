@@ -166,7 +166,7 @@ const selectModeTitlesPara = (state, mode, ids) => ids;
 export const selectTitlesByIds = 
   createSelector([selectSearch, selectModePara, selectModeTitlesPara], (search, mode, ids) =>
   { 
-    console.log("Selecting titles by ids:", ids, "in mode:", mode);
+    // console.log("Selecting titles by ids:", ids, "in mode:", mode);
     return search[mode].titles.filter((t) => ids.includes(t.titleId)); 
   }
   );

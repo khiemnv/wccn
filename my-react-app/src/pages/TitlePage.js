@@ -18,17 +18,19 @@ export const TitlePage = () => {
   const storeMode = useSelector(selectMode);
   const id = params.get("id") ? parseInt(params.get("id"), 10) : storeTitleId;
   const mode = params.get("mode") ? params.get("mode") : storeMode;
-  console.log("TitlePage mode, id:", mode, id);
+  // console.log("TitlePage mode, id:", mode, id);
+ 
+  useEffect(() => {
+    if (id && storeTitleId !== id) {
+      // sync store titleId with url param id
+      dispatch(changeTitleId({ titleId: id }));
+    }
 
-  if (id && storeTitleId !== id) {
-    // sync store titleId with url param id
-    dispatch(changeTitleId({ titleId: id }));
-  }
-
-  if (mode && storeMode !== mode) {
-    // sync store titleId with url param id
-    dispatch(changeMode({ mode: mode }));
-  }
+    if (mode && storeMode !== mode) {
+      // sync store titleId with url param id
+      dispatch(changeMode({ mode: mode }));
+    }
+  },[dispatch, id, mode, storeMode, storeTitleId])
 
   const titleIds = [id];
   const titles = useSelector((state) =>
@@ -61,18 +63,12 @@ export const TitlePage = () => {
     }
   }, [dispatch, mode, missingTitlesStr]);
 
-  useEffect(() => {
-    if (mode) {
-      dispatch(changeMode({ mode }));
-    }
-  }, [dispatch, mode]);
-
-  console.log("Rendering TitlePage with titles:", titles, "in mode:", mode);
+  // console.log("Rendering TitlePage with titles:", titles, "in mode:", mode);
   async function handleSave({ changes }) {
     var t = titles[0];
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
-      console.log(result, error);
+      // console.log(result, error);
       if (result) {
         dispatch(editTitle({ id: t.titleId, changes, mode }));
       }

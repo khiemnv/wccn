@@ -143,7 +143,7 @@ export class BaseApi {
   async update2(before, changes) {
     try {
       var id = before.id;
-      console.log("update", this.collectionName, "/", id, changes);
+      // console.log("update", this.collectionName, "/", id, changes);
 
       // check cache
       if (!this.map.has(id)) {

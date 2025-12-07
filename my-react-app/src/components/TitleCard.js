@@ -295,15 +295,15 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const handleDrop = (targetIndex) => {
     if (draggedIndex !== null && draggedIndex !== targetIndex) {
       const updated = [...paragraphs];
-        const [draggedParagraph] = updated.splice(draggedIndex, 1);
-        updated.splice(targetIndex, 0, draggedParagraph);
+      const [draggedParagraph] = updated.splice(draggedIndex, 1);
+      updated.splice(targetIndex, 0, draggedParagraph);
       setParagraphs(updated);
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
   };
 
-  const handleDragEnd = useCallback( () => {
+  const handleDragEnd = useCallback(() => {
     // If a drag ended while over an item but drop wasn't fired,
     // ensure we still reorder based on the current dragOverIndex.
     // if (
@@ -586,8 +586,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
                 backgroundColor: isDragOver
                   ? "rgba(25,118,210,0.08)"
                   : isDragged
-                  ? "action.hover"
-                  : "transparent",
+                    ? "action.hover"
+                    : "transparent",
                 borderRadius: 1,
                 m: isMobile ? 1 : 2,
               }}
@@ -631,7 +631,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
               setEditing(data);
               onClose();
             }}
-            // fullWidth={isMobile}
+          // fullWidth={isMobile}
           >
             Cancel
           </Button>
@@ -983,7 +983,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
 
   // Save changes to parent
   const handleSave = () => {
-    dispatch(setDict({dict: localDict}));
+    dispatch(setDict({ dict: localDict }));
     // onClose();
   };
 
@@ -1791,7 +1791,7 @@ const ParagraphEditor = memo(
 
     // Holds all history values, starting with an empty string
     const [history, setHistory] = useState([p]);
- 
+
     // Current position in history
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -1821,14 +1821,14 @@ const ParagraphEditor = memo(
       debouncedHis(newValue);
     };
     const debouncedHis = useMemo(() => debounce(
-    (newValue) => {
-      // Remove future history if we type after undo
-      const newHistory = history.slice(0, currentIndex + 1);
-      setHistory([...newHistory, newValue]);
-      setCurrentIndex(newHistory.length); // point to the new value
-      console.log("update his:", newHistory)
-    }
-    , 500), [currentIndex, history]);
+      (newValue) => {
+        // Remove future history if we type after undo
+        const newHistory = history.slice(0, currentIndex + 1);
+        setHistory([...newHistory, newValue]);
+        setCurrentIndex(newHistory.length); // point to the new value
+        // console.log("update his:", newHistory)
+      }
+      , 500), [currentIndex, history]);
 
     // Undo (go back in history)
     const handleUndo = () => {
@@ -1945,7 +1945,7 @@ const ParagraphEditor = memo(
               <IconButton
                 size={isMobile ? "small" : "medium"}
                 aria-label="drag handle"
-                 draggable
+                draggable
                 onDragStart={() => handleDragStart(idx)}
                 onDragEnd={handleDragEnd}
               >
