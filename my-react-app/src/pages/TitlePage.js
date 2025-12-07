@@ -223,7 +223,9 @@ const TitleIdInput = ({ id, onChangeId }) => {
   const debouncedSearch = useMemo(() => debounce(
     (zId) => {
       var nId = parseInt(zId);
-      onChangeId(nId);
+      if (!isNaN(nId)) {
+        onChangeId(nId);
+      }
     }
     , 500), [onChangeId]);
 
