@@ -1788,6 +1788,7 @@ const ParagraphEditor = memo(
     console.log("ParagraphEditor", idx);
     const [isFocused, setIsFocused] = useState(false);
     const [text, setText] = useState(p);
+    const inputRef = useRef();
 
     // Holds all history values, starting with an empty string
     const [history, setHistory] = useState([p]);
@@ -1798,9 +1799,11 @@ const ParagraphEditor = memo(
     const [saveConfirm, setSaveConfirm] = useState(false);
 
     useEffect(() => {
-      setHistory([p]);
-      setCurrentIndex(0);
-      setText(p);
+      if (p !== text) {
+        setHistory([p]);
+        setCurrentIndex(0);
+        setText(p);
+      }
     }, [p]);
 
     const onMoveUp = () => {
@@ -1827,14 +1830,16 @@ const ParagraphEditor = memo(
         setHistory([...newHistory, newValue]);
         setCurrentIndex(newHistory.length); // point to the new value
         // console.log("update his:", newHistory)
+        handleParagraphChange(idx, newValue);
       }
-      , 500), [currentIndex, history]);
+      , 500), [currentIndex, handleParagraphChange, history, idx]);
 
     // Undo (go back in history)
     const handleUndo = () => {
       if (currentIndex > 0) {
         setCurrentIndex(currentIndex - 1);
-        setText(history[currentIndex - 1])
+        setText(history[currentIndex - 1]);
+        handleParagraphChange(idx, history[currentIndex - 1]);
       }
     };
 
@@ -1843,23 +1848,32 @@ const ParagraphEditor = memo(
       if (currentIndex < history.length - 1) {
         setCurrentIndex(currentIndex + 1);
         setText(history[currentIndex + 1]);
+        handleParagraphChange(idx, history[currentIndex + 1]);
       }
     };
 
-    const editMode = history.length > 1;
+    const showHis = history.length > 1;
+    const showCtrl = p === text && !isFocused;
 
     const handleBlur = () => {
       // if (editMode) {
       //   setSaveConfirm(true);
       // }
+      // if (text !== p) {
+      //   handleParagraphChange(idx, text);
+      // }
     }
     const handleSave = () => {
       handleParagraphChange(idx, text);
-      setHistory([])
+      setHistory([text]);
     }
     return (
-      <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
+      <Box
+        prosition="relative"
+        sx={{ mb: isMobile ? 1 : 2 }}
+      >
         <TextField
+          ref={inputRef}
           sx={{
             // mt: 1,
             '& .MuiInputBase-input': {
@@ -1875,22 +1889,26 @@ const ParagraphEditor = memo(
           //   ta.style.height = "auto";
           //   ta.style.height = `${ta.scrollHeight}px`;
           // }}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => {
-            setIsFocused(false);
-            handleBlur();
-            // handleParagraphChange(idx, text);
-          }}
           fullWidth
           value={text}
           onChange={(e) => {
             handleChange(e);
             // handleAutoResize(e); // auto resize khi nhập
           }}
+          onFocus={() => {
+            setIsFocused(true)
+            console.log("onfocus")
+          }}
+          onBlur={() => {
+            setIsFocused(false);
+            console.log("onblur")
+            handleBlur();
+            // handleParagraphChange(idx, text);
+          }}
           label={`Paragraph ${idx + 1}`}
           size={isMobile ? "small" : "medium"}
         />
-        {editMode && (
+        {showHis && (
           <Box
             sx={{
               position: "absolute",
@@ -1900,15 +1918,15 @@ const ParagraphEditor = memo(
             }}
           >
             <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
-              <IconButton
-                disabled={history.length === 1}
+              {/* <IconButton
+                disabled={p === text}
                 size={isMobile ? "small" : "medium"}
                 aria-label="save"
                 onClick={handleSave}
                 color="primary"
               >
                 <SaveIcon fontSize="small" />
-              </IconButton>
+              </IconButton> */}
 
               <IconButton
                 disabled={currentIndex === 0}
@@ -1932,7 +1950,7 @@ const ParagraphEditor = memo(
             </Box>
           </Box>
         )}
-        {!editMode && (
+        {showCtrl && (
           <Box
             sx={{
               position: "absolute",
@@ -1972,7 +1990,7 @@ const ParagraphEditor = memo(
             </Box>
           </Box>
         )}
-        {!editMode && (
+        {showCtrl && (
           <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
             <Box sx={{ display: "flex", gap: 0.5 }}>
               <IconButton
