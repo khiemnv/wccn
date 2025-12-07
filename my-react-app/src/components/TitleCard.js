@@ -295,8 +295,8 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const handleDrop = (targetIndex) => {
     if (draggedIndex !== null && draggedIndex !== targetIndex) {
       const updated = [...paragraphs];
-      const [draggedParagraph] = updated.splice(draggedIndex, 1);
-      updated.splice(targetIndex, 0, draggedParagraph);
+        const [draggedParagraph] = updated.splice(draggedIndex, 1);
+        updated.splice(targetIndex, 0, draggedParagraph);
       setParagraphs(updated);
     }
     setDraggedIndex(null);
@@ -1800,6 +1800,7 @@ const ParagraphEditor = memo(
     useEffect(() => {
       setHistory([p]);
       setCurrentIndex(0);
+      setText(p);
     }, [p]);
 
     const onMoveUp = () => {
