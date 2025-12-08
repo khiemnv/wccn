@@ -200,6 +200,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
 
   return (
     <MyModal open={open} onClose={onClose}>
+      <DialogTitle>{`Edit Title: ${data.titleId}`}</DialogTitle>
       <TitleEditor
         isMobile={isMobile}
         data={data}
@@ -210,7 +211,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
   );
 }
 
-export function TitleEditor({ isMobile, data, onSave, onClose }) {
+export function TitleEditor({name, isMobile, data, onSave, onClose }) {
   // console.log("TitleEditor data:", data);
   const dispatch = useDispatch();
 
@@ -219,27 +220,17 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   const [showLogModal, setShowLog] = useState(false);
   const [openPreview, setOpenPreview] = useState(false);
 
-  // title
-  const [editing, setEditing] = useState(data);
-  const [path, setPath] = [
-    editing.path,
-    (path) => setEditing({ ...editing, path }),
-  ];
-  const [title, setTitle] = [
-    editing.title,
-    (title) => setEditing({ ...editing, title }),
-  ];
-  const paragraphs = editing.paragraphs;
-  const setParagraphs = useCallback((updated) => {
-    setEditing((prev) => {
-      return { ...prev, paragraphs: updated };
-    });
-  }, []);
+  const historyRef = useRef([data]);
+  const indexRef = useRef(0);
 
-  // Selected tags for this title (editable by the user)
-  const setSelectedTags = useCallback((tags) =>
-    setEditing((prev) => ({ ...prev, tags })), []
-  );
+  const [localData, setLocalData] = useState(data);
+  const handleChange = useCallback((field, value) => {
+    setLocalData((prev) => {
+      const newData = { ...prev, [field]: value };
+      updateHis(newData);
+      return newData;
+    })
+  }, []);
 
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -253,31 +244,68 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
   // --- Effects ------------------------------------------------------------
   // Sync khi data (props) thay đổi từ bên ngoài
   useEffect(() => {
-    setEditing(data);
+    setLocalData(data);
   }, [data]);
 
   // --- Handlers -----------------------------------------------------------
   const handleParagraphChange = useCallback((index, value) => {
-    setEditing(prev => {
-      const updated = [...prev.paragraphs];
-      updated[index] = value;
-      return { ...prev, paragraphs: updated };
+    setLocalData(prev => {
+      const paragraphs = [...prev.paragraphs];
+      paragraphs[index] = value;
+      const newData = { ...prev, paragraphs };
+      updateHis(newData);
+      return newData;
     })
   }, []);
 
-  const removeParagraph = useCallback((index) =>
-    setEditing(prev => {
-      const updated = prev.paragraphs.filter((_, i) => i !== index);
-      return { ...prev, paragraphs: updated };
-    }),
-    []);
+  const removeParagraph = useCallback((index) => {
+    setLocalData(prev => {
+      const paragraphs = prev.paragraphs.filter((_, i) => i !== index);
+      const newData = { ...prev, paragraphs };
+      updateHis(newData);
+      return newData;
+    })
+  }, []);
 
   const insertParagraph = useCallback((idx) => {
-    setEditing(prev => {
-      const updated = [...prev.paragraphs];
-      updated.splice(idx + 1, 0, "");
-      return { ...prev, paragraphs: updated };
+    setLocalData(prev => {
+      const paragraphs = [...prev.paragraphs];
+      paragraphs.splice(idx + 1, 0, "");
+      const newData = { ...prev, paragraphs };
+      updateHis(newData);
+      return newData;
     })
+  }, []);
+
+  const moveParagraph = useCallback((fromIndex, toIndex) => {
+    setLocalData(prev => {
+      const paragraphs = prev.paragraphs;
+      if (fromIndex < 0 || fromIndex >= paragraphs.length) return prev;
+      if (toIndex < 0 || toIndex >= paragraphs.length) return prev;
+      const updated = [...paragraphs];
+      const [movedParagraph] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, movedParagraph);
+      const newData = { ...prev, paragraphs: updated };
+      updateHis(newData);
+      return newData;
+    });
+  }, []);
+
+  const combineParagraph = useCallback((index) => {
+    setLocalData(prev => {
+      const paragraphs = prev.paragraphs;
+      if (index < 0 || index >= paragraphs.length - 1) return prev;
+      const combined = paragraphs[index] + "\n" + paragraphs[index + 1];
+      const newData = {
+        ...prev, paragraphs: [
+          ...paragraphs.slice(0, index),
+          combined,
+          ...paragraphs.slice(index + 2),
+        ]
+      };
+      updateHis(newData);
+      return newData;
+    });
   }, []);
 
   const handleDragStart = useCallback((index) => {
@@ -295,10 +323,10 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   const handleDrop = (targetIndex) => {
     if (draggedIndex !== null && draggedIndex !== targetIndex) {
-      const updated = [...paragraphs];
+      const updated = [...localData.paragraphs];
       const [draggedParagraph] = updated.splice(draggedIndex, 1);
       updated.splice(targetIndex, 0, draggedParagraph);
-      setParagraphs(updated);
+      handleChange("paragraphs", updated);
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -321,33 +349,17 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     setDragOverIndex(null);
   }, []);
 
-  const moveParagraph = useCallback((fromIndex, toIndex) => {
-    setEditing(prev => {
-      const paragraphs = prev.paragraphs;
-      if (fromIndex < 0 || fromIndex >= paragraphs.length) return prev;
-      if (toIndex < 0 || toIndex >= paragraphs.length) return prev;
-      const updated = [...paragraphs];
-      const [movedParagraph] = updated.splice(fromIndex, 1);
-      updated.splice(toIndex, 0, movedParagraph);
-      return { ...prev, paragraphs: updated };
-    });
-  }, []);
-
-  const combineParagraph = useCallback((index) => {
-    setEditing(prev => {
-      const paragraphs = prev.paragraphs;
-      if (index < 0 || index >= paragraphs.length - 1) return prev;
-      const combined = paragraphs[index] + "\n" + paragraphs[index + 1];
-      const updated = [
-        ...paragraphs.slice(0, index),
-        combined,
-        ...paragraphs.slice(index + 2),
-      ];
-      return { ...prev, paragraphs: updated };
-    });
-  }, []);
-
   console.log("edit title modal");
+
+  function updateHis(newData) {
+    // If the user types after undo, truncate redo history
+    if (indexRef.current < historyRef.current.length - 1) {
+      historyRef.current = historyRef.current.slice(0, indexRef.current + 1);
+    }
+    historyRef.current.push(newData);
+    indexRef.current = historyRef.current.length - 1;
+    console.log(historyRef.current.length);
+  }
 
   function isSameArray(a, b) {
     if (a.length !== b.length) return false;
@@ -356,15 +368,15 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
 
   var changes = {};
   ["title", "path"].forEach((field) => {
-    if (editing[field] !== data[field]) {
-      changes[field] = editing[field];
+    if (localData[field] !== data[field]) {
+      changes[field] = localData[field];
     }
   });
-  if (!isSameArray(editing.paragraphs, data.paragraphs)) {
-    changes.paragraphs = editing.paragraphs;
+  if (!isSameArray(localData.paragraphs, data.paragraphs)) {
+    changes.paragraphs = localData.paragraphs;
   }
-  if (!isSameArray(editing.tags || [], data.tags || [])) {
-    changes.tags = editing.tags;
+  if (!isSameArray(localData.tags || [], data.tags || [])) {
+    changes.tags = localData.tags;
   }
 
   // log
@@ -389,26 +401,31 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
     }
   };
 
-  const handleReplace = (pairs) => {
-    const replacedLines = paragraphs.map(line => {
-      let result = line;
-      pairs.forEach(({ find, replace, isReg }) => {
-        if (isReg) {
-          const regex = new RegExp(find, "gu");
-          result = result.replace(regex, replace);
-        } else {
-          result = replaceViWd(result, find, replace);
-        }
+  const handleReplace = useCallback((pairs) => {
+    setLocalData((prev) => {
+      const paragraphs = prev.paragraphs.map(line => {
+        let result = line;
+        pairs.forEach(({ find, replace, isReg }) => {
+          if (isReg) {
+            const regex = new RegExp(find, "gu");
+            result = result.replace(regex, replace);
+          } else {
+            result = replaceViWd(result, find, replace);
+          }
+        });
+        return result;
       });
-      return result;
+      const newData = { ...prev, paragraphs };
+      historyRef.current.push(newData);
+      indexRef.current = historyRef.current.length - 1;
+      return newData;
     })
-    setParagraphs(replacedLines);
     setOpenDict(false);
-  }
+  }, [])
 
   const handleCopy = async () => {
     try {
-      var textToCopy = titleToString(editing);
+      var textToCopy = titleToString(localData);
       await navigator.clipboard.writeText(textToCopy);
     } catch (err) {
       console.error("Failed to copy text: ", err);
@@ -467,20 +484,42 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         changes.paragraphs.push(curP.join("\n"));
       }
 
-      if (newId !== editing.titleId) {
+      if (newId !== localData.titleId) {
         setAlertObj({ message: "Pasting with different ID is not supported." });
         return;
       }
-      setEditing({ ...editing, ...changes });
+
+      const newData = { ...localData, ...changes };
+      historyRef.current.push(newData);
+      indexRef.current = historyRef.current.length - 1;
+      setLocalData(newData);
     } catch (err) {
       console.error("Failed to read clipboard contents: ", err);
       return;
     }
   };
 
+  // Undo (go back in history)
+  const handleUndo = () => {
+    if (indexRef.current > 0) {
+      indexRef.current -= 1;
+      setLocalData(historyRef.current[indexRef.current]);
+    }
+  };
+
+  // Redo (go forward in history)
+  const handleRedo = () => {
+    if (indexRef.current < historyRef.current.length - 1) {
+      indexRef.current += 1;
+      setLocalData(historyRef.current[indexRef.current]);
+    }
+  };
+
   const handlePreview = () => {
     setOpenPreview(true);
   };
+
+  const showCtrl = true;
 
   // console.log("editing", editing.paragraphs);
   return (
@@ -503,9 +542,26 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
         }}
       >
         <Typography variant={isMobile ? "h6" : "h5"}>
-          {`Edit Title: ${data.titleId}`}
+          {name}
         </Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
+          <IconButton
+            disabled={indexRef.current === 0}
+            aria-label="undo"
+            color="primary"
+            onClick={handleUndo}
+          >
+            <UndoIcon fontSize="small" />
+          </IconButton>
+
+          <IconButton
+            disabled={indexRef.current === (historyRef.current.length - 1)}
+            aria-label="redo"
+            color="primary"
+            onClick={handleRedo}
+          >
+            <RedoIcon fontSize="small" />
+          </IconButton>
           <IconButton aria-label="replace" onClick={() => setOpenDict(true)}>
             <FindReplaceIcon />
           </IconButton>
@@ -532,36 +588,37 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       >
         <Box sx={{ m: isMobile ? 1 : 2 }}>
           {/* path */}
-          <TextField
+          <DebouncedTextField
             label="Path"
             multiline
             minRows={1}
             maxRows={3}
             fullWidth
-            value={path}
-            onChange={(e) => setPath(e.target.value)}
+            value={localData.path}
+            onChange={(e) => handleChange("path", e.target.value)}
             size={isMobile ? "small" : "medium"}
             sx={{ mb: isMobile ? 1 : 2 }}
           />
 
           {/* Title */}
-          <TextField
+          <DebouncedTextField
             label="Title"
             multiline
             minRows={1}
             maxRows={3}
             fullWidth
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={localData.title}
+            onChange={(e) => handleChange("title", e.target.value)}
             size={isMobile ? "small" : "medium"}
             sx={{ mb: isMobile ? 1 : 2 }}
           />
 
+
           {/* Tags */}
           <TagEditor
             isMobile={isMobile}
-            selectedTags={editing.tags}
-            setSelectedTags={setSelectedTags}
+            selectedTags={localData.tags}
+            setSelectedTags={(tags) => handleChange("tags", tags)}
           />
         </Box>
 
@@ -573,7 +630,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           Paragraphs (drag to reorder)
         </Typography>
 
-        {paragraphs.map((p, idx) => {
+        {localData.paragraphs.map((p, idx) => {
           const isDragged = draggedIndex === idx;
           const isDragOver = dragOverIndex === idx && !isDragged;
           return (
@@ -597,18 +654,91 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
               onDragLeave={() => handleDragLeave(idx)}
               onDrop={() => handleDrop(idx)}
             >
-              <ParagraphEditor
-                p={p}
-                handleParagraphChange={handleParagraphChange}
-                idx={idx}
-                isMobile={isMobile}
-                insertParagraph={insertParagraph}
-                removeParagraph={removeParagraph}
-                moveParagraph={moveParagraph}
-                combineParagraph={combineParagraph}
-                handleDragStart={handleDragStart}
-                handleDragEnd={handleDragEnd}
+              <DebouncedTextField
+                sx={{
+                  // mt: 1,
+                  '& .MuiInputBase-input': {
+                    paddingTop: 2,         // padding inside textarea
+                    paddingBottom: 2,         // padding inside textarea
+                  }
+                }}
+                multiline
+                minRows={1}
+                maxRows={12}
+                fullWidth
+                value={p}
+                onChange={(e) => { handleParagraphChange(idx, e.target.value); }}
+                // label={`Paragraph ${idx + 1}`}
+                size={isMobile ? "small" : "medium"}
               />
+              {showCtrl && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 2,
+                    left: 2,
+                    // backgroundColor: "#0ee3e380"
+                  }}
+                >
+                  <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
+                    <IconButton
+                      size={isMobile ? "small" : "medium"}
+                      aria-label="drag handle"
+                      draggable
+                      onDragStart={() => handleDragStart(idx)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
+                    </IconButton>
+
+                    <IconButton
+                      size={isMobile ? "small" : "medium"}
+                      aria-label="move up"
+                      onClick={()=>moveParagraph(idx, idx - 1)}
+                      color="primary"
+                    >
+                      <KeyboardArrowUpIcon fontSize="small" />
+                    </IconButton>
+
+                    <IconButton
+                      size={isMobile ? "small" : "medium"}
+                      aria-label="move down"
+                      onClick={()=>moveParagraph(idx, idx + 1)}
+                      color="primary"
+                    >
+                      <KeyboardArrowDownIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                </Box>
+              )}
+              {showCtrl && (
+                <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+                  <Box sx={{ display: "flex", gap: 0.5 }}>
+                    <IconButton
+                      onClick={() => combineParagraph(idx)}
+                      size={isMobile ? "small" : "medium"}
+                      title="Combine with paragraph after this"
+                    >
+                      <MergeIcon color="primary" />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => insertParagraph(idx)}
+                      size={isMobile ? "small" : "medium"}
+                      title="Insert new paragraph after this"
+                    >
+                      <AddIcon color="primary" />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => removeParagraph(idx)}
+                      size={isMobile ? "small" : "medium"}
+                    >
+                      <DeleteIcon color="error" />
+                    </IconButton>
+                  </Box>
+                </Box>
+              )}
+
+
             </Box>
           );
         })}
@@ -626,16 +756,16 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
       >
         <Button onClick={() => handlePreview()}>Preview</Button>
         <Box>
-          <Button
+          {onClose && <Button
             variant="text"
             onClick={() => {
-              setEditing(data);
+              setLocalData(data);
               onClose();
             }}
           // fullWidth={isMobile}
           >
             Cancel
-          </Button>
+          </Button>}
           <Button
             variant="contained"
             onClick={() => onSave({ changes })}
@@ -656,7 +786,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           base={data}
           onRevert={(obj) => {
             setShowLog(false);
-            setEditing(obj);
+            setLocalData(obj);
           }}
         />
       )}
@@ -667,7 +797,7 @@ export function TitleEditor({ isMobile, data, onSave, onClose }) {
           onClose={() => {
             setOpenPreview(false);
           }}
-          title={editing}
+          title={localData}
         />
       )}
 
@@ -1772,7 +1902,29 @@ function TitleLogModal({
     </MyModal>
   );
 }
+const DebouncedTextField = ({ value, onChange, ...props }) => {
+  const [text, setText] = useState(value);
+  useEffect(() => {
+    // historyRef.current=[p];
+    // indexRef.current=0;
+    setText(value);
+  }, [value]);
 
+  const debouncedText = useMemo(() => debounce(
+    (e) => {
+      onChange(e);
+    }
+    , 500), [onChange]);
+  const handleChange = useCallback((e) => {
+    setText(e.target.value);
+    debouncedText(e);
+  }, [debouncedText])
+  return <TextField
+    value={text}
+    onChange={handleChange}
+    {...props}
+  />
+}
 const ParagraphEditor = memo(
   function ParagraphEditor({
     p,
@@ -1790,17 +1942,16 @@ const ParagraphEditor = memo(
     const [isFocused, setIsFocused] = useState(false);
     const [text, setText] = useState(p);
 
-    // Holds all history values, starting with an empty string
-    const [history, setHistory] = useState([p]);
-
+    // Holds all history values
+    const historyRef = useRef([p]);
     // Current position in history
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const indexRef = useRef(0);
 
     const [saveConfirm, setSaveConfirm] = useState(false);
 
     useEffect(() => {
-      setHistory([p]);
-      setCurrentIndex(0);
+      // historyRef.current=[p];
+      // indexRef.current=0;
       setText(p);
     }, [p]);
 
@@ -1822,32 +1973,36 @@ const ParagraphEditor = memo(
       debouncedHis(newValue);
     };
     const debouncedHis = useMemo(() => debounce(
-      (newValue) => {
-        // Remove future history if we type after undo
-        const newHistory = history.slice(0, currentIndex + 1);
-        setHistory([...newHistory, newValue]);
-        setCurrentIndex(newHistory.length); // point to the new value
-        // console.log("update his:", newHistory)
+      (content) => {
+        // If the user types after undo, truncate redo history
+        // if (indexRef.current < historyRef.current.length - 1) {
+        //   historyRef.current = historyRef.current.slice(0, indexRef.current + 1);
+        // }
+        // historyRef.current.push(content);
+        // indexRef.current = historyRef.current.length - 1;
+        // console.log(historyRef.current.length)
+        handleParagraphChange(idx, content);
       }
-      , 500), [currentIndex, history]);
+      , 500), [handleParagraphChange, idx]);
 
     // Undo (go back in history)
     const handleUndo = () => {
-      if (currentIndex > 0) {
-        setCurrentIndex(currentIndex - 1);
-        setText(history[currentIndex - 1])
+      if (indexRef.current > 0) {
+        indexRef.current -= 1;
+        setText(historyRef.current[indexRef.current]);
       }
     };
 
     // Redo (go forward in history)
     const handleRedo = () => {
-      if (currentIndex < history.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-        setText(history[currentIndex + 1]);
+      if (indexRef.current < historyRef.current.length - 1) {
+        indexRef.current += 1;
+        setText(historyRef.current[indexRef.current]);
       }
     };
 
-    const editMode = history.length > 1;
+    const showHis = false; // historyRef.current.length > 1;
+    const showCtrl = true;
 
     const handleBlur = () => {
       // if (editMode) {
@@ -1855,11 +2010,12 @@ const ParagraphEditor = memo(
       // }
     }
     const handleSave = () => {
+      console.log("save", (text !== p))
       if (text !== p) {
         handleParagraphChange(idx, text);
-      } else {
-        setHistory([p])
       }
+      historyRef.current = [p];
+      indexRef.current = 0;
     }
     return (
       <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
@@ -1879,9 +2035,11 @@ const ParagraphEditor = memo(
           //   ta.style.height = "auto";
           //   ta.style.height = `${ta.scrollHeight}px`;
           // }}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            // setIsFocused(true);
+          }}
           onBlur={() => {
-            setIsFocused(false);
+            // setIsFocused(false);
             handleBlur();
             // handleParagraphChange(idx, text);
           }}
@@ -1894,7 +2052,7 @@ const ParagraphEditor = memo(
           label={`Paragraph ${idx + 1}`}
           size={isMobile ? "small" : "medium"}
         />
-        {editMode && (
+        {showHis && (
           <Box
             sx={{
               position: "absolute",
@@ -1905,7 +2063,7 @@ const ParagraphEditor = memo(
           >
             <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
               <IconButton
-                disabled={history.length === 1}
+                // disabled={historyRef.current.length === 1}
                 size={isMobile ? "small" : "medium"}
                 aria-label="save"
                 onClick={handleSave}
@@ -1917,28 +2075,28 @@ const ParagraphEditor = memo(
               </IconButton>
 
               <IconButton
-                disabled={currentIndex === 0}
+                disabled={indexRef.current === 0}
                 size={isMobile ? "small" : "medium"}
                 aria-label="undo"
                 onClick={handleUndo}
-                // color="secondary"
+              // color="secondary"
               >
                 <UndoIcon fontSize="small" />
               </IconButton>
 
               <IconButton
-                disabled={currentIndex === (history.length - 1)}
+                disabled={indexRef.current === (historyRef.current.length - 1)}
                 size={isMobile ? "small" : "medium"}
                 aria-label="redo"
                 onClick={handleRedo}
-                // color="secondary"
+              // color="secondary"
               >
                 <RedoIcon fontSize="small" />
               </IconButton>
             </Box>
           </Box>
         )}
-        {!editMode && (
+        {showCtrl && (
           <Box
             sx={{
               position: "absolute",
@@ -1978,7 +2136,7 @@ const ParagraphEditor = memo(
             </Box>
           </Box>
         )}
-        {!editMode && (
+        {showCtrl && (
           <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
             <Box sx={{ display: "flex", gap: 0.5 }}>
               <IconButton
