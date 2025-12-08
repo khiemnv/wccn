@@ -139,20 +139,21 @@ export function EditableHighlight({value, hunkList, onChange}) {
     sx={{
       display: "flex",
       flexDirection: "column",
-      width: "100%"
+      width: "100%",
+      minHeight: 100,
     }}
     >
       <div
         ref={ref}
         contentEditable
         style={{
-          minHeight: "200px",
+          minHeight: 100,
           border: "1px solid #ccc",
           padding: "10px",
           whiteSpace: "pre-wrap",
           outline: "none",
           fontFamily: "monospace",
-          // width: "100%"
+          overflow: "auto"
         }}
         onInput={(e) => {
           const text = e.target.innerText; // get plain text (no HTML)
@@ -164,7 +165,8 @@ export function EditableHighlight({value, hunkList, onChange}) {
         onSelect={updateSelectionInfo}
       />
       <Box
-        sx={{display: "flex", justifyContent: "flex-end"}}
+        sx={{display: "flex", 
+          justifyContent: "flex-end"}}
       >
         Cursor: {cursorPos} &nbsp; | &nbsp;
         Selected: {selectLen}

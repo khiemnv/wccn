@@ -68,20 +68,31 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import CloseIcon from "@mui/icons-material/Close";
-import MergeIcon from '@mui/icons-material/Merge';
-import SaveIcon from '@mui/icons-material/Save';
-import UndoIcon from '@mui/icons-material/Undo';
-import RedoIcon from '@mui/icons-material/Redo';
-import FindReplaceIcon from '@mui/icons-material/FindReplace';
-import FunctionsIcon from '@mui/icons-material/Functions'; // dùng cho regex
-import CheckBoxIcon from '@mui/icons-material/CheckBox';
-import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
-import ClearIcon from '@mui/icons-material/Clear';
+import MergeIcon from "@mui/icons-material/Merge";
+import SaveIcon from "@mui/icons-material/Save";
+import UndoIcon from "@mui/icons-material/Undo";
+import RedoIcon from "@mui/icons-material/Redo";
+import FindReplaceIcon from "@mui/icons-material/FindReplace";
+import FunctionsIcon from "@mui/icons-material/Functions"; // dùng cho regex
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
+import ClearIcon from "@mui/icons-material/Clear";
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
-import { calcPath, decodeDiffText, rApplyPath, stableStringify } from "../utils/fbUtil";
-import { collection, onSnapshot, query, Timestamp, where } from "firebase/firestore";
+import {
+  calcPath,
+  decodeDiffText,
+  rApplyPath,
+  stableStringify,
+} from "../utils/fbUtil";
+import {
+  collection,
+  onSnapshot,
+  query,
+  Timestamp,
+  where,
+} from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { DiffView } from "./DiffView";
 import ChipDragSort from "./DraggableChip";
@@ -211,7 +222,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
   );
 }
 
-export function TitleEditor({name, isMobile, data, onSave, onClose }) {
+export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
   // console.log("TitleEditor data:", data);
   const dispatch = useDispatch();
 
@@ -229,7 +240,7 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
       const newData = { ...prev, [field]: value };
       updateHis(newData);
       return newData;
-    })
+    });
   }, []);
 
   const [draggedIndex, setDraggedIndex] = useState(null);
@@ -249,36 +260,36 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
 
   // --- Handlers -----------------------------------------------------------
   const handleParagraphChange = useCallback((index, value) => {
-    setLocalData(prev => {
+    setLocalData((prev) => {
       const paragraphs = [...prev.paragraphs];
       paragraphs[index] = value;
       const newData = { ...prev, paragraphs };
       updateHis(newData);
       return newData;
-    })
+    });
   }, []);
 
   const removeParagraph = useCallback((index) => {
-    setLocalData(prev => {
+    setLocalData((prev) => {
       const paragraphs = prev.paragraphs.filter((_, i) => i !== index);
       const newData = { ...prev, paragraphs };
       updateHis(newData);
       return newData;
-    })
+    });
   }, []);
 
   const insertParagraph = useCallback((idx) => {
-    setLocalData(prev => {
+    setLocalData((prev) => {
       const paragraphs = [...prev.paragraphs];
       paragraphs.splice(idx + 1, 0, "");
       const newData = { ...prev, paragraphs };
       updateHis(newData);
       return newData;
-    })
+    });
   }, []);
 
   const moveParagraph = useCallback((fromIndex, toIndex) => {
-    setLocalData(prev => {
+    setLocalData((prev) => {
       const paragraphs = prev.paragraphs;
       if (fromIndex < 0 || fromIndex >= paragraphs.length) return prev;
       if (toIndex < 0 || toIndex >= paragraphs.length) return prev;
@@ -292,16 +303,17 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
   }, []);
 
   const combineParagraph = useCallback((index) => {
-    setLocalData(prev => {
+    setLocalData((prev) => {
       const paragraphs = prev.paragraphs;
       if (index < 0 || index >= paragraphs.length - 1) return prev;
       const combined = paragraphs[index] + "\n" + paragraphs[index + 1];
       const newData = {
-        ...prev, paragraphs: [
+        ...prev,
+        paragraphs: [
           ...paragraphs.slice(0, index),
           combined,
           ...paragraphs.slice(index + 2),
-        ]
+        ],
       };
       updateHis(newData);
       return newData;
@@ -393,7 +405,11 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
         result.sort((a, b) => a.timestamp.seconds - b.timestamp.seconds);
         setLogs(result);
         if (!result.length) {
-          setAlertObj({ open: true, type: "warning", message: "No logs available" });
+          setAlertObj({
+            open: true,
+            type: "warning",
+            message: "No logs available",
+          });
         } else {
           setShowLog(true);
         }
@@ -403,7 +419,7 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
 
   const handleReplace = useCallback((pairs) => {
     setLocalData((prev) => {
-      const paragraphs = prev.paragraphs.map(line => {
+      const paragraphs = prev.paragraphs.map((line) => {
         let result = line;
         pairs.forEach(({ find, replace, isReg }) => {
           if (isReg) {
@@ -419,9 +435,9 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
       historyRef.current.push(newData);
       indexRef.current = historyRef.current.length - 1;
       return newData;
-    })
+    });
     setOpenDict(false);
-  }, [])
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -467,7 +483,7 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
             }
             break;
           case "tags":
-            if (line === "" & curP.length > 0) {
+            if ((line === "") & (curP.length > 0)) {
               changes.paragraphs.push(curP.join("\n"));
               curP = [];
             } else {
@@ -541,9 +557,7 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
           flexDirection: "row",
         }}
       >
-        <Typography variant={isMobile ? "h6" : "h5"}>
-          {name}
-        </Typography>
+        <Typography variant={isMobile ? "h6" : "h5"}>{name}</Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
           <IconButton
             disabled={indexRef.current === 0}
@@ -555,7 +569,7 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
           </IconButton>
 
           <IconButton
-            disabled={indexRef.current === (historyRef.current.length - 1)}
+            disabled={indexRef.current === historyRef.current.length - 1}
             aria-label="redo"
             color="primary"
             onClick={handleRedo}
@@ -613,7 +627,6 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
             sx={{ mb: isMobile ? 1 : 2 }}
           />
 
-
           {/* Tags */}
           <TagEditor
             isMobile={isMobile}
@@ -644,8 +657,8 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
                 backgroundColor: isDragOver
                   ? "rgba(25,118,210,0.08)"
                   : isDragged
-                    ? "action.hover"
-                    : "transparent",
+                  ? "action.hover"
+                  : "transparent",
                 borderRadius: 1,
                 m: isMobile ? 1 : 2,
               }}
@@ -657,17 +670,19 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
               <DebouncedTextField
                 sx={{
                   // mt: 1,
-                  '& .MuiInputBase-input': {
-                    paddingTop: 2,         // padding inside textarea
-                    paddingBottom: 2,         // padding inside textarea
-                  }
+                  "& .MuiInputBase-input": {
+                    paddingTop: 2, // padding inside textarea
+                    paddingBottom: 2, // padding inside textarea
+                  },
                 }}
                 multiline
                 minRows={1}
                 maxRows={12}
                 fullWidth
                 value={p}
-                onChange={(e) => { handleParagraphChange(idx, e.target.value); }}
+                onChange={(e) => {
+                  handleParagraphChange(idx, e.target.value);
+                }}
                 // label={`Paragraph ${idx + 1}`}
                 size={isMobile ? "small" : "medium"}
               />
@@ -694,7 +709,7 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
                     <IconButton
                       size={isMobile ? "small" : "medium"}
                       aria-label="move up"
-                      onClick={()=>moveParagraph(idx, idx - 1)}
+                      onClick={() => moveParagraph(idx, idx - 1)}
                       color="primary"
                     >
                       <KeyboardArrowUpIcon fontSize="small" />
@@ -703,7 +718,7 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
                     <IconButton
                       size={isMobile ? "small" : "medium"}
                       aria-label="move down"
-                      onClick={()=>moveParagraph(idx, idx + 1)}
+                      onClick={() => moveParagraph(idx, idx + 1)}
                       color="primary"
                     >
                       <KeyboardArrowDownIcon fontSize="small" />
@@ -737,8 +752,6 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
                   </Box>
                 </Box>
               )}
-
-
             </Box>
           );
         })}
@@ -756,16 +769,18 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
       >
         <Button onClick={() => handlePreview()}>Preview</Button>
         <Box>
-          {onClose && <Button
-            variant="text"
-            onClick={() => {
-              setLocalData(data);
-              onClose();
-            }}
-          // fullWidth={isMobile}
-          >
-            Cancel
-          </Button>}
+          {onClose && (
+            <Button
+              variant="text"
+              onClick={() => {
+                setLocalData(data);
+                onClose();
+              }}
+              // fullWidth={isMobile}
+            >
+              Cancel
+            </Button>
+          )}
           <Button
             variant="contained"
             onClick={() => onSave({ changes })}
@@ -829,147 +844,147 @@ export function TitleEditor({name, isMobile, data, onSave, onClose }) {
   );
 }
 
-const TagEditor = memo(
-  function TagEditor({ isMobile, selectedTags, setSelectedTags }) {
-    console.log("TagEditor");
+const TagEditor = memo(function TagEditor({
+  isMobile,
+  selectedTags,
+  setSelectedTags,
+}) {
+  console.log("TagEditor");
 
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
-    // All available tags (from API or from store) used to suggest options
-    const allTags = useSelector(selectTags);
+  // All available tags (from API or from store) used to suggest options
+  const allTags = useSelector(selectTags);
 
-    // alert dialog
-    const [alertObj, setAlertObj] = useState({ open: false });
+  // alert dialog
+  const [alertObj, setAlertObj] = useState({ open: false });
 
-    // Load all tags from API (fallback to store selector if API fails)
-    // console.log("allTags from store:", allTags);
-    const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
-    useEffect(() => {
-      async function loadTags() {
-        try {
-          const { result, error } = await getAllTags();
-          if (result) {
-            // attempt to read friendly name fields, fallback to raw value
-            dispatch(setTags({ tags: result }));
+  // Load all tags from API (fallback to store selector if API fails)
+  // console.log("allTags from store:", allTags);
+  const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
+  useEffect(() => {
+    async function loadTags() {
+      try {
+        const { result, error } = await getAllTags();
+        if (result) {
+          // attempt to read friendly name fields, fallback to raw value
+          dispatch(setTags({ tags: result }));
+        } else {
+          console.error("Error loading tags from API:", error);
+        }
+      } catch (err) {
+        console.error("Error loading tags:", err);
+      }
+    }
+    if (!allTags) {
+      loadTags();
+    }
+  }, [allTags, dispatch]);
+
+  // --- Subscribe -----------------------------------------------------------
+  useEffect(() => {
+    const now = Timestamp.now();
+    const q = query(collection(db, "/tags_log"), where("timestamp", ">=", now));
+
+    console.log("[Subscribe] Start at:", now.toDate().toLocaleString());
+
+    const unsubscribe = onSnapshot(
+      q,
+      { includeMetadataChanges: true },
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          const { id: logId } = change.doc;
+          const { json, action, itemId, timestamp } = change.doc.data();
+
+          console.log(
+            `TAG log: [${logId}] ${action} [${itemId}] at ${timestamp
+              .toDate()
+              .toLocaleString()}`
+          );
+          console.log("content: ", json);
+
+          if (true) {
+            apply();
+            console.log("applied");
           } else {
-            console.error("Error loading tags from API:", error);
+            console.log("skipped");
           }
-        } catch (err) {
-          console.error("Error loading tags:", err);
-        }
-      }
-      if (!allTags) {
-        loadTags();
-      }
-    }, [allTags, dispatch]);
 
-    // --- Subscribe -----------------------------------------------------------
-    useEffect(() => {
-      const now = Timestamp.now();
-      const q = query(
-        collection(db, "/tags_log"),
-        where("timestamp", ">=", now)
-      );
-
-      console.log("[Subscribe] Start at:", now.toDate().toLocaleString());
-
-      const unsubscribe = onSnapshot(
-        q,
-        { includeMetadataChanges: true },
-        (snapshot) => {
-          snapshot.docChanges().forEach((change) => {
-            const { id: logId } = change.doc;
-            const { json, action, itemId, timestamp } = change.doc.data();
-
-            console.log(
-              `TAG log: [${logId}] ${action} [${itemId}] at ${timestamp
-                .toDate()
-                .toLocaleString()}`
-            );
-            console.log("content: ", json);
-
-            if (true) {
-              apply();
-              console.log("applied");
-            } else {
-              console.log("skipped");
-            }
-
-            function apply() {
-              try {
-                const obj = JSON.parse(json);
-                switch (action) {
-                  case "create":
-                    dispatch(addTag({ tag: obj }));
-                    break;
-                  case "update":
-                    dispatch(editTag({ id: itemId, changes: obj }));
-                    break;
-                  default:
-                    console.warn("Unknown action:", action);
-                }
-
-                setAlertObj({
-                  open: true,
-                  type: "info",
-                  message:
-                    "Đã cập nhật thay đổi tags: " +
-                    timestamp.toDate().toLocaleString(),
-                });
-              } catch (e) {
-                console.error("[Realtime] JSON parse error:", e, json);
+          function apply() {
+            try {
+              const obj = JSON.parse(json);
+              switch (action) {
+                case "create":
+                  dispatch(addTag({ tag: obj }));
+                  break;
+                case "update":
+                  dispatch(editTag({ id: itemId, changes: obj }));
+                  break;
+                default:
+                  console.warn("Unknown action:", action);
               }
+
+              setAlertObj({
+                open: true,
+                type: "info",
+                message:
+                  "Đã cập nhật thay đổi tags: " +
+                  timestamp.toDate().toLocaleString(),
+              });
+            } catch (e) {
+              console.error("[Realtime] JSON parse error:", e, json);
             }
-          });
-        }
-      );
-
-      return () => {
-        console.log("[Subscribe] Unsubscribed");
-        unsubscribe();
-      };
-    }, [dispatch]);
-
-    const availableTags = (tagLstFromStore || []).filter(
-      (tag) => !selectedTags || !selectedTags.includes(tag)
+          }
+        });
+      }
     );
 
-    return (
-      <Box sx={{ mb: isMobile ? 1 : 2 }}>
-        <Autocomplete
-          multiple
-          freeSolo
-          options={availableTags}
-          value={selectedTags || []}
-          onChange={(event, newValue) => setSelectedTags(newValue || [])}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Tags"
-              size={isMobile ? "small" : "medium"}
-            />
-          )}
-        />
+    return () => {
+      console.log("[Subscribe] Unsubscribed");
+      unsubscribe();
+    };
+  }, [dispatch]);
 
-        {/* Alert */}
-        <Snackbar
-          anchorOrigin={{ vertical: "top", horizontal: "right" }}
-          open={alertObj.open}
-          autoHideDuration={5000}
+  const availableTags = (tagLstFromStore || []).filter(
+    (tag) => !selectedTags || !selectedTags.includes(tag)
+  );
+
+  return (
+    <Box sx={{ mb: isMobile ? 1 : 2 }}>
+      <Autocomplete
+        multiple
+        freeSolo
+        options={availableTags}
+        value={selectedTags || []}
+        onChange={(event, newValue) => setSelectedTags(newValue || [])}
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="Tags"
+            size={isMobile ? "small" : "medium"}
+          />
+        )}
+      />
+
+      {/* Alert */}
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        open={alertObj.open}
+        autoHideDuration={5000}
+        onClose={() => setAlertObj({ open: false })}
+      >
+        <Alert
           onClose={() => setAlertObj({ open: false })}
+          severity={alertObj.type} // "error" | "warning" | "info" | "success"
+          variant="filled"
+          sx={{ width: "100%" }}
         >
-          <Alert
-            onClose={() => setAlertObj({ open: false })}
-            severity={alertObj.type} // "error" | "warning" | "info" | "success"
-            variant="filled"
-            sx={{ width: "100%" }}
-          >
-            {alertObj.message}
-          </Alert>
-        </Snackbar>
-      </Box>
-    );
-  })
+          {alertObj.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+});
 
 function renderParagraphs(t, words) {
   return t.paragraphs
@@ -994,7 +1009,11 @@ function renderParagraphs(t, words) {
               {s}
             </Typography>
           ) : (
-            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: "pre-line" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ whiteSpace: "pre-line" }}
+            >
               • <HighlightWords text={s.replace(/^[-\s]+/, "")} words={words} />
             </Typography>
           )}
@@ -1029,7 +1048,9 @@ function PreviewModal({ open, onClose, title }) {
         {renderTags(title)}
       </Box>
 
-      <Box sx={{ overflowY: "auto", mt: isMobile ? 1 : 2, mb: isMobile ? 1 : 2 }}>
+      <Box
+        sx={{ overflowY: "auto", mt: isMobile ? 1 : 2, mb: isMobile ? 1 : 2 }}
+      >
         {renderParagraphs(title, [])}
       </Box>
 
@@ -1040,9 +1061,7 @@ function PreviewModal({ open, onClose, title }) {
           justifyContent: "flex-end",
         }}
       >
-        <Button variant="contained"
-          fullWidth={isMobile}
-          onClick={onClose}>
+        <Button variant="contained" fullWidth={isMobile} onClick={onClose}>
           OK
         </Button>
       </Box>
@@ -1088,7 +1107,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
 
   // Add a new empty pair
   const handleAdd = () => {
-    setLocalDict([...localDict, { find: '', replace: '', selected: true }]);
+    setLocalDict([...localDict, { find: "", replace: "", selected: true }]);
   };
 
   // Remove a pair by index
@@ -1123,20 +1142,18 @@ function ReplaceModal({ open, onReplace, onClose }) {
     if (open) setLocalDict(dict);
   }, [open, dict]);
 
-
   // Check for changes
   const isChanged = !dictsEqual(localDict, dict);
 
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <MyModal open={open} onClose={onClose}>
-
       {/* Top right close button */}
       <IconButton
         aria-label="close"
         onClick={onClose}
         sx={{
-          position: 'absolute',
+          position: "absolute",
           right: 8,
           top: 8,
           color: (theme) => theme.palette.grey[500],
@@ -1145,7 +1162,9 @@ function ReplaceModal({ open, onReplace, onClose }) {
       >
         <CloseIcon />
       </IconButton>
-      <Typography variant="h6" mb={2}>Edit Dictionary</Typography>
+      <Typography variant="h6" mb={2}>
+        Edit Dictionary
+      </Typography>
 
       {/* pair */}
       <Box
@@ -1155,7 +1174,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
           flexGrow: 1,
           overflowY: "auto",
           flexDirection: "column",
-          minHeight: "200px"
+          minHeight: "200px",
         }}
       >
         {localDict.map((pair, idx) => (
@@ -1163,19 +1182,19 @@ function ReplaceModal({ open, onReplace, onClose }) {
             key={idx}
             elevation={pair.selected ? 3 : 1}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               mb: 1,
               p: 1,
               // backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
-              cursor: 'pointer',
+              cursor: "pointer",
             }}
-          // onClick={() => handleToggleSelect(idx)}
+            // onClick={() => handleToggleSelect(idx)}
           >
             <Tooltip title="Selected">
               <Checkbox
                 checked={pair.selected}
-                onChange={e => handleEdit(idx, "selected", e.target.checked)}
+                onChange={(e) => handleEdit(idx, "selected", e.target.checked)}
                 size="small"
               />
             </Tooltip>
@@ -1183,28 +1202,28 @@ function ReplaceModal({ open, onReplace, onClose }) {
               label="Find"
               value={pair.find}
               size="small"
-              onChange={e => handleEdit(idx, 'find', e.target.value)}
+              onChange={(e) => handleEdit(idx, "find", e.target.value)}
               sx={{
                 mr: 1,
                 width: { xs: 80, sm: 120, md: 140 }, // responsive width
-                flexShrink: 0
+                flexShrink: 0,
               }}
             />
             <TextField
               label="Replace"
               value={pair.replace}
               size="small"
-              onChange={e => handleEdit(idx, 'replace', e.target.value)}
+              onChange={(e) => handleEdit(idx, "replace", e.target.value)}
               sx={{
                 mr: 1,
                 minWidth: 80,
-                flexGrow: 1,         // grow ra
-                flexBasis: 0,        // chiếm phần còn lại
+                flexGrow: 1, // grow ra
+                flexBasis: 0, // chiếm phần còn lại
               }}
             />
             <IconButton
               size="small"
-              onClick={e => handleMenuOpen(e, idx)}
+              onClick={(e) => handleMenuOpen(e, idx)}
               sx={{ flexShrink: 0 }}
             >
               <MoreVertIcon />
@@ -1214,8 +1233,8 @@ function ReplaceModal({ open, onReplace, onClose }) {
               anchorEl={anchorEl}
               open={menuIdx === idx}
               onClose={handleMenuClose}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-              transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+              transformOrigin={{ vertical: "top", horizontal: "left" }}
             >
               <MenuItem
                 onClick={() => {
@@ -1245,9 +1264,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
                 </ListItemIcon>
                 <ListItemText primary="Regex" />
               </MenuItem>
-              <MenuItem
-                onClick={() => handleRemove(idx)}
-              >
+              <MenuItem onClick={() => handleRemove(idx)}>
                 <ListItemIcon>
                   <DeleteIcon color="error" />
                 </ListItemIcon>
@@ -1258,125 +1275,142 @@ function ReplaceModal({ open, onReplace, onClose }) {
         ))}
       </Box>
 
-
       {/* add and save buttons */}
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
+          display: "flex",
+          justifyContent: "flex-end",
           gap: 2, // spacing between buttons
           mt: 2,
         }}
       >
-        <Button onClick={handleAdd} variant="outlined">Add</Button>
-        <Button onClick={handleSave}
-          variant="contained"
-          disabled={!isChanged}
-        >Save</Button>
+        <Button onClick={handleAdd} variant="outlined">
+          Add
+        </Button>
+        <Button onClick={handleSave} variant="contained" disabled={!isChanged}>
+          Save
+        </Button>
       </Box>
 
-      {localDict.some(pair => pair.selected) && (
+      {localDict.some((pair) => pair.selected) && (
         <Typography sx={{ mt: 2, overflow: "auto" }}>
           Replace:
           {localDict
-            .filter(pair => pair.selected)
-            .map(pair => ` "${pair.find}" -> "${pair.replace}"`)
-            .join('; ')}
+            .filter((pair) => pair.selected)
+            .map((pair) => ` "${pair.find}" -> "${pair.replace}"`)
+            .join("; ")}
         </Typography>
       )}
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
+          display: "flex",
+          justifyContent: "flex-end",
           gap: 2, // spacing between buttons
           mt: 2,
         }}
       >
-        <Button onClick={onClose} variant="outlined" >Cancel</Button>
-        <Button onClick={() => onReplace(localDict.filter(pair => pair.selected))} variant="contained" >Replace</Button>
+        <Button onClick={onClose} variant="outlined">
+          Cancel
+        </Button>
+        <Button
+          onClick={() => onReplace(localDict.filter((pair) => pair.selected))}
+          variant="contained"
+        >
+          Replace
+        </Button>
       </Box>
     </MyModal>
   );
 }
 
 function renderTags(title) {
-  return title.tags ? title.tags.map((tag, idx) => (
-    <Chip
-      sx={{ mr: 1 }}
-      label={tag}
-      key={idx}></Chip>
-  )) : <></>;
+  return title.tags ? (
+    title.tags.map((tag, idx) => (
+      <Chip sx={{ mr: 1 }} label={tag} key={idx}></Chip>
+    ))
+  ) : (
+    <></>
+  );
 }
 
 function sortLogs(logs) {
-  const sortedLogs = logs
-    .map((log, idx) => (
-      {
-        idx,
-        seconds: log.timestamp.seconds,
-        label: tsToStr(log.timestamp)
-      }));
+  const sortedLogs = logs.map((log, idx) => ({
+    idx,
+    seconds: log.timestamp.seconds,
+    label: tsToStr(log.timestamp),
+  }));
   sortedLogs.sort((a, b) => b.seconds - a.seconds);
   return sortedLogs;
 }
 
 function tsToStr(ts) {
   const date = ts.toDate();
-  const formatted = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+  const formatted = `${date.getDate()}/${
+    date.getMonth() + 1
+  }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
   return formatted;
 }
 
 // Helper to style diffs
 const PatchDecorator = (patchText, onHunk) => {
-  const [content, setContent] = useState("")
+  const [content, setContent] = useState("");
   useEffect(() => {
     var hunkList = [];
     // Helper to determine line type and style accordingly
     function formatLine(line, idx, onHunk) {
       // Context
       var style = {};
-      var onClick = () => { };
-      if (line.startsWith('+') && !line.startsWith('+++')) {
+      var onClick = () => {};
+      if (line.startsWith("+") && !line.startsWith("+++")) {
         // Addition
-        style = { background: "#e8f5e9", color: "#388e3c", fontWeight: 'bold' };
+        style = { background: "#e8f5e9", color: "#388e3c", fontWeight: "bold" };
       }
-      if (line.startsWith('-') && !line.startsWith('---')) {
+      if (line.startsWith("-") && !line.startsWith("---")) {
         // Deletion
-        style = { background: "#ffebee", color: "#d32f2f", fontWeight: 'bold' };
+        style = { background: "#ffebee", color: "#d32f2f", fontWeight: "bold" };
       }
-      if (line.startsWith('@@')) {
+      if (line.startsWith("@@")) {
         // Hunk header
-        style = { background: "#e3f2fd", color: "#1976d2", fontWeight: 'bold' };
-        onClick = () => { onHunk([line]) }
-        hunkList.push(line)
+        style = { background: "#e3f2fd", color: "#1976d2", fontWeight: "bold" };
+        onClick = () => {
+          onHunk([line]);
+        };
+        hunkList.push(line);
       }
-      if (line.startsWith('diff') || line.startsWith('index') || line.startsWith('---') || line.startsWith('+++')) {
+      if (
+        line.startsWith("diff") ||
+        line.startsWith("index") ||
+        line.startsWith("---") ||
+        line.startsWith("+++")
+      ) {
         // Metadata
-        style = { background: "#f5f5f5", color: "#616161", fontStyle: 'italic' };
+        style = {
+          background: "#f5f5f5",
+          color: "#616161",
+          fontStyle: "italic",
+        };
       }
-      return <Typography
-        key={idx}
-        component="div"
-        sx={{
-          whiteSpace: "pre-line",
-          ...style
-        }}
-        onClick={onClick}
-      >
-        {line}
-      </Typography>
+      return (
+        <Typography
+          key={idx}
+          component="div"
+          sx={{
+            whiteSpace: "pre-line",
+            ...style,
+          }}
+          onClick={onClick}
+        >
+          {line}
+        </Typography>
+      );
     }
 
-    const lines = patchText.split('\n');
-    var content = lines.map((line, idx) => formatLine(line, idx, onHunk))
-    setContent(content)
+    const lines = patchText.split("\n");
+    var content = lines.map((line, idx) => formatLine(line, idx, onHunk));
+    setContent(content);
   }, [patchText, onHunk]);
-  return (
-    <Paper sx={{ p: 2, overflow: "auto", fontFamily: "monospace", maxHeight: 400 }}>
-      {content}
-    </Paper>
-  );
-}
+  return <>{content}</>;
+};
 function reorderObject(obj, order) {
   const newObj = {};
 
@@ -1396,16 +1430,24 @@ function reorderObject(obj, order) {
   return newObj;
 }
 function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
-
   const [selectionLength, setSelectionLength] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [hunkList, setHunkList] = useState([]);
   const inputRef = useRef(null);
-  const [order, setOrder] = useState(["title", "path", "paragraphs", "tags", "titleId", "id"]);
+  const [order, setOrder] = useState([
+    "title",
+    "path",
+    "paragraphs",
+    "tags",
+    "titleId",
+    "id",
+  ]);
 
   const [json, setJson] = useState(afterJson);
   const [status, setStatus] = useState({});
-  useEffect(() => { setJson(afterJson) }, [afterJson]);
+  useEffect(() => {
+    setJson(afterJson);
+  }, [afterJson]);
 
   function handleCheck() {
     var { result, error } = rApplyPath(json, patch);
@@ -1435,24 +1477,24 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
       setJson(newJson);
       var { result, error } = rApplyPath(newJson, patch);
       if (result && isValidJSON(result)) {
-        setStatus({ success: "OK" })
+        setStatus({ success: "OK" });
       } else {
-        setStatus({ error })
+        setStatus({ error });
       }
     } catch (ex) {
-      console.log(ex)
+      console.log(ex);
     }
   }
   function handleChangeOrder(lst) {
-    setOrder(lst)
+    setOrder(lst);
     var newObj = JSON.parse(json);
     var newJson = JSON.stringify(reorderObject(newObj, lst));
     setJson(newJson);
     var { result, error } = rApplyPath(newJson, patch);
     if (result && isValidJSON(result)) {
-      setStatus({ success: "OK" })
+      setStatus({ success: "OK" });
     } else {
-      setStatus({ error })
+      setStatus({ error });
     }
   }
 
@@ -1460,19 +1502,17 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
     // @@ -61,19 +61,8 @@
     setHunkList(hunkList);
     console.log(hunkList);
-  }, [])
+  }, []);
 
   return (
-    <MyModal
-      open={open}
-      close={onClose}
-    >
+    <MyModal open={open} close={onClose}>
       {/* header */}
-      <Box sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        justifyItems: "center"
-      }}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          justifyItems: "center",
+        }}
       >
         <Typography variant="h6">{"Resolve conflict"}</Typography>
         <IconButton
@@ -1489,7 +1529,10 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
       {/* Body */}
       <DialogContent
         sx={{
-          p: 1
+          p: 1,
+          display: "flex",
+          minHeight: 300,
+          flexDirection: "column",
         }}
       >
         {/* <TextField
@@ -1498,9 +1541,29 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
       value={decodeDiffText(patch)}
     >
     </TextField> */}
+        <Paper
+          sx={{
+            overflow: "auto",
+            fontFamily: "monospace",
+            minHeight: 100,
+            // display: "flex",
+            // flexDirection: "column",
+            flex: 1,
+            p: 1,
+          }}
+        >
         {PatchDecorator(decodeDiffText(patch), handleHunk)}
-
-        <Box sx={{ display: "flex", position: "relative", pt: 1 }}>
+        </Paper>
+        <Box
+          sx={{
+            // display: "flex",
+            position: "relative",
+            minHeight: 200,
+            flex: 2,
+            pt: 1,
+            overflow: "auto",
+          }}
+        >
           {/* <TextField
             multiline={true}
             maxRows={10}
@@ -1513,12 +1576,13 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
             fullWidth
           >
           </TextField> */}
-          <EditableHighlight value={json}
+          <EditableHighlight
+            value={json}
             hunkList={hunkList}
             onChange={(value) => setJson(value)}
           ></EditableHighlight>
         </Box>
-      </DialogContent >
+      </DialogContent>
 
       {/* ACTION */}
       <DialogActions
@@ -1529,14 +1593,8 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
           gap: 2,
         }}
       >
-        <Button
-          onClick={handleReorder}
-        >Reorder</Button>
-        <ChipDragSort
-          value={order}
-          onChange={handleChangeOrder}
-        ></ChipDragSort>
-
+        <Button onClick={handleReorder}>Reorder</Button>
+        <ChipDragSort value={order} onChange={handleChangeOrder}></ChipDragSort>
       </DialogActions>
       {/* ⭐ TITLEBAR BAR Ở DƯỚI */}
       <Box
@@ -1544,17 +1602,29 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
           display: "flex",
           flexDirection: "row",
           // borderTop: "1px solid #ddd",
-          p: 1,
+          // p: 1,
           justifyContent: "space-between",
         }}
       >
         <Box sx={{ display: "flex", overflow: "auto" }}>
-          <Typography color="error"
-            sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
-          >{status.error && `Error: [${status.error}]`}</Typography>
-          <Typography color="success"
-            sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}
-          >{status.success && `Success: [${status.success}]`}</Typography>
+          <Typography
+            color="error"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflow: "auto",
+            }}
+          >
+            {status.error && `[${status.error}]`}
+          </Typography>
+          <Typography
+            color="success"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflow: "auto",
+            }}
+          >
+            {status.success && `[${status.success}]`}
+          </Typography>
         </Box>
         {/* <Box>{`S: ${selectionLength} P: ${cursorPosition}`}</Box> */}
         {/* button FIX, CLOSE */}
@@ -1566,17 +1636,14 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
             gap: 2,
           }}
         >
-          <Button
-            onClick={handleClose}
-          >Close</Button>
-          <Button
-            variant="contained"
-            onClick={handleCheck}
-          >Fix</Button>
+          <Button onClick={handleClose}>Close</Button>
+          <Button variant="contained" onClick={handleCheck}>
+            Fix
+          </Button>
         </Box>
       </Box>
     </MyModal>
-  )
+  );
 }
 function isValidJSON(str) {
   try {
@@ -1594,7 +1661,7 @@ function TitleLogModal({
   isMobile,
   logs,
   base,
-  onRevert
+  onRevert,
 }) {
   console.log("title log modal");
 
@@ -1606,7 +1673,7 @@ function TitleLogModal({
 
   useEffect(() => {
     var prev = stableStringify(base);
-    var lst = []
+    var lst = [];
     try {
       for (var i = logs.length - 1; i >= 0; i--) {
         var patch = logs[i].patch;
@@ -1620,7 +1687,7 @@ function TitleLogModal({
             editor: "",
             time: tsToStr(logs[i].timestamp),
             version: `v${i + 1}`,
-            idx: i
+            idx: i,
           }); // content
         } else {
           setErrObj({ idx: i });
@@ -1628,14 +1695,14 @@ function TitleLogModal({
         }
       }
       setHis(lst);
-    } catch (ex) { }
-  }, [base, logs])
+    } catch (ex) {}
+  }, [base, logs]);
 
   if (!his) {
-    return <></>
+    return <></>;
   }
 
-  const options = his.map(({ time }, idx) => ({ idx, label: time }))
+  const options = his.map(({ time }, idx) => ({ idx, label: time }));
 
   // console.log("his", his)
 
@@ -1649,7 +1716,7 @@ function TitleLogModal({
       // console.log(prev)
       // udpate db
       var after = lst.length ? lst[lst.length - 1].content : null;
-      var beforeObj = JSON.parse(prev)
+      var beforeObj = JSON.parse(prev);
       var newPatch = calcPath(beforeObj, after ? JSON.parse(after) : base);
       var logId = logs[errObj.idx].id;
       var updateRes = await updateTitleLog2(logId, { patch: newPatch });
@@ -1662,8 +1729,8 @@ function TitleLogModal({
         time: tsToStr(logs[errObj.idx].timestamp),
         version: `v${errObj.idx + 1}`,
         idx: errObj.idx,
-        resolved: true
-      })
+        resolved: true,
+      });
 
       var err = null;
       for (var i = errObj.idx - 1; i >= 0; i--) {
@@ -1686,7 +1753,7 @@ function TitleLogModal({
             time: tsToStr(logs[i].timestamp),
             version: `v${i + 1}`,
             idx: i,
-            resolved: true
+            resolved: true,
           }); // content
         } else {
           err = { idx: i };
@@ -1697,7 +1764,7 @@ function TitleLogModal({
       setErrObj(err);
       setOpenResModal(false);
     } catch (ex) {
-      console.log(ex)
+      console.log(ex);
     }
   }
 
@@ -1726,9 +1793,8 @@ function TitleLogModal({
   //   return <div>Error</div>;
   // }
   // console.log(his, selected)
-  const afterJson = selected === 0 ?
-    JSON.stringify(base)
-    : his[selected - 1].content;
+  const afterJson =
+    selected === 0 ? JSON.stringify(base) : his[selected - 1].content;
   const beforeJson = his.length ? his[selected].content : null;
 
   // create diff
@@ -1739,11 +1805,12 @@ function TitleLogModal({
   return (
     <MyModal open={showLogModal} onClose={handleCloseLogModal}>
       {/* header */}
-      <Box sx={{
-        display: "flex",
-        justifyContent: "space-between",
-        justifyItems: "center"
-      }}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          justifyItems: "center",
+        }}
       >
         <Typography variant="h6">{"Lịch sử chỉnh sửa"}</Typography>
         <IconButton
@@ -1757,7 +1824,8 @@ function TitleLogModal({
           <CloseIcon />
         </IconButton>
       </Box>
-      <Box direction={"row"}
+      <Box
+        direction={"row"}
         spacing={isMobile ? 1 : 2}
         sx={{ justifyContent: "space-between" }}
         display={"flex"}
@@ -1773,8 +1841,9 @@ function TitleLogModal({
             renderValue={(option) => {
               const idx = option;
               const date = logs[idx].timestamp.toDate();
-              const formatted = `${date.getDate()}/${date.getMonth() + 1
-                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+              const formatted = `${date.getDate()}/${
+                date.getMonth() + 1
+              }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
               return formatted;
             }}
           >
@@ -1789,24 +1858,20 @@ function TitleLogModal({
                       alignItems: "center",
                     }}
                     value={idx}
-                  // onClick={() => handleUndo(idx)}
+                    // onClick={() => handleUndo(idx)}
                   >
-                    <Radio
-                      checked={idx === selected}
-                    ></Radio>
+                    <Radio checked={idx === selected}></Radio>
                     <Typography>{label}</Typography>
                   </MenuItem>
                 );
               })}
           </Select>
-
         </FormControl>
-        {errObj && <Typography
-          color="error"
-          onClick={() => setOpenResModal(true)}
-        >
-          {`Conflit at: v${errObj.idx + 1}`}
-        </Typography>}
+        {errObj && (
+          <Typography color="error" onClick={() => setOpenResModal(true)}>
+            {`Conflit at: v${errObj.idx + 1}`}
+          </Typography>
+        )}
       </Box>
       {/* <div
           style={{
@@ -1857,16 +1922,19 @@ function TitleLogModal({
         }}
       >
         {/* diff view */}
-        {openResModal ? <ResolveModal
-          open={openResModal}
-          afterJson={his.length ? his[his.length - 1].content : stableStringify(base)}
-          patch={logs[errObj.idx].patch}
-          onApply={handleResolve}
-          onClose={() => setOpenResModal(false)}
-        /> : <DiffView
-          oldText={beforeStr}
-          newText={afterStr}
-        />}
+        {openResModal ? (
+          <ResolveModal
+            open={openResModal}
+            afterJson={
+              his.length ? his[his.length - 1].content : stableStringify(base)
+            }
+            patch={logs[errObj.idx].patch}
+            onApply={handleResolve}
+            onClose={() => setOpenResModal(false)}
+          />
+        ) : (
+          <DiffView oldText={beforeStr} newText={afterStr} />
+        )}
       </Card>
 
       {/* <div style={{ whiteSpace: "pre", textWrap: "auto", border: "1px, solid", padding: "0.5rem", margin: "1px" }}>
@@ -1886,15 +1954,15 @@ function TitleLogModal({
         <Button
           variant="text"
           onClick={handleCloseLogModal}
-        // fullWidth={isMobile}
+          // fullWidth={isMobile}
         >
           Cancel
         </Button>
         <Button
           variant="contained"
           onClick={() => onRevert(JSON.parse(beforeJson))}
-        // fullWidth={isMobile}
-        // disabled={selected && (selected === (logs.length-1))}
+          // fullWidth={isMobile}
+          // disabled={selected && (selected === (logs.length-1))}
         >
           Revert
         </Button>
@@ -1910,70 +1978,71 @@ const DebouncedTextField = ({ value, onChange, ...props }) => {
     setText(value);
   }, [value]);
 
-  const debouncedText = useMemo(() => debounce(
+  const debouncedText = useMemo(
+    () =>
+      debounce((e) => {
+        onChange(e);
+      }, 500),
+    [onChange]
+  );
+  const handleChange = useCallback(
     (e) => {
-      onChange(e);
-    }
-    , 500), [onChange]);
-  const handleChange = useCallback((e) => {
-    setText(e.target.value);
-    debouncedText(e);
-  }, [debouncedText])
-  return <TextField
-    value={text}
-    onChange={handleChange}
-    {...props}
-  />
-}
-const ParagraphEditor = memo(
-  function ParagraphEditor({
-    p,
-    handleParagraphChange,
-    idx,
-    isMobile,
-    insertParagraph,
-    removeParagraph,
-    moveParagraph,
-    combineParagraph,
-    handleDragStart,
-    handleDragEnd
-  }) {
-    console.log("ParagraphEditor", idx);
-    const [isFocused, setIsFocused] = useState(false);
-    const [text, setText] = useState(p);
+      setText(e.target.value);
+      debouncedText(e);
+    },
+    [debouncedText]
+  );
+  return <TextField value={text} onChange={handleChange} {...props} />;
+};
+const ParagraphEditor = memo(function ParagraphEditor({
+  p,
+  handleParagraphChange,
+  idx,
+  isMobile,
+  insertParagraph,
+  removeParagraph,
+  moveParagraph,
+  combineParagraph,
+  handleDragStart,
+  handleDragEnd,
+}) {
+  console.log("ParagraphEditor", idx);
+  const [isFocused, setIsFocused] = useState(false);
+  const [text, setText] = useState(p);
 
-    // Holds all history values
-    const historyRef = useRef([p]);
-    // Current position in history
-    const indexRef = useRef(0);
+  // Holds all history values
+  const historyRef = useRef([p]);
+  // Current position in history
+  const indexRef = useRef(0);
 
-    const [saveConfirm, setSaveConfirm] = useState(false);
+  const [saveConfirm, setSaveConfirm] = useState(false);
 
-    useEffect(() => {
-      // historyRef.current=[p];
-      // indexRef.current=0;
-      setText(p);
-    }, [p]);
+  useEffect(() => {
+    // historyRef.current=[p];
+    // indexRef.current=0;
+    setText(p);
+  }, [p]);
 
-    const onMoveUp = () => {
-      moveParagraph(idx, idx - 1);
-    };
+  const onMoveUp = () => {
+    moveParagraph(idx, idx - 1);
+  };
 
-    const onMoveDown = () => {
-      moveParagraph(idx, idx + 1);
-    };
+  const onMoveDown = () => {
+    moveParagraph(idx, idx + 1);
+  };
 
-    // Current text value
-    // const text = history[currentIndex];
+  // Current text value
+  // const text = history[currentIndex];
 
-    const handleChange = (e) => {
-      const newValue = e.target.value;
-      setText(newValue);
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setText(newValue);
 
-      debouncedHis(newValue);
-    };
-    const debouncedHis = useMemo(() => debounce(
-      (content) => {
+    debouncedHis(newValue);
+  };
+  const debouncedHis = useMemo(
+    () =>
+      debounce((content) => {
         // If the user types after undo, truncate redo history
         // if (indexRef.current < historyRef.current.length - 1) {
         //   historyRef.current = historyRef.current.slice(0, indexRef.current + 1);
@@ -1982,194 +2051,200 @@ const ParagraphEditor = memo(
         // indexRef.current = historyRef.current.length - 1;
         // console.log(historyRef.current.length)
         handleParagraphChange(idx, content);
-      }
-      , 500), [handleParagraphChange, idx]);
+      }, 500),
+    [handleParagraphChange, idx]
+  );
 
-    // Undo (go back in history)
-    const handleUndo = () => {
-      if (indexRef.current > 0) {
-        indexRef.current -= 1;
-        setText(historyRef.current[indexRef.current]);
-      }
-    };
-
-    // Redo (go forward in history)
-    const handleRedo = () => {
-      if (indexRef.current < historyRef.current.length - 1) {
-        indexRef.current += 1;
-        setText(historyRef.current[indexRef.current]);
-      }
-    };
-
-    const showHis = false; // historyRef.current.length > 1;
-    const showCtrl = true;
-
-    const handleBlur = () => {
-      // if (editMode) {
-      //   setSaveConfirm(true);
-      // }
+  // Undo (go back in history)
+  const handleUndo = () => {
+    if (indexRef.current > 0) {
+      indexRef.current -= 1;
+      setText(historyRef.current[indexRef.current]);
     }
-    const handleSave = () => {
-      console.log("save", (text !== p))
-      if (text !== p) {
-        handleParagraphChange(idx, text);
-      }
-      historyRef.current = [p];
-      indexRef.current = 0;
+  };
+
+  // Redo (go forward in history)
+  const handleRedo = () => {
+    if (indexRef.current < historyRef.current.length - 1) {
+      indexRef.current += 1;
+      setText(historyRef.current[indexRef.current]);
     }
-    return (
-      <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
-        <TextField
+  };
+
+  const showHis = false; // historyRef.current.length > 1;
+  const showCtrl = true;
+
+  const handleBlur = () => {
+    // if (editMode) {
+    //   setSaveConfirm(true);
+    // }
+  };
+  const handleSave = () => {
+    console.log("save", text !== p);
+    if (text !== p) {
+      handleParagraphChange(idx, text);
+    }
+    historyRef.current = [p];
+    indexRef.current = 0;
+  };
+  return (
+    <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
+      <TextField
+        sx={{
+          // mt: 1,
+          "& .MuiInputBase-input": {
+            paddingTop: 2, // padding inside textarea
+            paddingBottom: 2, // padding inside textarea
+          },
+        }}
+        multiline
+        minRows={1}
+        maxRows={12}
+        // onInput={(e) => {
+        //   const ta = e.target;
+        //   ta.style.height = "auto";
+        //   ta.style.height = `${ta.scrollHeight}px`;
+        // }}
+        onFocus={() => {
+          // setIsFocused(true);
+        }}
+        onBlur={() => {
+          // setIsFocused(false);
+          handleBlur();
+          // handleParagraphChange(idx, text);
+        }}
+        fullWidth
+        value={text}
+        onChange={(e) => {
+          handleChange(e);
+          // handleAutoResize(e); // auto resize khi nhập
+        }}
+        label={`Paragraph ${idx + 1}`}
+        size={isMobile ? "small" : "medium"}
+      />
+      {showHis && (
+        <Box
           sx={{
-            // mt: 1,
-            '& .MuiInputBase-input': {
-              paddingTop: 2,         // padding inside textarea
-              paddingBottom: 2,         // padding inside textarea
-            }
+            position: "absolute",
+            top: 2,
+            right: 2,
+            // backgroundColor: "#0ee3e380"
           }}
-          multiline
-          minRows={1}
-          maxRows={12}
-          // onInput={(e) => {
-          //   const ta = e.target;
-          //   ta.style.height = "auto";
-          //   ta.style.height = `${ta.scrollHeight}px`;
-          // }}
-          onFocus={() => {
-            // setIsFocused(true);
-          }}
-          onBlur={() => {
-            // setIsFocused(false);
-            handleBlur();
-            // handleParagraphChange(idx, text);
-          }}
-          fullWidth
-          value={text}
-          onChange={(e) => {
-            handleChange(e);
-            // handleAutoResize(e); // auto resize khi nhập
-          }}
-          label={`Paragraph ${idx + 1}`}
-          size={isMobile ? "small" : "medium"}
-        />
-        {showHis && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 2,
-              right: 2,
-              // backgroundColor: "#0ee3e380"
-            }}
-          >
-            <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
-              <IconButton
-                // disabled={historyRef.current.length === 1}
-                size={isMobile ? "small" : "medium"}
-                aria-label="save"
-                onClick={handleSave}
-                color="primary"
-              >
-                {false ?
-                  <ClearIcon fontSize="small" color="error" /> :
-                  <SaveIcon fontSize="small" />}
-              </IconButton>
+        >
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
+            <IconButton
+              // disabled={historyRef.current.length === 1}
+              size={isMobile ? "small" : "medium"}
+              aria-label="save"
+              onClick={handleSave}
+              color="primary"
+            >
+              {false ? (
+                <ClearIcon fontSize="small" color="error" />
+              ) : (
+                <SaveIcon fontSize="small" />
+              )}
+            </IconButton>
 
-              <IconButton
-                disabled={indexRef.current === 0}
-                size={isMobile ? "small" : "medium"}
-                aria-label="undo"
-                onClick={handleUndo}
+            <IconButton
+              disabled={indexRef.current === 0}
+              size={isMobile ? "small" : "medium"}
+              aria-label="undo"
+              onClick={handleUndo}
               // color="secondary"
-              >
-                <UndoIcon fontSize="small" />
-              </IconButton>
+            >
+              <UndoIcon fontSize="small" />
+            </IconButton>
 
-              <IconButton
-                disabled={indexRef.current === (historyRef.current.length - 1)}
-                size={isMobile ? "small" : "medium"}
-                aria-label="redo"
-                onClick={handleRedo}
+            <IconButton
+              disabled={indexRef.current === historyRef.current.length - 1}
+              size={isMobile ? "small" : "medium"}
+              aria-label="redo"
+              onClick={handleRedo}
               // color="secondary"
-              >
-                <RedoIcon fontSize="small" />
-              </IconButton>
-            </Box>
+            >
+              <RedoIcon fontSize="small" />
+            </IconButton>
           </Box>
-        )}
-        {showCtrl && (
-          <Box
-            sx={{
-              position: "absolute",
-              top: 2,
-              left: 2,
-              // backgroundColor: "#0ee3e380"
-            }}
-          >
-            <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
-              <IconButton
-                size={isMobile ? "small" : "medium"}
-                aria-label="drag handle"
-                draggable
-                onDragStart={() => handleDragStart(idx)}
-                onDragEnd={handleDragEnd}
-              >
-                <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
-              </IconButton>
+        </Box>
+      )}
+      {showCtrl && (
+        <Box
+          sx={{
+            position: "absolute",
+            top: 2,
+            left: 2,
+            // backgroundColor: "#0ee3e380"
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
+            <IconButton
+              size={isMobile ? "small" : "medium"}
+              aria-label="drag handle"
+              draggable
+              onDragStart={() => handleDragStart(idx)}
+              onDragEnd={handleDragEnd}
+            >
+              <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
+            </IconButton>
 
-              <IconButton
-                size={isMobile ? "small" : "medium"}
-                aria-label="move up"
-                onClick={onMoveUp}
-                color="primary"
-              >
-                <KeyboardArrowUpIcon fontSize="small" />
-              </IconButton>
+            <IconButton
+              size={isMobile ? "small" : "medium"}
+              aria-label="move up"
+              onClick={onMoveUp}
+              color="primary"
+            >
+              <KeyboardArrowUpIcon fontSize="small" />
+            </IconButton>
 
-              <IconButton
-                size={isMobile ? "small" : "medium"}
-                aria-label="move down"
-                onClick={onMoveDown}
-                color="primary"
-              >
-                <KeyboardArrowDownIcon fontSize="small" />
-              </IconButton>
-            </Box>
+            <IconButton
+              size={isMobile ? "small" : "medium"}
+              aria-label="move down"
+              onClick={onMoveDown}
+              color="primary"
+            >
+              <KeyboardArrowDownIcon fontSize="small" />
+            </IconButton>
           </Box>
-        )}
-        {showCtrl && (
-          <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
-            <Box sx={{ display: "flex", gap: 0.5 }}>
-              <IconButton
-                onClick={() => combineParagraph(idx)}
-                size={isMobile ? "small" : "medium"}
-                title="Combine with paragraph after this"
-              >
-                <MergeIcon color="primary" />
-              </IconButton>
-              <IconButton
-                onClick={() => insertParagraph(idx)}
-                size={isMobile ? "small" : "medium"}
-                title="Insert new paragraph after this"
-              >
-                <AddIcon color="primary" />
-              </IconButton>
-              <IconButton
-                onClick={() => removeParagraph(idx)}
-                size={isMobile ? "small" : "medium"}
-              >
-                <DeleteIcon color="error" />
-              </IconButton>
-            </Box>
+        </Box>
+      )}
+      {showCtrl && (
+        <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+          <Box sx={{ display: "flex", gap: 0.5 }}>
+            <IconButton
+              onClick={() => combineParagraph(idx)}
+              size={isMobile ? "small" : "medium"}
+              title="Combine with paragraph after this"
+            >
+              <MergeIcon color="primary" />
+            </IconButton>
+            <IconButton
+              onClick={() => insertParagraph(idx)}
+              size={isMobile ? "small" : "medium"}
+              title="Insert new paragraph after this"
+            >
+              <AddIcon color="primary" />
+            </IconButton>
+            <IconButton
+              onClick={() => removeParagraph(idx)}
+              size={isMobile ? "small" : "medium"}
+            >
+              <DeleteIcon color="error" />
+            </IconButton>
           </Box>
-        )}
+        </Box>
+      )}
 
-        {saveConfirm && <Dialog
+      {saveConfirm && (
+        <Dialog
           open={saveConfirm}
           onClose={() => setSaveConfirm(false)}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
         >
-          <DialogTitle id="alert-dialog-title">{"UN-SAVED CONFIRM"}</DialogTitle>
+          <DialogTitle id="alert-dialog-title">
+            {"UN-SAVED CONFIRM"}
+          </DialogTitle>
           <DialogContent>{"Save editing?(YES/NO)"}</DialogContent>
           <DialogActions>
             <Button onClick={() => setSaveConfirm(false)}>{"NO"}</Button>
@@ -2183,38 +2258,40 @@ const ParagraphEditor = memo(
               {"YES"}
             </Button>
           </DialogActions>
-        </Dialog>}
-      </Box>
-    );
-  })
+        </Dialog>
+      )}
+    </Box>
+  );
+});
 
 function MyModal({ open, onClose, children: Element }) {
-  const isMobile = useMediaQuery('(max-width:600px)');
-  return <Modal open={open} onClose={onClose}>
-    <Box
-      sx={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: isMobile ? "90%" : 600,
-        maxWidth: "90vw",
-        bgcolor: "background.paper",
-        boxShadow: 24,
-        p: isMobile ? 2 : 4,
-        // maxHeight: isMobile ? "calc(var(--vh) * 90)" : "calc(var(--vh) * 80)",
-        maxHeight: "80vh",
-        overflowY: "auto",
-        borderRadius: 2,
-        display: "flex",
-        flexDirection: "column"
-      }}
-    >
-      {Element}
-    </Box>
-  </Modal>
+  const isMobile = useMediaQuery("(max-width:600px)");
+  return (
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: isMobile ? "90%" : 600,
+          maxWidth: "90vw",
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: isMobile ? 2 : 4,
+          // maxHeight: isMobile ? "calc(var(--vh) * 90)" : "calc(var(--vh) * 80)",
+          maxHeight: "80vh",
+          overflowY: "auto",
+          borderRadius: 2,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {Element}
+      </Box>
+    </Modal>
+  );
 }
-
 
 function OldDiffComp(beforeStr, afterStr) {
   var dmp = new diff_match_patch();
@@ -2249,52 +2326,64 @@ function OldDiffComp(beforeStr, afterStr) {
       );
     }
   });
-  return <div style={{ width: "100%", display: "flex", flexDirection: "row", overflowY: "auto", margin: "8px 0 8px 0" }}>
-    <Box sx={{
-      display: "flex",
-      flexGrow: 1,
-      flexDirection: "column",
-      height: "fit-content",
-      width: "50%",
-    }}>
-
+  return (
+    <div
+      style={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        overflowY: "auto",
+        margin: "8px 0 8px 0",
+      }}
+    >
       <Box
         sx={{
-          border: '1px solid',
-          mr: 0.5,
-          p: 0.5,
-          height: 'fit-content',
-          borderRadius: '0.5rem',
-          whiteSpace: 'pre-line',
-          minHeight: '50vh'
+          display: "flex",
+          flexGrow: 1,
+          flexDirection: "column",
+          height: "fit-content",
+          width: "50%",
         }}
       >
-        {left}
+        <Box
+          sx={{
+            border: "1px solid",
+            mr: 0.5,
+            p: 0.5,
+            height: "fit-content",
+            borderRadius: "0.5rem",
+            whiteSpace: "pre-line",
+            minHeight: "50vh",
+          }}
+        >
+          {left}
+        </Box>
       </Box>
-    </Box>
-    <Box sx={{
-      display: "flex",
-      flexGrow: 1,
-      flexDirection: "column",
-      height: "fit-content",
-      width: "50%",
-    }}>
       <Box
         sx={{
-          border: '1px solid',
-          mr: 0.5,
-          p: 0.5,
-          height: 'fit-content',
-          borderRadius: "0.5rem",
-          whiteSpace: 'pre-line',
-          minHeight: '50vh'
+          display: "flex",
+          flexGrow: 1,
+          flexDirection: "column",
+          height: "fit-content",
+          width: "50%",
         }}
       >
-        {right}
+        <Box
+          sx={{
+            border: "1px solid",
+            mr: 0.5,
+            p: 0.5,
+            height: "fit-content",
+            borderRadius: "0.5rem",
+            whiteSpace: "pre-line",
+            minHeight: "50vh",
+          }}
+        >
+          {right}
+        </Box>
       </Box>
-    </Box>
-
-  </div>;
+    </div>
+  );
 }
 
 function isSameArray(a, b) {
@@ -2329,7 +2418,7 @@ function TitleCard({ t, isMobile, words }) {
       console.error("Copy failed:", err);
     }
   };
-  const handleDel = () => { };
+  const handleDel = () => {};
   const handleSave = async ({ changes, patch }) => {
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
@@ -2398,7 +2487,6 @@ function TitleCard({ t, isMobile, words }) {
   );
 }
 export default TitleCard;
-
 
 function replaceViWd(text, find, replace) {
   const VWORD = "A-Za-zÀ-Ỵà-ỵĂăÂâĐđÊêÔôƠơƯư";

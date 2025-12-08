@@ -52,7 +52,11 @@ export default function ChipDragSort({value, onChange}) {
   };
 
   return (
-      <Stack direction="row" spacing={1}>
+      <Stack 
+      direction="row" 
+      spacing={1}
+      flexWrap={"wrap"}
+      >
         {items.map((item, idx) => {
           const isDragged = draggedIndex === idx;
           const isDragOver = dragOverIndex === idx && !isDragged;
