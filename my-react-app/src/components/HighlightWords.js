@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useRef, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Card, Typography } from "@mui/material";
 
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -135,25 +135,20 @@ export function EditableHighlight({value, hunkList, onChange}) {
   };
 
   return (
-    <Box 
-    sx={{
-      display: "flex",
-      flexDirection: "column",
-      width: "100%",
-      minHeight: 100,
-    }}
-    >
-      <div
+    <>
+      <Card
         ref={ref}
         contentEditable
-        style={{
+        sx={{
           minHeight: 100,
-          border: "1px solid #ccc",
-          padding: "10px",
+          // border: "1px solid #ccc",
+          // padding: "10px",
           whiteSpace: "pre-wrap",
           outline: "none",
-          fontFamily: "monospace",
-          overflow: "auto"
+          // fontFamily: "monospace",
+          overflow: "auto",
+          mt: 1,
+          p: 1,
         }}
         onInput={(e) => {
           const text = e.target.innerText; // get plain text (no HTML)
@@ -171,6 +166,6 @@ export function EditableHighlight({value, hunkList, onChange}) {
         Cursor: {cursorPos} &nbsp; | &nbsp;
         Selected: {selectLen}
       </Box>
-    </Box>
+    </>
   );
 }

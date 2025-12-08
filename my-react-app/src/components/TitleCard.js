@@ -77,6 +77,8 @@ import FunctionsIcon from "@mui/icons-material/Functions"; // dùng cho regex
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import ClearIcon from "@mui/icons-material/Clear";
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ReorderIcon from '@mui/icons-material/Reorder';
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
@@ -1363,15 +1365,21 @@ const PatchDecorator = (patchText, onHunk) => {
       var onClick = () => {};
       if (line.startsWith("+") && !line.startsWith("+++")) {
         // Addition
-        style = { background: "#e8f5e9", color: "#388e3c", fontWeight: "bold" };
+        style = { background: "#e8f5e9", color: "#388e3c", 
+          // fontWeight: "bold" 
+        };
       }
       if (line.startsWith("-") && !line.startsWith("---")) {
         // Deletion
-        style = { background: "#ffebee", color: "#d32f2f", fontWeight: "bold" };
+        style = { background: "#ffebee", color: "#d32f2f", 
+          // fontWeight: "bold" 
+        };
       }
       if (line.startsWith("@@")) {
         // Hunk header
-        style = { background: "#e3f2fd", color: "#1976d2", fontWeight: "bold" };
+        style = { background: "#e3f2fd", color: "#1976d2", 
+          fontWeight: "bold" 
+        };
         onClick = () => {
           onHunk([line]);
         };
@@ -1527,7 +1535,7 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
         </IconButton>
       </Box>
       {/* Body */}
-      <DialogContent
+      <Box
         sx={{
           p: 1,
           display: "flex",
@@ -1541,7 +1549,7 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
       value={decodeDiffText(patch)}
     >
     </TextField> */}
-        <Paper
+        <Card
           sx={{
             overflow: "auto",
             fontFamily: "monospace",
@@ -1552,19 +1560,10 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
             p: 1,
           }}
         >
-        {PatchDecorator(decodeDiffText(patch), handleHunk)}
-        </Paper>
-        <Box
-          sx={{
-            // display: "flex",
-            position: "relative",
-            minHeight: 200,
-            flex: 2,
-            pt: 1,
-            overflow: "auto",
-          }}
-        >
-          {/* <TextField
+          {PatchDecorator(decodeDiffText(patch), handleHunk)}
+        </Card>
+
+        {/* <TextField
             multiline={true}
             maxRows={10}
             value={json}
@@ -1576,26 +1575,26 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
             fullWidth
           >
           </TextField> */}
-          <EditableHighlight
-            value={json}
-            hunkList={hunkList}
-            onChange={(value) => setJson(value)}
-          ></EditableHighlight>
-        </Box>
-      </DialogContent>
+        <EditableHighlight
+          value={json}
+          hunkList={hunkList}
+          onChange={(value) => setJson(value)}
+        ></EditableHighlight>
+      </Box>
 
       {/* ACTION */}
-      <DialogActions
+      <Box
         sx={{
           display: "flex",
           justifyContent: "flex-start",
           alignItems: "center",
-          gap: 2,
         }}
       >
-        <Button onClick={handleReorder}>Reorder</Button>
+        <IconButton onClick={handleReorder} size="small">
+          <RefreshIcon />
+        </IconButton>
         <ChipDragSort value={order} onChange={handleChangeOrder}></ChipDragSort>
-      </DialogActions>
+      </Box>
       {/* ⭐ TITLEBAR BAR Ở DƯỚI */}
       <Box
         sx={{

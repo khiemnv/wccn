@@ -54,15 +54,14 @@ export default function ChipDragSort({value, onChange}) {
   return (
       <Stack 
       direction="row" 
-      spacing={1}
-      flexWrap={"wrap"}
       >
         {items.map((item, idx) => {
           const isDragged = draggedIndex === idx;
           const isDragOver = dragOverIndex === idx && !isDragged;
-          return(
-          <Box key={idx}
-          sx={{
+          return (
+            <Box
+              key={idx}
+              sx={{
                 position: "relative",
                 // mb: isMobile ? 1 : 2,
                 opacity: isDragged ? 0.5 : 1,
@@ -70,10 +69,10 @@ export default function ChipDragSort({value, onChange}) {
                 backgroundColor: isDragOver
                   ? "rgba(25,118,210,0.08)"
                   : isDragged
-                    ? "action.hover"
-                    : "transparent",
-                borderRadius: 1,
-                m: 1,
+                  ? "action.hover"
+                  : "transparent",
+                // borderRadius: 1,
+                // m: 0.5,
               }}
               draggable
               onDragStart={() => handleDragStart(idx)}
@@ -82,10 +81,10 @@ export default function ChipDragSort({value, onChange}) {
               onDragLeave={() => handleDragLeave(idx)}
               onDrop={() => handleDrop(idx)}
               onDragEnd={handleDragEnd}
-          >
-            <Chip id={item} label={item} />
-          </Box>
-        )})}
+            >
+              <Chip id={item} label={item} size="small" />
+            </Box>
+          );})}
       </Stack>
   );
 }
