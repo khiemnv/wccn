@@ -77,8 +77,8 @@ import FunctionsIcon from "@mui/icons-material/Functions"; // dùng cho regex
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import ClearIcon from "@mui/icons-material/Clear";
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ReorderIcon from '@mui/icons-material/Reorder';
+import RefreshIcon from "@mui/icons-material/Refresh";
+import ReorderIcon from "@mui/icons-material/Reorder";
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
@@ -100,6 +100,21 @@ import { DiffView } from "./DiffView";
 import ChipDragSort from "./DraggableChip";
 import { useAppDispatch } from "../app/hooks";
 import debounce from "debounce";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -224,6 +239,69 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
   );
 }
 
+function SortableItem({ id, children, isMobile, p }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  return (
+    <Box
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      sx={{
+        position: "relative",
+        opacity: isDragging ? 0.5 : 1,
+        transform: CSS.Transform.toString(transform),
+        transition,
+        // borderRadius: 1,
+        // m: isMobile ? 1 : 2,
+        backgroundColor: isDragging ? "action.hover" : "transparent",
+        display:"flex",
+        flexDirection:"row",
+        alignItems: "center"
+      }}
+    >
+      {children}
+      {isDragging && <Typography>{`pragraphs: ${id}`}</Typography>}
+      {/* {isDragging && <DebouncedTextField
+        multiline
+        minRows={1}
+        maxRows={12}
+        fullWidth
+        value={p}
+      />} */}
+    </Box>
+  );
+}
+function OverlayItem({ paragraph }) {
+  return (
+    <Box
+      sx={{
+        borderRadius: 1,
+        p: 1,
+        width: "100%",
+        boxShadow: 4,
+        background: "white",
+        opacity: 0.9,
+      }}
+    >
+      {/* simple non-resizing clone */}
+      <DebouncedTextField
+        multiline
+        minRows={1}
+        maxRows={12}
+        fullWidth
+        value={paragraph}
+      />
+    </Box>
+  );
+}
 export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
   // console.log("TitleEditor data:", data);
   const dispatch = useDispatch();
@@ -346,22 +424,32 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
     setDragOverIndex(null);
   };
 
-  const handleDragEnd = useCallback(() => {
-    // If a drag ended while over an item but drop wasn't fired,
-    // ensure we still reorder based on the current dragOverIndex.
-    // if (
-    //   draggedIndex !== null &&
-    //   dragOverIndex !== null &&
-    //   draggedIndex !== dragOverIndex
-    // ) {
-    //   const updated = [...paragraphs];
-    //   const [draggedParagraph] = updated.splice(draggedIndex, 1);
-    //   updated.splice(dragOverIndex, 0, draggedParagraph);
-    //   setParagraphs(updated);
-    // }
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  }, []);
+  // const handleDragEnd = useCallback(() => {
+  //   // If a drag ended while over an item but drop wasn't fired,
+  //   // ensure we still reorder based on the current dragOverIndex.
+  //   // if (
+  //   //   draggedIndex !== null &&
+  //   //   dragOverIndex !== null &&
+  //   //   draggedIndex !== dragOverIndex
+  //   // ) {
+  //   //   const updated = [...paragraphs];
+  //   //   const [draggedParagraph] = updated.splice(draggedIndex, 1);
+  //   //   updated.splice(dragOverIndex, 0, draggedParagraph);
+  //   //   setParagraphs(updated);
+  //   // }
+  //   setDraggedIndex(null);
+  //   setDragOverIndex(null);
+  // }, []);
+  const handleDragEnd = ({ active, over }) => {
+    if (!over) return;
+
+    if (active.id !== over.id) {
+      const oldIndex = Number(active.id);
+      const newIndex = Number(over.id);
+      const newList = arrayMove(localData.paragraphs, oldIndex, newIndex);
+      handleChange("paragraphs", newList);
+    }
+  };
 
   console.log("edit title modal");
 
@@ -537,7 +625,16 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
     setOpenPreview(true);
   };
 
-  const showCtrl = true;
+  // const showCtrl = true;
+
+  // DND
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 }, // long press iPhone
+    })
+  );
+  const [activeId, setActiveId] = useState(null);
+  const [editingP, setEditingP] = useState(null);
 
   // console.log("editing", editing.paragraphs);
   return (
@@ -644,119 +741,139 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
         >
           Paragraphs (drag to reorder)
         </Typography>
-
-        {localData.paragraphs.map((p, idx) => {
-          const isDragged = draggedIndex === idx;
-          const isDragOver = dragOverIndex === idx && !isDragged;
-          return (
-            <Box
-              key={idx}
-              sx={{
-                position: "relative",
-                // mb: isMobile ? 1 : 2,
-                opacity: isDragged ? 0.5 : 1,
-                transition: "opacity 0.2s, background-color 0.15s",
-                backgroundColor: isDragOver
-                  ? "rgba(25,118,210,0.08)"
-                  : isDragged
-                  ? "action.hover"
-                  : "transparent",
-                borderRadius: 1,
-                m: isMobile ? 1 : 2,
-              }}
-              onDragOver={(e) => handleDragOver(e, idx)}
-              onDragEnter={() => setDragOverIndex(idx)}
-              onDragLeave={() => handleDragLeave(idx)}
-              onDrop={() => handleDrop(idx)}
-            >
-              <DebouncedTextField
-                sx={{
-                  // mt: 1,
-                  "& .MuiInputBase-input": {
-                    paddingTop: 2, // padding inside textarea
-                    paddingBottom: 2, // padding inside textarea
-                  },
-                }}
-                multiline
-                minRows={1}
-                maxRows={12}
-                fullWidth
-                value={p}
-                onChange={(e) => {
-                  handleParagraphChange(idx, e.target.value);
-                }}
-                // label={`Paragraph ${idx + 1}`}
-                size={isMobile ? "small" : "medium"}
-              />
-              {showCtrl && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(e) => {
+            setActiveId(null);
+            handleDragEnd(e);
+          }}
+          onDragCancel={() => setActiveId(null)}
+        >
+          <SortableContext
+            items={localData.paragraphs.map((_, i) => String(i))}
+            strategy={verticalListSortingStrategy}
+          >
+            {localData.paragraphs.map((p, idx) => {
+              const isDragged = draggedIndex === idx;
+              const isDragOver = dragOverIndex === idx && !isDragged;
+              const showCtrl = editingP !== idx;
+              return (
                 <Box
                   sx={{
-                    position: "absolute",
-                    top: 2,
-                    left: 2,
-                    // backgroundColor: "#0ee3e380"
+                    position: "relative",
+                    borderRadius: 1,
+                    m: isMobile ? 1 : 2,
                   }}
                 >
-                  <Box sx={{ display: "flex", flexDirection: "row", gap: 0.5 }}>
-                    <IconButton
-                      size={isMobile ? "small" : "medium"}
-                      aria-label="drag handle"
-                      draggable
-                      onDragStart={() => handleDragStart(idx)}
-                      onDragEnd={handleDragEnd}
+                  <DebouncedTextField
+                    sx={{
+                      // mt: 1,
+                      "& .MuiInputBase-input": {
+                        paddingTop: 2, // padding inside textarea
+                        paddingBottom: 2, // padding inside textarea
+                      },
+                    }}
+                    multiline
+                    minRows={1}
+                    maxRows={12}
+                    fullWidth
+                    value={p}
+                    onChange={(e) => {
+                      handleParagraphChange(idx, e.target.value);
+                    }}
+                    // label={`Paragraph ${idx + 1}`}
+                    size={isMobile ? "small" : "medium"}
+                    onFocus={(e) => setEditingP(idx)}
+                    onBlur={(e) => setEditingP(null)}
+                  />
+                  {showCtrl && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 2,
+                        left: 2,
+                        width: "100%",
+                        // backgroundColor: "#0ee3e380"
+                      }}
                     >
-                      <DragIndicatorIcon sx={{ transform: "rotate(90deg)" }} />
-                    </IconButton>
+                      <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "row",
+                            gap: 0.5,
+                          }}
+                        >
+                          <IconButton
+                            size={isMobile ? "small" : "medium"}
+                            aria-label="drag handle"
+                            // draggable
+                            // onDragStart={() => handleDragStart(idx)}
+                            // onDragEnd={handleDragEnd}
+                          >
+                            <DragIndicatorIcon
+                              sx={{ transform: "rotate(90deg)" }}
+                            />
+                          </IconButton>
 
-                    <IconButton
-                      size={isMobile ? "small" : "medium"}
-                      aria-label="move up"
-                      onClick={() => moveParagraph(idx, idx - 1)}
-                      color="primary"
-                    >
-                      <KeyboardArrowUpIcon fontSize="small" />
-                    </IconButton>
+                          <IconButton
+                            size={isMobile ? "small" : "medium"}
+                            aria-label="move up"
+                            onClick={() => moveParagraph(idx, idx - 1)}
+                            color="primary"
+                          >
+                            <KeyboardArrowUpIcon fontSize="small" />
+                          </IconButton>
 
-                    <IconButton
-                      size={isMobile ? "small" : "medium"}
-                      aria-label="move down"
-                      onClick={() => moveParagraph(idx, idx + 1)}
-                      color="primary"
-                    >
-                      <KeyboardArrowDownIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
+                          <IconButton
+                            size={isMobile ? "small" : "medium"}
+                            aria-label="move down"
+                            onClick={() => moveParagraph(idx, idx + 1)}
+                            color="primary"
+                          >
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </SortableItem>
+                    </Box>
+                  )}
+                  {showCtrl && (
+                    <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+                      <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <IconButton
+                          onClick={() => combineParagraph(idx)}
+                          size={isMobile ? "small" : "medium"}
+                          title="Combine with paragraph after this"
+                        >
+                          <MergeIcon color="primary" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => insertParagraph(idx)}
+                          size={isMobile ? "small" : "medium"}
+                          title="Insert new paragraph after this"
+                        >
+                          <AddIcon color="primary" />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => removeParagraph(idx)}
+                          size={isMobile ? "small" : "medium"}
+                        >
+                          <DeleteIcon color="error" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  )}
                 </Box>
-              )}
-              {showCtrl && (
-                <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
-                  <Box sx={{ display: "flex", gap: 0.5 }}>
-                    <IconButton
-                      onClick={() => combineParagraph(idx)}
-                      size={isMobile ? "small" : "medium"}
-                      title="Combine with paragraph after this"
-                    >
-                      <MergeIcon color="primary" />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => insertParagraph(idx)}
-                      size={isMobile ? "small" : "medium"}
-                      title="Insert new paragraph after this"
-                    >
-                      <AddIcon color="primary" />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => removeParagraph(idx)}
-                      size={isMobile ? "small" : "medium"}
-                    >
-                      <DeleteIcon color="error" />
-                    </IconButton>
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          );
-        })}
+              );
+            })}
+          </SortableContext>
+          <DragOverlay>
+            {activeId != null ? (
+              <OverlayItem paragraph={localData.paragraphs[Number(activeId)]} />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </Box>
 
       {/* Actions */}
@@ -1365,21 +1482,23 @@ const PatchDecorator = (patchText, onHunk) => {
       var onClick = () => {};
       if (line.startsWith("+") && !line.startsWith("+++")) {
         // Addition
-        style = { background: "#e8f5e9", color: "#388e3c", 
-          // fontWeight: "bold" 
+        style = {
+          background: "#e8f5e9",
+          color: "#388e3c",
+          // fontWeight: "bold"
         };
       }
       if (line.startsWith("-") && !line.startsWith("---")) {
         // Deletion
-        style = { background: "#ffebee", color: "#d32f2f", 
-          // fontWeight: "bold" 
+        style = {
+          background: "#ffebee",
+          color: "#d32f2f",
+          // fontWeight: "bold"
         };
       }
       if (line.startsWith("@@")) {
         // Hunk header
-        style = { background: "#e3f2fd", color: "#1976d2", 
-          fontWeight: "bold" 
-        };
+        style = { background: "#e3f2fd", color: "#1976d2", fontWeight: "bold" };
         onClick = () => {
           onHunk([line]);
         };
@@ -1437,7 +1556,7 @@ function reorderObject(obj, order) {
 
   return newObj;
 }
-function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
+function ResolveModal({ open, patch, afterJson, onApply, onClose, isMobile }) {
   const [selectionLength, setSelectionLength] = useState(0);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [hunkList, setHunkList] = useState([]);
@@ -1499,10 +1618,12 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
     var newJson = JSON.stringify(reorderObject(newObj, lst));
     setJson(newJson);
     var { result, error } = rApplyPath(newJson, patch);
-    if (result && isValidJSON(result)) {
+    if (error) {
+      setStatus({ error });
+    } else if (isValidJSON(result)) {
       setStatus({ success: "OK" });
     } else {
-      setStatus({ error });
+      setStatus({ error: "Invalid JSON" });
     }
   }
 
@@ -1593,7 +1714,11 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose }) {
         <IconButton onClick={handleReorder} size="small">
           <RefreshIcon />
         </IconButton>
-        <ChipDragSort value={order} onChange={handleChangeOrder}></ChipDragSort>
+        <ChipDragSort
+          value={order}
+          onChange={handleChangeOrder}
+          isMobile={isMobile}
+        ></ChipDragSort>
       </Box>
       {/* ⭐ TITLEBAR BAR Ở DƯỚI */}
       <Box
@@ -1930,6 +2055,7 @@ function TitleLogModal({
             patch={logs[errObj.idx].patch}
             onApply={handleResolve}
             onClose={() => setOpenResModal(false)}
+            isMobile={isMobile}
           />
         ) : (
           <DiffView oldText={beforeStr} newText={afterStr} />
