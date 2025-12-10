@@ -111,7 +111,7 @@ export const slice = createSlice({
     },
     addTag: (state, action) => {
       const { tag } = action.payload;
-      if (!state.tags.includes(tag)) {
+      if (!state.tags.find(t=>t.id === tag.id)) {
         state.tags.push(tag);
       }
     },

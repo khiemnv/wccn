@@ -635,7 +635,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
   );
   const [activeId, setActiveId] = useState(null);
   const [editingP, setEditingP] = useState(null);
-
+  const modalRef = useRef(null);
   // console.log("editing", editing.paragraphs);
   return (
     <Box
@@ -741,139 +741,142 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
         >
           Paragraphs (drag to reorder)
         </Typography>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={(e) => {
-            setActiveId(null);
-            handleDragEnd(e);
-          }}
-          onDragCancel={() => setActiveId(null)}
-        >
-          <SortableContext
-            items={localData.paragraphs.map((_, i) => String(i))}
-            strategy={verticalListSortingStrategy}
+        <div ref={modalRef}>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={(e) => {
+              setActiveId(null);
+              handleDragEnd(e);
+            }}
+            onDragCancel={() => setActiveId(null)}
           >
-            {localData.paragraphs.map((p, idx) => {
-              const isDragged = draggedIndex === idx;
-              const isDragOver = dragOverIndex === idx && !isDragged;
-              const showCtrl = editingP !== idx;
-              return (
-                <Box
-                  sx={{
-                    position: "relative",
-                    borderRadius: 1,
-                    m: isMobile ? 1 : 2,
-                  }}
-                >
-                  <DebouncedTextField
+            <SortableContext
+              items={localData.paragraphs.map((_, i) => String(i))}
+              strategy={verticalListSortingStrategy}
+            >
+              {localData.paragraphs.map((p, idx) => {
+                const isDragged = draggedIndex === idx;
+                const isDragOver = dragOverIndex === idx && !isDragged;
+                const showCtrl = editingP !== idx;
+                return (
+                  <Box
                     sx={{
-                      // mt: 1,
-                      "& .MuiInputBase-input": {
-                        paddingTop: 2, // padding inside textarea
-                        paddingBottom: 2, // padding inside textarea
-                      },
+                      position: "relative",
+                      borderRadius: 1,
+                      m: isMobile ? 1 : 2,
                     }}
-                    multiline
-                    minRows={1}
-                    maxRows={12}
-                    fullWidth
-                    value={p}
-                    onChange={(e) => {
-                      handleParagraphChange(idx, e.target.value);
-                    }}
-                    // label={`Paragraph ${idx + 1}`}
-                    size={isMobile ? "small" : "medium"}
-                    onFocus={(e) => setEditingP(idx)}
-                    onBlur={(e) => setEditingP(null)}
-                  />
-                  {showCtrl && (
-                    <Box
+                  >
+                    <DebouncedTextField
                       sx={{
-                        position: "absolute",
-                        top: 2,
-                        left: 2,
-                        width: "100%",
-                        // backgroundColor: "#0ee3e380"
+                        // mt: 1,
+                        "& .MuiInputBase-input": {
+                          paddingTop: 2, // padding inside textarea
+                          paddingBottom: 2, // padding inside textarea
+                        },
                       }}
-                    >
-                      <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            gap: 0.5,
-                          }}
-                        >
-                          <IconButton
-                            size={isMobile ? "small" : "medium"}
-                            aria-label="drag handle"
+                      multiline
+                      minRows={1}
+                      maxRows={12}
+                      fullWidth
+                      value={p}
+                      onChange={(e) => {
+                        handleParagraphChange(idx, e.target.value);
+                      }}
+                      // label={`Paragraph ${idx + 1}`}
+                      size={isMobile ? "small" : "medium"}
+                      onFocus={(e) => setEditingP(idx)}
+                      onBlur={(e) => setEditingP(null)}
+                    />
+                    {showCtrl && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 2,
+                          left: 2,
+                          width: "100%",
+                          // backgroundColor: "#0ee3e380"
+                        }}
+                      >
+                        <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "row",
+                              gap: 0.5,
+                            }}
+                          >
+                            <IconButton
+                              size={isMobile ? "small" : "medium"}
+                              aria-label="drag handle"
                             // draggable
                             // onDragStart={() => handleDragStart(idx)}
                             // onDragEnd={handleDragEnd}
-                          >
-                            <DragIndicatorIcon
-                              sx={{ transform: "rotate(90deg)" }}
-                            />
-                          </IconButton>
+                            >
+                              <DragIndicatorIcon
+                                sx={{ transform: "rotate(90deg)" }}
+                              />
+                            </IconButton>
 
-                          <IconButton
-                            size={isMobile ? "small" : "medium"}
-                            aria-label="move up"
-                            onClick={() => moveParagraph(idx, idx - 1)}
-                            color="primary"
-                          >
-                            <KeyboardArrowUpIcon fontSize="small" />
-                          </IconButton>
+                            <IconButton
+                              size={isMobile ? "small" : "medium"}
+                              aria-label="move up"
+                              onClick={() => moveParagraph(idx, idx - 1)}
+                              color="primary"
+                            >
+                              <KeyboardArrowUpIcon fontSize="small" />
+                            </IconButton>
 
+                            <IconButton
+                              size={isMobile ? "small" : "medium"}
+                              aria-label="move down"
+                              onClick={() => moveParagraph(idx, idx + 1)}
+                              color="primary"
+                            >
+                              <KeyboardArrowDownIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </SortableItem>
+                      </Box>
+                    )}
+                    {showCtrl && (
+                      <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+                        <Box sx={{ display: "flex", gap: 0.5 }}>
                           <IconButton
+                            onClick={() => combineParagraph(idx)}
                             size={isMobile ? "small" : "medium"}
-                            aria-label="move down"
-                            onClick={() => moveParagraph(idx, idx + 1)}
-                            color="primary"
+                            title="Combine with paragraph after this"
                           >
-                            <KeyboardArrowDownIcon fontSize="small" />
+                            <MergeIcon color="primary" />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => insertParagraph(idx)}
+                            size={isMobile ? "small" : "medium"}
+                            title="Insert new paragraph after this"
+                          >
+                            <AddIcon color="primary" />
+                          </IconButton>
+                          <IconButton
+                            onClick={() => removeParagraph(idx)}
+                            size={isMobile ? "small" : "medium"}
+                          >
+                            <DeleteIcon color="error" />
                           </IconButton>
                         </Box>
-                      </SortableItem>
-                    </Box>
-                  )}
-                  {showCtrl && (
-                    <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
-                      <Box sx={{ display: "flex", gap: 0.5 }}>
-                        <IconButton
-                          onClick={() => combineParagraph(idx)}
-                          size={isMobile ? "small" : "medium"}
-                          title="Combine with paragraph after this"
-                        >
-                          <MergeIcon color="primary" />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => insertParagraph(idx)}
-                          size={isMobile ? "small" : "medium"}
-                          title="Insert new paragraph after this"
-                        >
-                          <AddIcon color="primary" />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => removeParagraph(idx)}
-                          size={isMobile ? "small" : "medium"}
-                        >
-                          <DeleteIcon color="error" />
-                        </IconButton>
                       </Box>
-                    </Box>
-                  )}
-                </Box>
-              );
-            })}
-          </SortableContext>
-          <DragOverlay>
-            {activeId != null ? (
-              <OverlayItem paragraph={localData.paragraphs[Number(activeId)]} />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+                    )}
+                  </Box>
+                );
+              })}
+            </SortableContext>
+            {/* <DragOverlay container={modalRef.current}>
+              {activeId != null ? (
+                <OverlayItem paragraph={localData.paragraphs[Number(activeId)]} />
+              ) : null}
+            </DragOverlay> */}
+          </DndContext>
+        </div>
+
       </Box>
 
       {/* Actions */}
@@ -978,104 +981,28 @@ const TagEditor = memo(function TagEditor({
   // alert dialog
   const [alertObj, setAlertObj] = useState({ open: false });
 
-  // Load all tags from API (fallback to store selector if API fails)
-  // console.log("allTags from store:", allTags);
-  const tagLstFromStore = allTags ? allTags.map((t) => t.tag) : [];
-  useEffect(() => {
-    async function loadTags() {
-      try {
-        const { result, error } = await getAllTags();
-        if (result) {
-          // attempt to read friendly name fields, fallback to raw value
-          dispatch(setTags({ tags: result }));
-        } else {
-          console.error("Error loading tags from API:", error);
+const selectedOpts = [];
+    if (allTags && selectedTags) {
+      selectedTags.forEach(id => {
+        var tagObj = allTags.find(t => t.id === id);
+        if (tagObj) {
+          selectedOpts.push(tagObj);
         }
-      } catch (err) {
-        console.error("Error loading tags:", err);
-      }
+      });
     }
-    if (!allTags) {
-      loadTags();
-    }
-  }, [allTags, dispatch]);
-
-  // --- Subscribe -----------------------------------------------------------
-  useEffect(() => {
-    const now = Timestamp.now();
-    const q = query(collection(db, "/tags_log"), where("timestamp", ">=", now));
-
-    console.log("[Subscribe] Start at:", now.toDate().toLocaleString());
-
-    const unsubscribe = onSnapshot(
-      q,
-      { includeMetadataChanges: true },
-      (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          const { id: logId } = change.doc;
-          const { json, action, itemId, timestamp } = change.doc.data();
-
-          console.log(
-            `TAG log: [${logId}] ${action} [${itemId}] at ${timestamp
-              .toDate()
-              .toLocaleString()}`
-          );
-          console.log("content: ", json);
-
-          if (true) {
-            apply();
-            console.log("applied");
-          } else {
-            console.log("skipped");
-          }
-
-          function apply() {
-            try {
-              const obj = JSON.parse(json);
-              switch (action) {
-                case "create":
-                  dispatch(addTag({ tag: obj }));
-                  break;
-                case "update":
-                  dispatch(editTag({ id: itemId, changes: obj }));
-                  break;
-                default:
-                  console.warn("Unknown action:", action);
-              }
-
-              setAlertObj({
-                open: true,
-                type: "info",
-                message:
-                  "Đã cập nhật thay đổi tags: " +
-                  timestamp.toDate().toLocaleString(),
-              });
-            } catch (e) {
-              console.error("[Realtime] JSON parse error:", e, json);
-            }
-          }
-        });
-      }
-    );
-
-    return () => {
-      console.log("[Subscribe] Unsubscribed");
-      unsubscribe();
-    };
-  }, [dispatch]);
-
-  const availableTags = (tagLstFromStore || []).filter(
-    (tag) => !selectedTags || !selectedTags.includes(tag)
-  );
-
   return (
     <Box sx={{ mb: isMobile ? 1 : 2 }}>
       <Autocomplete
         multiple
-        freeSolo
-        options={availableTags}
-        value={selectedTags || []}
-        onChange={(event, newValue) => setSelectedTags(newValue || [])}
+        // freeSolo
+        getOptionLabel={(option) => option.tag}
+        options={allTags}
+        value={selectedOpts}
+          onChange={(event, newValue) => {
+            const ids = (newValue).map(opt=>opt.id);
+            // console.log(ids)
+            setSelectedTags(ids);
+          }}
         renderInput={(params) => (
           <TextField
             {...params}
@@ -1143,7 +1070,9 @@ function renderParagraphs(t, words) {
 
 function PreviewModal({ open, onClose, title }) {
   console.log("PreviewModal");
-
+  const allTags = useSelector(selectTags);
+  const tagDict = new Map();
+  if (allTags) { allTags.forEach(t => tagDict.set(t.id, t.tag)); }
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <MyModal open={open} onClose={onClose}>
@@ -1164,7 +1093,7 @@ function PreviewModal({ open, onClose, title }) {
       </Typography>
 
       <Box sx={{ display: "flex", flexDirection: "row" }}>
-        {renderTags(title)}
+        {renderTags(title, tagDict)}
       </Box>
 
       <Box
@@ -1442,14 +1371,21 @@ function ReplaceModal({ open, onReplace, onClose }) {
   );
 }
 
-function renderTags(title) {
-  return title.tags ? (
-    title.tags.map((tag, idx) => (
-      <Chip sx={{ mr: 1 }} label={tag} key={idx}></Chip>
-    ))
-  ) : (
-    <></>
-  );
+function renderTags(title, tagDict) {
+  var tags = [];
+  if (title.tags) {
+    title.tags.forEach(t=>{
+      if (tagDict.has(t)) {
+        tags.push(tagDict.get(t));
+      }
+    });
+  }
+  return tags.map((tag, idx) => (
+    <Chip
+      sx={{ mr: 1 }}
+      label={tag}
+      key={idx}></Chip>
+  ));
 }
 
 function sortLogs(logs) {
@@ -1706,6 +1642,7 @@ function ResolveModal({ open, patch, afterJson, onApply, onClose, isMobile }) {
       {/* ACTION */}
       <Box
         sx={{
+          position: "relative",
           display: "flex",
           justifyContent: "flex-start",
           alignItems: "center",
@@ -2554,6 +2491,9 @@ function TitleCard({ t, isMobile, words }) {
     }
   };
   const [open, setOpen] = useState(false);
+  const allTags = useSelector(selectTags);
+  const tagDict = new Map();
+  if (allTags) {allTags.forEach(t=>tagDict.set(t.id,t.tag))}
   return !open ? (
     <Card
       variant="outlined"
@@ -2574,7 +2514,7 @@ function TitleCard({ t, isMobile, words }) {
         <Typography variant="h6">
           {t.title.replace(/Question|cau/, "Câu")}
         </Typography>
-        {renderTags(t)}
+        {renderTags(t, tagDict)}
       </CardContent>
       <CardActions>
         <Box sx={{ width: "100%", textAlign: "left" }}>

@@ -2,7 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import CategoryPage from "./pages/CategoryPage";
 import PostDetail from "./pages/PostDetail";
-import { useAppSelector } from "./app/hooks";
+import { useAppSelector, useTagsSubscription } from "./app/hooks";
 import { selectRoleObj, selectToken } from "./features/auth/authSlice";
 import LoginPage from "./pages/LoginPage";
 import SearchPage from "./pages/SearchPage";
@@ -14,6 +14,10 @@ import { TitlePage } from "./pages/TitlePage";
 import TagPage from "./pages/TagPage";
 
 import { useEffect } from "react";
+import { db } from "./firebase/firebase";
+import { useDispatch, useSelector } from "react-redux";
+import { selectTags, setTags } from "./features/search/searchSlice";
+import { getAllTags } from "./services/search/keyApi";
 
 export function useMobileVh() {
   useEffect(() => {
@@ -39,7 +43,33 @@ export function useMobileVh() {
 
 
 function App() {
+  console.log("App render");
   useMobileVh();
+
+  // All available tags (from API or from store) used to suggest options
+  const dispatch = useDispatch();
+  const allTags = useSelector(selectTags);
+
+  useEffect(() => {
+    async function loadTags() {
+      try {
+        console.log("Loading all tags...");
+        const { result, error } = await getAllTags();
+        if (result) {
+          dispatch(setTags({ tags: result }));
+        } else {
+          console.error("Error loading tags from API:", error);
+        }
+      } catch (err) {
+        console.error("Error loading tags:", err);
+      }
+    }
+    if (!allTags) {
+      loadTags();
+    }
+  }, [allTags, dispatch]);
+
+  useTagsSubscription(db, ()=>{});
 
   const token = useAppSelector(selectToken);
   const isMobile = useMediaQuery('(max-width:600px)');

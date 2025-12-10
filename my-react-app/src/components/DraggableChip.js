@@ -65,9 +65,9 @@ export default function ChipDragSort({ value, onChange }) {
       </SortableContext>
 
       {/* ⭐ PERFECT: DragOverlay prevents resizing while dragging */}
-      <DragOverlay>
+      {/* <DragOverlay>
         {activeId ? <DragChip id={activeId} /> : null}
-      </DragOverlay>
+      </DragOverlay> */}
     </DndContext>
   );
 }

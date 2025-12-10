@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Card,
-  CardContent,
   TextField,
   Button,
   IconButton,
@@ -18,16 +17,13 @@ import {
   deleteTag,
   editTag,
   selectTags,
-  setTags,
 } from "../features/search/searchSlice";
 import {
   createTag,
-  getAllTags,
   removeTag,
   updateTag,
 } from "../services/search/keyApi";
 import { useAppDispatch } from "../app/hooks";
-import { Timestamp } from "firebase/firestore";
 import CancelIcon from '@mui/icons-material/Cancel';
 
 export default function TagPage() {
@@ -41,23 +37,23 @@ export default function TagPage() {
   const [alertObj, setAlertObj] = useState({ open: false });
 
   // --- Load tags on mount ---
-  useEffect(() => {
-    async function loadTags() {
-      try {
-        const { result, error } = await getAllTags();
-        if (result) {
-          dispatch(setTags({ tags: result }));
-        } else {
-          console.error("Error loading tags from API:", error);
-        }
-      } catch (err) {
-        console.error("Error loading tags:", err);
-      }
-    }
-    if (!tags) {
-      loadTags();
-    }
-  }, [tags, dispatch]);
+  // useEffect(() => {
+  //   async function loadTags() {
+  //     try {
+  //       const { result, error } = await getAllTags();
+  //       if (result) {
+  //         dispatch(setTags({ tags: result }));
+  //       } else {
+  //         console.error("Error loading tags from API:", error);
+  //       }
+  //     } catch (err) {
+  //       console.error("Error loading tags:", err);
+  //     }
+  //   }
+  //   if (!tags) {
+  //     loadTags();
+  //   }
+  // }, [tags, dispatch]);
 
   // --- Handlers ---
   const handleAdd = async () => {
