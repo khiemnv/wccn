@@ -343,9 +343,13 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
   }, [data]);
 
   // --- Handlers -----------------------------------------------------------
-  const handleTagesChange = useCallback((tags) => {
-    handleChange("tags", tags);
-  }, [handleChange]);
+  const handleTagsChange = useCallback((tags) => {
+    setLocalData((prev) => {
+      const newData = { ...prev, "tags": tags };
+      updateHis(newData);
+      return newData;
+    });
+  }, []);
   const handleParagraphChange = useCallback((index, value) => {
     setLocalData((prev) => {
       const paragraphs = [...prev.paragraphs];
@@ -737,7 +741,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
           <TagEditor
             isMobile={isMobile}
             selectedTags={localData.tags}
-            setSelectedTags={handleTagesChange}
+            setSelectedTags={handleTagsChange}
           />
         </Box>
 
