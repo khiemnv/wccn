@@ -1,8 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { useEffect } from "react";
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
-import { getAllTags } from '../services/search/keyApi';
-import { addTag, editTag, selectTags, setTags } from '../features/search/searchSlice';
+import { addTag, editTag } from '../features/search/searchSlice';
 
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`
@@ -55,7 +54,7 @@ export function useTagsSubscription(db, setAlertObj) {
                   open: true,
                   type: "info",
                   message:
-                    "?? c?p nh?t thay ??i tags: " +
+                    "Tags updated at: " +
                     timestamp.toDate().toLocaleString(),
                 });
               }

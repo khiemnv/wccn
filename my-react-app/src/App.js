@@ -48,7 +48,7 @@ function App() {
 
   // All available tags (from API or from store) used to suggest options
   const dispatch = useDispatch();
-  const allTags = useSelector(selectTags);
+  const rawTags = useSelector(selectTags);
 
   useEffect(() => {
     async function loadTags() {
@@ -64,12 +64,12 @@ function App() {
         console.error("Error loading tags:", err);
       }
     }
-    if (!allTags) {
+    if (!rawTags) {
       loadTags();
     }
-  }, [allTags, dispatch]);
+  }, [rawTags, dispatch]);
 
-  useTagsSubscription(db, ()=>{});
+  useTagsSubscription(db, null);
 
   const token = useAppSelector(selectToken);
   const isMobile = useMediaQuery('(max-width:600px)');

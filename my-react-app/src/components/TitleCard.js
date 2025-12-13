@@ -23,19 +23,15 @@ import {
 
 import { useDispatch, useSelector } from "react-redux";
 import {
-  addTag,
   changeEditMode,
-  editTag,
   editTitle,
   selectDict,
   selectEditmode,
   selectMode,
   selectTags,
   setDict,
-  setTags,
 } from "../features/search/searchSlice";
 import {
-  getAllTags,
   getTitleLog2,
   updateTitle2,
   updateTitleLog2,
@@ -81,7 +77,6 @@ import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import ClearIcon from "@mui/icons-material/Clear";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import ReorderIcon from "@mui/icons-material/Reorder";
 
 import { selectRoleObj } from "../features/auth/authSlice";
 import { diff_match_patch } from "diff-match-patch";
@@ -91,14 +86,6 @@ import {
   rApplyPath,
   stableStringify,
 } from "../utils/fbUtil";
-import {
-  collection,
-  onSnapshot,
-  query,
-  Timestamp,
-  where,
-} from "firebase/firestore";
-import { db } from "../firebase/firebase";
 import { DiffView } from "./DiffView";
 import ChipDragSort from "./DraggableChip";
 import { useAppDispatch } from "../app/hooks";
@@ -113,7 +100,6 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   closestCenter,
   DndContext,
-  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
@@ -1014,20 +1000,21 @@ const TagEditor = memo(function TagEditor({
   const dispatch = useDispatch();
 
   // All available tags (from API or from store) used to suggest options
-  const allTags = useSelector(selectTags);
+  const rawTags = useSelector(selectTags);
+  const allTags = rawTags? rawTags.filter(tagObj => !tagObj.disabled) : [];
 
   // alert dialog
   const [alertObj, setAlertObj] = useState({ open: false });
 
-const selectedOpts = [];
-    if (allTags && selectedTags) {
-      selectedTags.forEach(id => {
-        var tagObj = allTags.find(t => t.id === id);
-        if (tagObj) {
-          selectedOpts.push(tagObj);
-        }
-      });
-    }
+  const selectedOpts = [];
+  if (selectedTags) {
+    selectedTags.forEach(id => {
+      var tagObj = allTags.find(t => t.id === id);
+      if (tagObj) {
+        selectedOpts.push(tagObj);
+      }
+    });
+  }
   return (
     <Box sx={{ mb: isMobile ? 1 : 2 }}>
       <Autocomplete
@@ -1108,9 +1095,11 @@ function renderParagraphs(t, words) {
 
 function PreviewModal({ open, onClose, title }) {
   console.log("PreviewModal");
-  const allTags = useSelector(selectTags);
+  const rawTags = useSelector(selectTags);
+  const allTags = rawTags? rawTags.filter(tagObj => !tagObj.disabled) : [];
+
   const tagDict = new Map();
-  if (allTags) { allTags.forEach(t => tagDict.set(t.id, t.tag)); }
+  allTags.forEach(t => tagDict.set(t.id, t.tag));
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <MyModal open={open} onClose={onClose}>
@@ -2529,9 +2518,11 @@ function TitleCard({ t, isMobile, words }) {
     }
   };
   const [open, setOpen] = useState(false);
-  const allTags = useSelector(selectTags);
+  const rawTags = useSelector(selectTags);
+  const allTags = rawTags? rawTags.filter(tagObj => !tagObj.disabled) : [];
+
   const tagDict = new Map();
-  if (allTags) {allTags.forEach(t=>tagDict.set(t.id,t.tag))}
+  allTags.forEach(t=>tagDict.set(t.id,t.tag));
   return !open ? (
     <Card
       variant="outlined"

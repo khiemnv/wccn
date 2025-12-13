@@ -9,18 +9,17 @@ import {
   Snackbar,
   Alert,
   useMediaQuery,
+  Checkbox,
 } from "@mui/material";
-import { Edit, Delete, Save, Add } from "@mui/icons-material";
+import { Edit, Save, Add } from "@mui/icons-material";
 import { useSelector } from "react-redux";
 import {
   addTag,
-  deleteTag,
   editTag,
   selectTags,
 } from "../features/search/searchSlice";
 import {
   createTag,
-  removeTag,
   updateTag,
 } from "../services/search/keyApi";
 import { useAppDispatch } from "../app/hooks";
@@ -28,7 +27,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 
 export default function TagPage() {
   const dispatch = useAppDispatch();
-  const tags = useSelector(selectTags);
+  const rawTags = useSelector(selectTags);
   //   console.log("Tags:", tags);
   const [newTag, setNewTag] = useState({});
   const [editing, setEditing] = useState({});
@@ -55,9 +54,11 @@ export default function TagPage() {
   //   }
   // }, [tags, dispatch]);
 
+  const isMobile = useMediaQuery("(max-width:600px)");
+
   // --- Handlers ---
   const handleAdd = async () => {
-    if (tags.find((t) => t.tag === newTag.tag.trim())) {
+    if (rawTags.find((t) => t.tag === newTag.tag.trim())) {
       setAlertObj({
         open: true,
         type: "error",
@@ -73,10 +74,10 @@ export default function TagPage() {
     }
   };
 
-  const handleDel = async (id) => {
-    const { result } = await removeTag(id);
+  const toggleTag = async (id, disabled) => {
+    const { result } = await updateTag(id, { disabled });
     if (result) {
-      dispatch(deleteTag({ id }));
+      dispatch(editTag({ id, changes: { disabled } }));
     }
   };
 
@@ -92,7 +93,10 @@ export default function TagPage() {
     setEditing({});
   }
 
-  const isMobile = useMediaQuery("(max-width:600px)");
+  if (!rawTags) {
+    return <div>Loading tags...</div>;
+  }
+  
   return (
     <Box sx={{
       p: isMobile ? 1 : 2,
@@ -144,7 +148,7 @@ export default function TagPage() {
           overflowY: "auto",
           p:isMobile?1:2
         }}>
-          {(tags || []).map((tagObj, index) => (
+          {rawTags.map((tagObj, index) => (
             <Box
               key={index}
               sx={{m:0}}
@@ -183,12 +187,17 @@ export default function TagPage() {
                     <IconButton onClick={() => setEditing(tagObj)}>
                       <Edit />
                     </IconButton>
-                    <IconButton
+                    {/* <IconButton
                       color="error"
                       onClick={() => handleDel(tagObj.id)}
                     >
                       <Delete />
-                    </IconButton>
+                    </IconButton> */}
+                    <Checkbox
+                      checked={!tagObj.disabled}
+                      onChange={() => toggleTag(tagObj.id, !tagObj.disabled)}
+                    >
+                    </Checkbox>
                   </Box>
                 </Card>
               )}
