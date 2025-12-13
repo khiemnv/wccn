@@ -44,7 +44,8 @@ const initialState = {
   sortByDate: "dsc",
   tags: undefined,
   status: "idle",
-  dict: dict
+  dict: dict,
+  editMode: "basic", // basic or advanced
 };
 
 export const slice = createSlice({
@@ -96,6 +97,10 @@ export const slice = createSlice({
     changeTitleId: (state, action) => {
       const {titleId} = action.payload;
       state.titleId = titleId;
+    },
+    changeEditMode: (state, action) => {
+      const {editMode} = action.payload;
+      state.editMode = editMode;
     },
     changeSearchStr: (state, action) => {
       const {searchStr} = action.payload;
@@ -150,6 +155,7 @@ export const {
   deleteKey,
   changeMode,
   changeTitleId,
+  changeEditMode,
   changeSearchStr,
   changeSearchPage,
   setSortByDate,
@@ -190,6 +196,7 @@ export const selectTags = (state) => state.search.tags;
 export const selectTitleId = (state) => state.search.titleId;
 export const selectSearchStr = (state) => state.search.searchStr;
 export const selectDict = (state) => state.search.dict;
+export const selectEditmode = (state) => state.search.editMode;
 
 export default slice.reducer;
 
