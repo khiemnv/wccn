@@ -268,7 +268,6 @@ function SortableItem({ id, children, isMobile, p }) {
       }}
     >
       {children}
-      {isDragging && <Typography>{`pragraphs: ${id}`}</Typography>}
       {/* {isDragging && <DebouncedTextField
         multiline
         minRows={1}
@@ -801,14 +800,21 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
                         <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
                           <Box
                             sx={{
+                              position: "relative",
                               display: "flex",
                               flexDirection: "row",
                               gap: 0.5,
+                              width: "100%",
                             }}
                           >
-                            <IconButton
+                            <Box
                               size={isMobile ? "small" : "medium"}
                               aria-label="drag handle"
+                              sx={{position: "absolute", 
+                                top: "50%", 
+                                left: "50%", 
+                                transform: "translateY(-50%)", 
+                                cursor: "grab" }}
                             // draggable
                             // onDragStart={() => handleDragStart(idx)}
                             // onDragEnd={handleDragEnd}
@@ -816,7 +822,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
                               <DragIndicatorIcon
                                 sx={{ transform: "rotate(90deg)" }}
                               />
-                            </IconButton>
+                            </Box>
 
                             <IconButton
                               size={isMobile ? "small" : "medium"}
