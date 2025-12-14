@@ -97,6 +97,9 @@ export default function TagPage() {
     return <div>Loading tags...</div>;
   }
   
+  const sorted = [...rawTags];
+  sorted.sort((a, b) => a.tag.localeCompare(b.tag))
+  console.log("Sorted tags:", sorted);
   return (
     <Box sx={{
       p: isMobile ? 1 : 2,
@@ -148,7 +151,8 @@ export default function TagPage() {
           overflowY: "auto",
           p:isMobile?1:2
         }}>
-          {rawTags.map((tagObj, index) => (
+          {sorted
+          .map((tagObj, index) => (
             <Box
               key={index}
               sx={{m:0}}
