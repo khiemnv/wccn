@@ -28,7 +28,7 @@ const pages = [
   { text: "Title", icon: <SearchIcon />, url: "/title", roles: ["admin", "user", "guest"] },
   { text: "Tag", icon: <SearchIcon />, url: "/tag", roles: ["admin", "user", "guest"] },
   { text: "User Manger", icon: <PeopleIcon />, url: "/usermanager", roles: ["admin"] },
-  { text: "Settings", icon: <SettingsIcon />, roles: ["admin"] },
+  { text: "Settings", icon: <SettingsIcon />, url: "/setting",roles: ["admin", "user", "guest"] },
 ];
 
 export function ResponsiveAppBar() {

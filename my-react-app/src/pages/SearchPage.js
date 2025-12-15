@@ -299,7 +299,7 @@ export default function SearchPage() {
     navigate(`/search?q=${encodeURIComponent(searchStr)}`);
   return (
     <Box sx={{
-      p: isMobile?1:2,
+      p: isMobile ? 1 : 2,
       display: "flex",
       flexDirection: "column",
       width: "100%"
@@ -361,7 +361,7 @@ export default function SearchPage() {
             ))}
           </Grid>
         </Box>
-        
+
       </Paper>
     </Box>
   );

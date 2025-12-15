@@ -13,6 +13,8 @@ class RoleApi extends BaseApi {
       bbh_keys: "",
       bbh_titles: "",
       bbh_titles_log: "",
+      tags: "",
+      tags_log: "",
     };
     super("roles", defaultEntity);
   }

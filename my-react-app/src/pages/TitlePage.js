@@ -12,14 +12,13 @@ export const TitlePage = () => {
   const dispatch = useDispatch();
 
   const isMobile = useMediaQuery("(max-width:600px)");
-
   const params = new URLSearchParams(window.location.search);
   const storeTitleId = useSelector(selectTitleId);
   const storeMode = useSelector(selectMode);
   const id = params.get("id") ? parseInt(params.get("id"), 10) : storeTitleId;
   const mode = params.get("mode") ? params.get("mode") : storeMode;
   // console.log("TitlePage mode, id:", mode, id);
- 
+
   useEffect(() => {
     if (id && storeTitleId !== id) {
       // sync store titleId with url param id
@@ -30,7 +29,7 @@ export const TitlePage = () => {
       // sync store titleId with url param id
       dispatch(changeMode({ mode: mode }));
     }
-  },[dispatch, id, mode, storeMode, storeTitleId])
+  }, [dispatch, id, mode, storeMode, storeTitleId])
 
   const titleIds = [id];
   const titles = useSelector((state) =>
@@ -98,18 +97,16 @@ export const TitlePage = () => {
     );
   }
 
-  const handleIdChange = (id) => {
-    navigate(`/title?mode=${mode}&id=${id}`);
-  }
+
 
   return (
     <Box
-    sx={{
-          flexGrow: 1,
-          // p: isMobile?1:2,
-          display: "flex",
-          flexDirection: "column",
-        }}
+      sx={{
+        flexGrow: 1,
+        // p: isMobile?1:2,
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
       <Box
         // alignItems={"center"}
@@ -122,67 +119,17 @@ export const TitlePage = () => {
       // fullWidth
       // spacing={2}
       >
-        {/* control bar */}
-        <Box 
-        sx={{pt: isMobile? 2:3,
-          display: "flex", 
-          flexDirection: "row", 
-          justifyContent:"center"}}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Button
-              onClick={() => {
-                const curId = parseInt(id);
-                if (curId <= 1) return;
-                navigate(`/title?mode=${mode}&id=${curId - 1}`);
-              }}
-            >
-              Trước
-            </Button>
 
-            {/* select mode */}
-            <FormControl size="small">
-              <InputLabel id="mode-select-label">Mode</InputLabel>
-              <Select
-                labelId="mode-select-label"
-                label="Mode"
-                value={mode}
-                onChange={(e) => navigate(`/title?mode=${e.target.value}&id=1`)}
-              >
-                <MenuItem value="QA">QA</MenuItem>
-                <MenuItem value="BBH">BBH</MenuItem>
-              </Select>
-            </FormControl>
-            {/* 
-            <CustomizedInputBase sx={{with: 50}} searchStr={id} onSearch={(strId)=>{
-                const newId = parseInt(strId);
-                navigate(`/title?mode=${mode}&id=${newId}`);
-              }} ></CustomizedInputBase> */}
-            <TitleIdInput
-              id={id}
-              onChangeId={handleIdChange}
-            ></TitleIdInput>
-
-            <Button
-              onClick={() => {
-                const newId = parseInt(id) + 1;
-                navigate(`/title?mode=${mode}&id=${newId}`);
-              }}
-            >
-              Tiếp
-            </Button>
-          </Stack>
-        </Box>
 
         {/* title editor box */}
-        {titles[0] && (
-          <TitleEditor
-            data={titles[0]}
-            isMobile={isMobile}
-            onSave={handleSave}
-            onClose={handleClose}
-          ></TitleEditor>
-        )}
+
+        <TitleEditor
+          data={titles[0]}
+          isMobile={isMobile}
+          onSave={handleSave}
+          onClose={handleClose}
+          ctrlBar={true}
+        ></TitleEditor>
         {/* <Box
           sx={{
             // position: "absolute",
@@ -216,40 +163,6 @@ export const TitlePage = () => {
     </Box>
   );
 };
-
-// debounce
-const TitleIdInput = ({ id, onChangeId }) => {
-  const [inputId, setInputId] = useState(id);
-  const debouncedSearch = useMemo(() => debounce(
-    (zId) => {
-      var nId = parseInt(zId);
-      if (!isNaN(nId)) {
-        onChangeId(nId);
-      }
-    }
-    , 500), [onChangeId]);
-
-  useEffect(() => {
-      setInputId(id);
-  }, [id]);
-
-  const handleIdChange = (e) => {
-    setInputId(e.target.value);
-    debouncedSearch(e.target.value);
-  }
-  return <TextField
-    label="Title ID"
-    value={inputId}
-    size="small"
-    sx={{ width: 100 }}
-    // onBlur={(e) => {
-    //   const newId = parseInt(e.target.value);
-    //   navigate(`/title?mode=${mode}&id=${newId}`);
-    // }}
-    onChange={handleIdChange}
-  // onKeyDown={handleKeyDown}
-  ></TextField>
-}
 
 // onblur
 const TitleIdInput2 = ({ id, onChangeId }) => {

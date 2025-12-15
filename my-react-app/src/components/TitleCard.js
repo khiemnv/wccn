@@ -25,10 +25,12 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   changeEditMode,
   editTitle,
+  selectAutoSave,
   selectDict,
   selectEditmode,
   selectMode,
   selectTags,
+  selectTitleId,
   setDict,
 } from "../features/search/searchSlice";
 import {
@@ -104,6 +106,9 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useNavigate } from "react-router-dom";
+import { DebouncedTextField } from "./DebouncedTextField";
+import { DebouncedNumInput } from "./DebouncedNumInput";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -251,8 +256,8 @@ function SortableItem({ id, children, isMobile, p }) {
         // borderRadius: 1,
         // m: isMobile ? 1 : 2,
         backgroundColor: isDragging ? "action.hover" : "transparent",
-        display:"flex",
-        flexDirection:"row",
+        display: "flex",
+        flexDirection: "row",
         alignItems: "center"
       }}
     >
@@ -290,9 +295,11 @@ function OverlayItem({ paragraph }) {
     </Box>
   );
 }
-export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
+export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = false }) {
   // console.log("TitleEditor data:", data);
+  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const autoSave = useSelector(selectAutoSave);
 
   // log
   const [logs, setLogs] = useState();
@@ -466,17 +473,35 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
   }
 
   var changes = {};
-  ["title", "path"].forEach((field) => {
-    if (localData[field] !== data[field]) {
-      changes[field] = localData[field];
+  if (localData && data) {
+    ["title", "path"].forEach((field) => {
+      if (localData[field] !== data[field]) {
+        changes[field] = localData[field];
+      }
+    });
+    if (!isSameArray(localData.paragraphs, data.paragraphs)) {
+      changes.paragraphs = localData.paragraphs;
     }
-  });
-  if (!isSameArray(localData.paragraphs, data.paragraphs)) {
-    changes.paragraphs = localData.paragraphs;
+    if (!isSameArray(localData.tags || [], data.tags || [])) {
+      changes.tags = localData.tags;
+    }
   }
-  if (!isSameArray(localData.tags || [], data.tags || [])) {
-    changes.tags = localData.tags;
-  }
+
+  // auto save on exit
+  const storeMode = useSelector(selectMode);
+  const storeTitleId = useSelector(selectTitleId);
+  // useEffect(() => {
+  //   return async () => {
+  //     // This function runs when the component is about to unmount
+  //     if (Object.keys(changes).length) {
+  //       var { result, error } = await updateTitle2(data, changes, storeMode);
+  //       console.log("auto save: ", result, error);
+  //       if (result) {
+  //         dispatch(editTitle({ id: result.titleId, changes, storeMode }));
+  //       }
+  //     }
+  //   };
+  // }, [autoSave, changes, data, dispatch, localData, onSave, storeMode]);
 
   // log
   function handleCloseLogModal() {
@@ -551,18 +576,18 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
           case "id":
           case "title":
           case "path":
-            if (line.startsWith("path: ")) {
-              changes.path = line.slice(6).trim();
+            if (line.startsWith("path:")) {
+              changes.path = line.slice(5).trim();
               state = "path";
-            } else if (line.startsWith("id: ")) {
-              newId = parseInt(line.slice(4).trim());
+            } else if (line.startsWith("id:")) {
+              newId = parseInt(line.slice(3).trim());
               state = "id";
-            } else if (line.startsWith("title: ")) {
-              changes.title = line.slice(7).trim();
+            } else if (line.startsWith("title:")) {
+              changes.title = line.slice(6).trim();
               state = "title";
-            } else if (line.startsWith("tags: ")) {
+            } else if (line.startsWith("tags:")) {
               changes.tags = line
-                .slice(6)
+                .slice(5)
                 .split("#")
                 .map((t) => t.trim())
                 .filter((t) => t !== "");
@@ -633,360 +658,446 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose }) {
   const [activeId, setActiveId] = useState(null);
   const [editingP, setEditingP] = useState(null);
   const modalRef = useRef(null);
+
   // console.log("editing", editing.paragraphs);
+  async function handleSave({ changes }) {
+    if (Object.keys(changes).length) {
+      console.log("save changes:", changes);
+      var { result, error } = await updateTitle2(data, changes, storeMode);
+      if (result) {
+        dispatch(editTitle({ id: storeTitleId, changes, mode: storeMode }));
+      }
+    }
+  }
+  const handleIdChange = async (id) => {
+    if (autoSave) {
+      await handleSave({ changes });
+    }
+    navigate(`/title?mode=${storeMode}&id=${id}`);
+  }
+  const prevTitle = async () => {
+    if (autoSave) {
+      await handleSave({ changes });
+    }
+    const curId = parseInt(storeTitleId);
+    if (curId <= 1) return;
+    navigate(`/title?mode=${storeMode}&id=${curId - 1}`);
+  }
+  const nextTitle = async () => {
+    if (autoSave) {
+      await handleSave({ changes });
+    }
+    const newId = parseInt(storeTitleId) + 1;
+    navigate(`/title?mode=${storeMode}&id=${newId}`);
+  }
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        flexGrow: 1,
-        minHeight: "50vh",
-        m: isMobile ? 1 : 2,
-      }}
-    >
-      {/* header */}
-      <Box
+    <>
+      {/* control bar */}
+      {ctrlBar && <Box
+        sx={{
+          pt: isMobile ? 2 : 3,
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center"
+        }}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            onClick={prevTitle}
+          >
+            Trước
+          </Button>
+
+          {/* select mode */}
+          <FormControl size="small">
+            <InputLabel id="mode-select-label">Mode</InputLabel>
+            <Select
+              labelId="mode-select-label"
+              label="Mode"
+              value={storeMode}
+              onChange={(e) => navigate(`/title?mode=${e.target.value}&id=1`)}
+            >
+              <MenuItem value="QA">QA</MenuItem>
+              <MenuItem value="BBH">BBH</MenuItem>
+            </Select>
+          </FormControl>
+          {/* 
+            <CustomizedInputBase sx={{with: 50}} searchStr={id} onSearch={(strId)=>{
+                const newId = parseInt(strId);
+                navigate(`/title?mode=${mode}&id=${newId}`);
+              }} ></CustomizedInputBase> */}
+          <DebouncedNumInput
+            id={storeTitleId}
+            onChangeId={handleIdChange}
+          ></DebouncedNumInput>
+
+          <Button
+            onClick={nextTitle}
+          >
+            Tiếp
+          </Button>
+        </Stack>
+      </Box>}
+
+      {localData && <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
-          gap: 2,
-          flexDirection: "row",
-        }}
-      >
-        <Typography variant={isMobile ? "h6" : "h5"}>{name}</Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <IconButton
-            disabled={indexRef.current === 0}
-            aria-label="undo"
-            color="primary"
-            onClick={handleUndo}
-          >
-            <UndoIcon fontSize="small" />
-          </IconButton>
-
-          <IconButton
-            disabled={indexRef.current === historyRef.current.length - 1}
-            aria-label="redo"
-            color="primary"
-            onClick={handleRedo}
-          >
-            <RedoIcon fontSize="small" />
-          </IconButton>
-          <IconButton aria-label="replace" onClick={() => setOpenDict(true)}>
-            <FindReplaceIcon />
-          </IconButton>
-          <IconButton aria-label="copy" onClick={handleCopy}>
-            <ContentCopyIcon />
-          </IconButton>
-          <IconButton aria-label="paste" onClick={handlePaste}>
-            <ContentPasteIcon />
-          </IconButton>
-          <IconButton aria-label="log" onClick={handleLog}>
-            <InfoOutlineIcon />
-          </IconButton>
-        </Box>
-      </Box>
-
-      {/* body */}
-      <Box
-        sx={{
-          overflowY: "auto",
-          mt: isMobile ? 1 : 2,
-          mb: isMobile ? 1 : 2,
+          flexDirection: "column",
           flexGrow: 1,
+          minHeight: "50vh",
+          m: isMobile ? 1 : 2,
         }}
       >
-        <Box sx={{ m: isMobile ? 1 : 2 }}>
-          {/* path */}
-          <DebouncedTextField
-            label="Path"
-            multiline
-            minRows={1}
-            maxRows={3}
-            fullWidth
-            value={localData.path}
-            onChange={(e) => handleChange("path", e.target.value)}
-            size={isMobile ? "small" : "medium"}
-            sx={{ mb: isMobile ? 1 : 2 }}
-          />
+        {/* header */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 2,
+            flexDirection: "row",
+          }}
+        >
+          <Typography variant={isMobile ? "h6" : "h5"}>{name}</Typography>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <IconButton
+              disabled={indexRef.current === 0}
+              aria-label="undo"
+              color="primary"
+              onClick={handleUndo}
+            >
+              <UndoIcon fontSize="small" />
+            </IconButton>
 
-          {/* Title */}
-          <DebouncedTextField
-            label="Title"
-            multiline
-            minRows={1}
-            maxRows={3}
-            fullWidth
-            value={localData.title}
-            onChange={(e) => handleChange("title", e.target.value)}
-            size={isMobile ? "small" : "medium"}
-            sx={{ mb: isMobile ? 1 : 2 }}
-          />
-
-          {/* Tags */}
-          <TagEditor
-            isMobile={isMobile}
-            selectedTags={localData.tags}
-            setSelectedTags={handleTagsChange}
-          />
+            <IconButton
+              disabled={indexRef.current === historyRef.current.length - 1}
+              aria-label="redo"
+              color="primary"
+              onClick={handleRedo}
+            >
+              <RedoIcon fontSize="small" />
+            </IconButton>
+            <IconButton aria-label="replace" onClick={() => setOpenDict(true)}>
+              <FindReplaceIcon />
+            </IconButton>
+            <IconButton aria-label="copy" onClick={handleCopy}>
+              <ContentCopyIcon />
+            </IconButton>
+            <IconButton aria-label="paste" onClick={handlePaste}>
+              <ContentPasteIcon />
+            </IconButton>
+            <IconButton aria-label="log" onClick={handleLog}>
+              <InfoOutlineIcon />
+            </IconButton>
+          </Box>
         </Box>
 
-        {/* Paragraphs */}
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-          <Typography
-            variant={isMobile ? "subtitle1" : "h6"}
-            mb={isMobile ? 1 : 2}
-          >
-            Paragraphs (drag to reorder)
-          </Typography>
-          <Switch checked={editContent}
-            onChange={() => dispatch(changeEditMode({editMode:!editContent?"advanced":"basic"}))}
-          ></Switch></Stack>
-        {editContent ?
-          <div ref={modalRef}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={(e) => {
-                setActiveId(null);
-                handleDragEnd(e);
-              }}
-              onDragCancel={() => setActiveId(null)}
+        {/* body */}
+        <Box
+          sx={{
+            overflowY: "auto",
+            pt: isMobile ? 1 : 2,
+            pb: isMobile ? 1 : 2,
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box sx={{ p: isMobile ? 1 : 2 }}>
+            {/* path */}
+            <DebouncedTextField
+              label="Path"
+              multiline
+              minRows={1}
+              maxRows={3}
+              fullWidth
+              value={localData.path}
+              onChange={(e) => handleChange("path", e.target.value)}
+              size={isMobile ? "small" : "medium"}
+              sx={{ mb: isMobile ? 1 : 2 }}
+            />
+
+            {/* Title */}
+            <DebouncedTextField
+              label="Title"
+              multiline
+              minRows={1}
+              maxRows={3}
+              fullWidth
+              value={localData.title}
+              onChange={(e) => handleChange("title", e.target.value)}
+              size={isMobile ? "small" : "medium"}
+              sx={{ mb: isMobile ? 1 : 2 }}
+            />
+
+            {/* Tags */}
+            <TagEditor
+              isMobile={isMobile}
+              selectedTags={localData.tags}
+              setSelectedTags={handleTagsChange}
+            />
+          </Box>
+
+          {/* Paragraphs - label */}
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+            <Typography
+              variant={isMobile ? "subtitle1" : "h6"}
+              mb={isMobile ? 1 : 2}
             >
-              <SortableContext
-                items={localData.paragraphs.map((_, i) => String(i))}
-                strategy={verticalListSortingStrategy}
+              Paragraphs (drag to reorder)
+            </Typography>
+            <Switch checked={editContent}
+              onChange={() => dispatch(changeEditMode({ editMode: !editContent ? "advanced" : "basic" }))}
+            ></Switch>
+          </Stack>
+
+          {/* Paragraphs - data */}
+          {editContent ?
+            <div ref={modalRef}>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={(e) => {
+                  setActiveId(null);
+                  handleDragEnd(e);
+                }}
+                onDragCancel={() => setActiveId(null)}
               >
-                {localData.paragraphs.map((p, idx) => {
-                  const isDragged = draggedIndex === idx;
-                  const isDragOver = dragOverIndex === idx && !isDragged;
-                  const showCtrl = editingP !== idx;
-                  return (
-                    <Box
-                      sx={{
-                        position: "relative",
-                        borderRadius: 1,
-                        m: isMobile ? 1 : 2,
-                      }}
-                    >
-                      <DebouncedTextField
+                <SortableContext
+                  items={localData.paragraphs.map((_, i) => String(i))}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {localData.paragraphs.map((p, idx) => {
+                    const isDragged = draggedIndex === idx;
+                    const isDragOver = dragOverIndex === idx && !isDragged;
+                    const showCtrl = editingP !== idx;
+                    return (
+                      <Box
                         sx={{
-                          // mt: 1,
-                          "& .MuiInputBase-input": {
-                            paddingTop: 2, // padding inside textarea
-                            paddingBottom: 2, // padding inside textarea
-                          },
+                          position: "relative",
+                          borderRadius: 1,
+                          m: isMobile ? 1 : 2,
                         }}
-                        multiline
-                        minRows={1}
-                        maxRows={12}
-                        fullWidth
-                        value={p}
-                        onChange={(e) => {
-                          handleParagraphChange(idx, e.target.value);
-                        }}
-                        // label={`Paragraph ${idx + 1}`}
-                        size={isMobile ? "small" : "medium"}
-                        onFocus={(e) => setEditingP(idx)}
-                        onBlur={(e) => setEditingP(null)}
-                      />
-                      {showCtrl && (
-                        <Box
+                      >
+                        <DebouncedTextField
                           sx={{
-                            position: "absolute",
-                            top: 2,
-                            left: 2,
-                            width: "100%",
-                            // backgroundColor: "#0ee3e380"
+                            // mt: 1,
+                            "& .MuiInputBase-input": {
+                              paddingTop: 2, // padding inside textarea
+                              paddingBottom: 2, // padding inside textarea
+                            },
                           }}
-                        >
-                          <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
-                            <Box
-                              sx={{
-                                position: "relative",
-                                display: "flex",
-                                flexDirection: "row",
-                                gap: 0.5,
-                                width: "100%",
-                              }}
-                            >
+                          multiline
+                          minRows={1}
+                          maxRows={12}
+                          fullWidth
+                          value={p}
+                          onChange={(e) => {
+                            handleParagraphChange(idx, e.target.value);
+                          }}
+                          // label={`Paragraph ${idx + 1}`}
+                          size={isMobile ? "small" : "medium"}
+                          onFocus={(e) => setEditingP(idx)}
+                          onBlur={(e) => setEditingP(null)}
+                        />
+                        {showCtrl && (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              top: 2,
+                              left: 2,
+                              width: "100%",
+                              // backgroundColor: "#0ee3e380"
+                            }}
+                          >
+                            <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
                               <Box
-                                size={isMobile ? "small" : "medium"}
-                                aria-label="drag handle"
                                 sx={{
-                                  position: "absolute",
-                                  top: "50%",
-                                  left: "50%",
-                                  transform: "translateY(-50%)",
-                                  cursor: "grab"
+                                  position: "relative",
+                                  display: "flex",
+                                  flexDirection: "row",
+                                  gap: 0.5,
+                                  width: "100%",
                                 }}
-                              // draggable
-                              // onDragStart={() => handleDragStart(idx)}
-                              // onDragEnd={handleDragEnd}
                               >
-                                <DragIndicatorIcon
-                                  sx={{ transform: "rotate(90deg)" }}
-                                />
+                                <Box
+                                  size={isMobile ? "small" : "medium"}
+                                  aria-label="drag handle"
+                                  sx={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translateY(-50%)",
+                                    cursor: "grab"
+                                  }}
+                                // draggable
+                                // onDragStart={() => handleDragStart(idx)}
+                                // onDragEnd={handleDragEnd}
+                                >
+                                  <DragIndicatorIcon
+                                    sx={{ transform: "rotate(90deg)" }}
+                                  />
+                                </Box>
+
+                                <IconButton
+                                  size={isMobile ? "small" : "medium"}
+                                  aria-label="move up"
+                                  onClick={() => moveParagraph(idx, idx - 1)}
+                                  color="primary"
+                                >
+                                  <KeyboardArrowUpIcon fontSize="small" />
+                                </IconButton>
+
+                                <IconButton
+                                  size={isMobile ? "small" : "medium"}
+                                  aria-label="move down"
+                                  onClick={() => moveParagraph(idx, idx + 1)}
+                                  color="primary"
+                                >
+                                  <KeyboardArrowDownIcon fontSize="small" />
+                                </IconButton>
                               </Box>
-
+                            </SortableItem>
+                          </Box>
+                        )}
+                        {showCtrl && (
+                          <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+                            <Box sx={{ display: "flex", gap: 0.5 }}>
                               <IconButton
+                                onClick={() => combineParagraph(idx)}
                                 size={isMobile ? "small" : "medium"}
-                                aria-label="move up"
-                                onClick={() => moveParagraph(idx, idx - 1)}
-                                color="primary"
+                                title="Combine with paragraph after this"
                               >
-                                <KeyboardArrowUpIcon fontSize="small" />
+                                <MergeIcon color="primary" />
                               </IconButton>
-
                               <IconButton
+                                onClick={() => insertParagraph(idx)}
                                 size={isMobile ? "small" : "medium"}
-                                aria-label="move down"
-                                onClick={() => moveParagraph(idx, idx + 1)}
-                                color="primary"
+                                title="Insert new paragraph after this"
                               >
-                                <KeyboardArrowDownIcon fontSize="small" />
+                                <AddIcon color="primary" />
+                              </IconButton>
+                              <IconButton
+                                onClick={() => removeParagraph(idx)}
+                                size={isMobile ? "small" : "medium"}
+                              >
+                                <DeleteIcon color="error" />
                               </IconButton>
                             </Box>
-                          </SortableItem>
-                        </Box>
-                      )}
-                      {showCtrl && (
-                        <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
-                          <Box sx={{ display: "flex", gap: 0.5 }}>
-                            <IconButton
-                              onClick={() => combineParagraph(idx)}
-                              size={isMobile ? "small" : "medium"}
-                              title="Combine with paragraph after this"
-                            >
-                              <MergeIcon color="primary" />
-                            </IconButton>
-                            <IconButton
-                              onClick={() => insertParagraph(idx)}
-                              size={isMobile ? "small" : "medium"}
-                              title="Insert new paragraph after this"
-                            >
-                              <AddIcon color="primary" />
-                            </IconButton>
-                            <IconButton
-                              onClick={() => removeParagraph(idx)}
-                              size={isMobile ? "small" : "medium"}
-                            >
-                              <DeleteIcon color="error" />
-                            </IconButton>
                           </Box>
-                        </Box>
-                      )}
-                    </Box>
-                  );
-                })}
-              </SortableContext>
-              {/* <DragOverlay container={modalRef.current}>
+                        )}
+                      </Box>
+                    );
+                  })}
+                </SortableContext>
+                {/* <DragOverlay container={modalRef.current}>
               {activeId != null ? (
                 <OverlayItem paragraph={localData.paragraphs[Number(activeId)]} />
               ) : null}
             </DragOverlay> */}
-            </DndContext>
-          </div>
-          :
-          <Card
-            sx={{
-              overflowY: "auto",
-              mt: isMobile ? 1 : 2,
-              mb: isMobile ? 1 : 2,
-              p: isMobile ? 1 : 2,
-              minHeight: "30vh",
-            }}
-          >
-            {renderParagraphs(localData, [])}
-          </Card>
-        }
-
-      </Box>
-
-      {/* Actions */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 2,
-          // flexDirection: isMobile ? "column" : "row",
-          flexDirection: "row",
-        }}
-      >
-        <Button onClick={() => handlePreview()}>Preview</Button>
-        <Box>
-          {onClose && (
-            <Button
-              variant="text"
-              onClick={() => {
-                setLocalData(data);
-                onClose();
+              </DndContext>
+            </div>
+            :
+            <Card
+              sx={{
+                overflowY: "auto",
+                p: isMobile ? 1 : 2,
+                minHeight: "15vh",
               }}
-              // fullWidth={isMobile}
             >
-              Cancel
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            onClick={() => onSave({ changes })}
-            // fullWidth={isMobile}
-            disabled={Object.keys(changes).length === 0}
-          >
-            Save
-          </Button>
+              <Box>
+                {renderParagraphs(localData, [])}
+              </Box>
+            </Card>
+          }
+
         </Box>
-      </Box>
 
-      {showLogModal && (
-        <TitleLogModal
-          showLogModal={showLogModal}
-          handleCloseLogModal={handleCloseLogModal}
-          isMobile={isMobile}
-          logs={logs}
-          base={data}
-          onRevert={(obj) => {
-            setShowLog(false);
-            setLocalData(obj);
+        {/* Actions */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 2,
+            // flexDirection: isMobile ? "column" : "row",
+            flexDirection: "row",
           }}
-        />
-      )}
-
-      {openPreview && (
-        <PreviewModal
-          open={openPreview}
-          onClose={() => {
-            setOpenPreview(false);
-          }}
-          title={localData}
-        />
-      )}
-
-      {openDict && (
-        <ReplaceModal
-          open={openDict}
-          onClose={() => setOpenDict(false)}
-          onReplace={handleReplace}
-        ></ReplaceModal>
-      )}
-
-      {/* Alert */}
-      <Snackbar
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        open={alertObj.open}
-        autoHideDuration={5000}
-        onClose={() => setAlertObj({ open: false })}
-      >
-        <Alert
-          onClose={() => setAlertObj({ open: false })}
-          severity={alertObj.type} // "error" | "warning" | "info" | "success"
-          variant="filled"
-          sx={{ width: "100%" }}
         >
-          {alertObj.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+          <Button onClick={() => handlePreview()}>Preview</Button>
+          <Box>
+            {onClose && (
+              <Button
+                variant="text"
+                onClick={() => {
+                  setLocalData(data);
+                  onClose();
+                }}
+              // fullWidth={isMobile}
+              >
+                Cancel
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              onClick={() => onSave({ changes })}
+              // fullWidth={isMobile}
+              disabled={Object.keys(changes).length === 0}
+            >
+              Save
+            </Button>
+          </Box>
+        </Box>
+
+        {showLogModal && (
+          <TitleLogModal
+            showLogModal={showLogModal}
+            handleCloseLogModal={handleCloseLogModal}
+            isMobile={isMobile}
+            logs={logs}
+            base={data}
+            onRevert={(obj) => {
+              setShowLog(false);
+              setLocalData(obj);
+            }}
+          />
+        )}
+
+        {openPreview && (
+          <PreviewModal
+            open={openPreview}
+            onClose={() => {
+              setOpenPreview(false);
+            }}
+            title={localData}
+          />
+        )}
+
+        {openDict && (
+          <ReplaceModal
+            open={openDict}
+            onClose={() => setOpenDict(false)}
+            onReplace={handleReplace}
+          ></ReplaceModal>
+        )}
+
+        {/* Alert */}
+        <Snackbar
+          anchorOrigin={{ vertical: "top", horizontal: "right" }}
+          open={alertObj.open}
+          autoHideDuration={5000}
+          onClose={() => setAlertObj({ open: false })}
+        >
+          <Alert
+            onClose={() => setAlertObj({ open: false })}
+            severity={alertObj.type} // "error" | "warning" | "info" | "success"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {alertObj.message}
+          </Alert>
+        </Snackbar>
+      </Box>}
+    </>
+
   );
 }
 
@@ -1001,7 +1112,7 @@ const TagEditor = memo(function TagEditor({
 
   // All available tags (from API or from store) used to suggest options
   const rawTags = useSelector(selectTags);
-  const allTags = rawTags? rawTags.filter(tagObj => !tagObj.disabled) : [];
+  const allTags = rawTags ? rawTags.filter(tagObj => !tagObj.disabled) : [];
 
   // alert dialog
   const [alertObj, setAlertObj] = useState({ open: false });
@@ -1023,11 +1134,11 @@ const TagEditor = memo(function TagEditor({
         getOptionLabel={(option) => option.tag}
         options={allTags}
         value={selectedOpts}
-          onChange={(event, newValue) => {
-            const ids = (newValue).map(opt=>opt.id);
-            // console.log(ids)
-            setSelectedTags(ids);
-          }}
+        onChange={(event, newValue) => {
+          const ids = (newValue).map(opt => opt.id);
+          // console.log(ids)
+          setSelectedTags(ids);
+        }}
         renderInput={(params) => (
           <TextField
             {...params}
@@ -1096,7 +1207,7 @@ function renderParagraphs(t, words) {
 function PreviewModal({ open, onClose, title }) {
   console.log("PreviewModal");
   const rawTags = useSelector(selectTags);
-  const allTags = rawTags? rawTags.filter(tagObj => !tagObj.disabled) : [];
+  const allTags = rawTags ? rawTags.filter(tagObj => !tagObj.disabled) : [];
 
   const tagDict = new Map();
   allTags.forEach(t => tagDict.set(t.id, t.tag));
@@ -1264,7 +1375,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
               // backgroundColor: pair.selected ? 'primary.light' : 'background.paper',
               cursor: "pointer",
             }}
-            // onClick={() => handleToggleSelect(idx)}
+          // onClick={() => handleToggleSelect(idx)}
           >
             <Tooltip title="Selected">
               <Checkbox
@@ -1401,7 +1512,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
 function renderTags(title, tagDict) {
   var tags = [];
   if (title.tags) {
-    title.tags.forEach(t=>{
+    title.tags.forEach(t => {
       if (tagDict.has(t)) {
         tags.push(tagDict.get(t));
       }
@@ -1427,9 +1538,8 @@ function sortLogs(logs) {
 
 function tsToStr(ts) {
   const date = ts.toDate();
-  const formatted = `${date.getDate()}/${
-    date.getMonth() + 1
-  }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+  const formatted = `${date.getDate()}/${date.getMonth() + 1
+    }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
   return formatted;
 }
 
@@ -1442,7 +1552,7 @@ const PatchDecorator = (patchText, onHunk) => {
     function formatLine(line, idx, onHunk) {
       // Context
       var style = {};
-      var onClick = () => {};
+      var onClick = () => { };
       if (line.startsWith("+") && !line.startsWith("+++")) {
         // Addition
         style = {
@@ -1783,7 +1893,7 @@ function TitleLogModal({
         }
       }
       setHis(lst);
-    } catch (ex) {}
+    } catch (ex) { }
   }, [base, logs]);
 
   if (!his) {
@@ -1929,9 +2039,8 @@ function TitleLogModal({
             renderValue={(option) => {
               const idx = option;
               const date = logs[idx].timestamp.toDate();
-              const formatted = `${date.getDate()}/${
-                date.getMonth() + 1
-              }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
+              const formatted = `${date.getDate()}/${date.getMonth() + 1
+                }/${date.getFullYear()} ${date.getHours()}:${date.getMinutes()}`;
               return formatted;
             }}
           >
@@ -1946,7 +2055,7 @@ function TitleLogModal({
                       alignItems: "center",
                     }}
                     value={idx}
-                    // onClick={() => handleUndo(idx)}
+                  // onClick={() => handleUndo(idx)}
                   >
                     <Radio checked={idx === selected}></Radio>
                     <Typography>{label}</Typography>
@@ -2043,15 +2152,15 @@ function TitleLogModal({
         <Button
           variant="text"
           onClick={handleCloseLogModal}
-          // fullWidth={isMobile}
+        // fullWidth={isMobile}
         >
           Cancel
         </Button>
         <Button
           variant="contained"
           onClick={() => onRevert(JSON.parse(beforeJson))}
-          // fullWidth={isMobile}
-          // disabled={selected && (selected === (logs.length-1))}
+        // fullWidth={isMobile}
+        // disabled={selected && (selected === (logs.length-1))}
         >
           Revert
         </Button>
@@ -2059,30 +2168,7 @@ function TitleLogModal({
     </MyModal>
   );
 }
-const DebouncedTextField = ({ value, onChange, ...props }) => {
-  const [text, setText] = useState(value);
-  useEffect(() => {
-    // historyRef.current=[p];
-    // indexRef.current=0;
-    setText(value);
-  }, [value]);
 
-  const debouncedText = useMemo(
-    () =>
-      debounce((e) => {
-        onChange(e);
-      }, 500),
-    [onChange]
-  );
-  const handleChange = useCallback(
-    (e) => {
-      setText(e.target.value);
-      debouncedText(e);
-    },
-    [debouncedText]
-  );
-  return <TextField value={text} onChange={handleChange} {...props} />;
-};
 const ParagraphEditor = memo(function ParagraphEditor({
   p,
   handleParagraphChange,
@@ -2240,7 +2326,7 @@ const ParagraphEditor = memo(function ParagraphEditor({
               size={isMobile ? "small" : "medium"}
               aria-label="undo"
               onClick={handleUndo}
-              // color="secondary"
+            // color="secondary"
             >
               <UndoIcon fontSize="small" />
             </IconButton>
@@ -2250,7 +2336,7 @@ const ParagraphEditor = memo(function ParagraphEditor({
               size={isMobile ? "small" : "medium"}
               aria-label="redo"
               onClick={handleRedo}
-              // color="secondary"
+            // color="secondary"
             >
               <RedoIcon fontSize="small" />
             </IconButton>
@@ -2507,7 +2593,7 @@ function TitleCard({ t, isMobile, words }) {
       console.error("Copy failed:", err);
     }
   };
-  const handleDel = () => {};
+  const handleDel = () => { };
   const handleSave = async ({ changes, patch }) => {
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
@@ -2519,10 +2605,10 @@ function TitleCard({ t, isMobile, words }) {
   };
   const [open, setOpen] = useState(false);
   const rawTags = useSelector(selectTags);
-  const allTags = rawTags? rawTags.filter(tagObj => !tagObj.disabled) : [];
+  const allTags = rawTags ? rawTags.filter(tagObj => !tagObj.disabled) : [];
 
   const tagDict = new Map();
-  allTags.forEach(t=>tagDict.set(t.id,t.tag));
+  allTags.forEach(t => tagDict.set(t.id, t.tag));
   return !open ? (
     <Card
       variant="outlined"

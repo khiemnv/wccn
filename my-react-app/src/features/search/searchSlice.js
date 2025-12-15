@@ -46,6 +46,7 @@ const initialState = {
   status: "idle",
   dict: dict,
   editMode: "basic", // basic or advanced
+  autoSave: true,
 };
 
 export const slice = createSlice({
@@ -102,6 +103,10 @@ export const slice = createSlice({
       const {editMode} = action.payload;
       state.editMode = editMode;
     },
+    changeAutoSave: (state, action) => {
+      const {autoSave} = action.payload;
+      state.autoSave = autoSave;
+    },
     changeSearchStr: (state, action) => {
       const {searchStr} = action.payload;
       state.searchStr = searchStr;
@@ -156,6 +161,7 @@ export const {
   changeMode,
   changeTitleId,
   changeEditMode,
+  changeAutoSave,
   changeSearchStr,
   changeSearchPage,
   setSortByDate,
@@ -197,6 +203,7 @@ export const selectTitleId = (state) => state.search.titleId;
 export const selectSearchStr = (state) => state.search.searchStr;
 export const selectDict = (state) => state.search.dict;
 export const selectEditmode = (state) => state.search.editMode;
+export const selectAutoSave = (state) => state.search.autoSave;
 
 export default slice.reducer;
 

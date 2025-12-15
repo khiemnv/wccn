@@ -18,6 +18,7 @@ import { db } from "./firebase/firebase";
 import { useDispatch, useSelector } from "react-redux";
 import { selectTags, setTags } from "./features/search/searchSlice";
 import { getAllTags } from "./services/search/keyApi";
+import SettingsPage from "./pages/SettingsPage";
 
 export function useMobileVh() {
   useEffect(() => {
@@ -92,6 +93,7 @@ function App() {
           <Route path="/bai8" element={<Bai8 />} />
           <Route path="/title" element={<TitlePage />} />
           <Route path="/tag" element={<TagPage />} />
+          <Route path="/setting" element={<SettingsPage />} />
 
           {roleObj && roleObj.sys === "admin" && <Route path="/usermanager" element={<UserManager />} />}
         </Routes>
