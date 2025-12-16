@@ -50,8 +50,11 @@ function App() {
   // All available tags (from API or from store) used to suggest options
   const dispatch = useDispatch();
   const rawTags = useSelector(selectTags);
+  const token = useAppSelector(selectToken);
 
   useEffect(() => {
+    if (!token) return;
+
     async function loadTags() {
       try {
         console.log("Loading all tags...");
@@ -65,14 +68,14 @@ function App() {
         console.error("Error loading tags:", err);
       }
     }
+
     if (!rawTags) {
       loadTags();
     }
-  }, [rawTags, dispatch]);
+  }, [rawTags, dispatch, token]);
 
   useTagsSubscription(db, null);
 
-  const token = useAppSelector(selectToken);
   const isMobile = useMediaQuery('(max-width:600px)');
   const roleObj = useAppSelector(selectRoleObj);
   if (!token) {

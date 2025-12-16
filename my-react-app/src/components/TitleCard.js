@@ -646,6 +646,45 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
   const handlePreview = () => {
     setOpenPreview(true);
   };
+  const normalizeText = (text) =>
+  text
+    .normalize("NFC")
+    // nối dòng sai (không sau . : ! ?)
+    .replace(/([0-9\p{L}][,;]?)\s*\n\s*(\p{L})/gu, "$1 $2")
+    // chuẩn dấu câu
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/([^\d])([,.;:!?])(?=\S)/g, "$1$2 ")
+    .replace(/\s*([.:!?]\s*)([a-zàáảãạâăèéêìíòóôơùúưỳýđ])/g,
+          (match, punc, letter) => punc + letter.toUpperCase()
+        );
+
+  const handleFix = () => {
+    setLocalData((prev) => {
+      const cbLst = [
+        normalizeText,
+        // (text) => text.replace(/\s*([.:!?]\s*)([a-zàáảãạâăèéêìíòóôơùúưỳýđ])/g,
+        //   (match, punc, letter) => punc + letter.toUpperCase()
+        // ),
+        // (text) => text.replace(/\s*([,;:.])(\w|\n)/gu, '$1 $2'),
+        // // thiếu khoảng trắng sau dấu
+        // (text) => text.replace(/(\p{L}),(\p{L})/gu, "$1, $2"),
+        // // nối dòng sai
+        // (text) => text.replace(/([\p{L}\p{M}][,;]?)\s*\n\s*([\p{L}\p{M}])/gu,"$1 $2"),
+        // (text) => text.replace(/\s+([.,:;?!])/gm,"$1"),
+      ]
+      const paragraphs = prev.paragraphs.map((line) => {
+        let result = line.trim();
+        cbLst.forEach((cb) => {
+          result = cb(result)
+        });
+        return result;
+      });
+      const newData = { ...prev, paragraphs };
+      historyRef.current.push(newData);
+      indexRef.current = historyRef.current.length - 1;
+      return newData;
+    });
+  }
 
   // const showCtrl = true;
 
@@ -838,10 +877,10 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
           </Box>
 
           {/* Paragraphs - label */}
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+          <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2}>
             <Typography
               variant={isMobile ? "subtitle1" : "h6"}
-              mb={isMobile ? 1 : 2}
+              // mb={isMobile ? 1 : 2}
             >
               Paragraphs (drag to reorder)
             </Typography>
@@ -852,7 +891,16 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
 
           {/* Paragraphs - data */}
           {editContent ?
-            <div ref={modalRef}>
+          <Card
+              sx={{
+                overflowY: "auto",
+                p: isMobile ? 1 : 2,
+                minHeight: "15vh",
+              }}
+            >
+            <div
+              ref={modalRef}
+            >
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -875,7 +923,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                         sx={{
                           position: "relative",
                           borderRadius: 1,
-                          m: isMobile ? 1 : 2,
+                          mb: isMobile ? 1 : 2,
                         }}
                       >
                         <DebouncedTextField
@@ -995,7 +1043,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
               ) : null}
             </DragOverlay> */}
               </DndContext>
-            </div>
+            </div></Card>
             :
             <Card
               sx={{
@@ -1022,7 +1070,10 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
             flexDirection: "row",
           }}
         >
-          <Button onClick={() => handlePreview()}>Preview</Button>
+          <Box>
+            <Button onClick={() => handlePreview()}>Preview</Button>
+            <Button onClick={() => handleFix()}>Fix</Button>
+          </Box>
           <Box>
             {onClose && (
               <Button
@@ -1127,7 +1178,7 @@ const TagEditor = memo(function TagEditor({
     });
   }
   return (
-    <Box sx={{ mb: isMobile ? 1 : 2 }}>
+    <>
       <Autocomplete
         multiple
         // freeSolo
@@ -1164,7 +1215,7 @@ const TagEditor = memo(function TagEditor({
           {alertObj.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </>
   );
 });
 
@@ -1360,7 +1411,7 @@ function ReplaceModal({ open, onReplace, onClose }) {
           flexGrow: 1,
           overflowY: "auto",
           flexDirection: "column",
-          minHeight: "200px",
+          minHeight: "20vh",
         }}
       >
         {localDict.map((pair, idx) => (

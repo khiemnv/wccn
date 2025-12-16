@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useEffect } from "react";
 import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
 import { addTag, editTag } from '../features/search/searchSlice';
+import { selectToken } from '../features/auth/authSlice';
 
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`
@@ -11,7 +12,10 @@ export const useAppSelector = useSelector
 export function useTagsSubscription(db, setAlertObj) {
   const dispatch = useDispatch();
 
+  const token = useAppSelector(selectToken);
   useEffect(() => {
+    if (!token) return;
+
     const now = Timestamp.now();
     const q = query(
       collection(db, "/tags_log"),
@@ -72,5 +76,5 @@ export function useTagsSubscription(db, setAlertObj) {
       console.log("[Subscribe] Unsubscribed");
       unsubscribe();
     };
-  }, [db, dispatch, setAlertObj]);
+  }, [db, dispatch, setAlertObj, token]);
 }
