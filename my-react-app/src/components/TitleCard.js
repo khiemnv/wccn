@@ -254,7 +254,7 @@ function SortableItem({ id, children, isMobile, p }) {
         transform: CSS.Transform.toString(transform),
         transition,
         // borderRadius: 1,
-        // m: isMobile ? 1 : 2,
+        // m: 1,
         backgroundColor: isDragging ? "action.hover" : "transparent",
         display: "flex",
         flexDirection: "row",
@@ -733,10 +733,10 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
   }
   return (
     <>
-      {/* control bar */}
+      {/* title id bar */}
       {ctrlBar && <Box
         sx={{
-          pt: isMobile ? 2 : 3,
+          pt: 1,
           display: "flex",
           flexDirection: "row",
           justifyContent: "center"
@@ -786,7 +786,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
           flexDirection: "column",
           flexGrow: 1,
           minHeight: "50vh",
-          m: isMobile ? 1 : 2,
+          m: 1,
         }}
       >
         {/* header */}
@@ -836,14 +836,15 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
         <Box
           sx={{
             overflowY: "auto",
-            pt: isMobile ? 1 : 2,
-            pb: isMobile ? 1 : 2,
+            pt: 1,
+            pb: 1,
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
           }}
         >
-          <Box sx={{ p: isMobile ? 1 : 2, pt: 0 }}>
+          {/* path, title, tags */}
+          <Box>
             {/* path */}
             <DebouncedTextField
               label="Path"
@@ -854,7 +855,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
               value={localData.path}
               onChange={(e) => handleChange("path", e.target.value)}
               size={isMobile ? "small" : "medium"}
-              sx={{ mb: isMobile ? 1 : 2 }}
+              sx={{ mb: 1 }}
             />
 
             {/* Title */}
@@ -867,7 +868,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
               value={localData.title}
               onChange={(e) => handleChange("title", e.target.value)}
               size={isMobile ? "small" : "medium"}
-              sx={{ mb: isMobile ? 1 : 2 }}
+              sx={{ mb: 1 }}
             />
 
             {/* Tags */}
@@ -879,10 +880,10 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
           </Box>
 
           {/* Paragraphs - label */}
-          <Stack direction="row" alignItems="center" spacing={isMobile ? 1 : 2}>
+          <Stack direction="row" alignItems="center" spacing={1}>
             <Typography
               variant={isMobile ? "subtitle1" : "h6"}
-              // mb={isMobile ? 1 : 2}
+              // mb={1}
             >
               Paragraphs (drag to reorder)
             </Typography>
@@ -893,164 +894,168 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
 
           {/* Paragraphs - data */}
           {editContent ?
-          <Card
+            <Box
               sx={{
                 overflowY: "auto",
-                p: isMobile ? 1 : 2,
+                overflowX: "hidden",
+                display: "flex",
+                flexDirection: "column",
                 minHeight: "15vh",
               }}
             >
-            <div
-              ref={modalRef}
-            >
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={(e) => {
-                  setActiveId(null);
-                  handleDragEnd(e);
-                }}
-                onDragCancel={() => setActiveId(null)}
+              <Box
+                sx={{p:0}}
+                ref={modalRef}
               >
-                <SortableContext
-                  items={localData.paragraphs.map((_, i) => String(i))}
-                  strategy={verticalListSortingStrategy}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(e) => {
+                    setActiveId(null);
+                    handleDragEnd(e);
+                  }}
+                  onDragCancel={() => setActiveId(null)}
                 >
-                  {localData.paragraphs.map((p, idx) => {
-                    const isDragged = draggedIndex === idx;
-                    const isDragOver = dragOverIndex === idx && !isDragged;
-                    const showCtrl = editingP !== idx;
-                    return (
-                      <Box
-                        sx={{
-                          position: "relative",
-                          borderRadius: 1,
-                          mb: isMobile ? 1 : 2,
-                        }}
-                      >
-                        <DebouncedTextField
+                  <SortableContext
+                    items={localData.paragraphs.map((_, i) => String(i))}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {localData.paragraphs.map((p, idx) => {
+                      const isDragged = draggedIndex === idx;
+                      const isDragOver = dragOverIndex === idx && !isDragged;
+                      const showCtrl = editingP !== idx;
+                      return (
+                        <Box
                           sx={{
-                            // mt: 1,
-                            "& .MuiInputBase-input": {
-                              paddingTop: 2, // padding inside textarea
-                              paddingBottom: 2, // padding inside textarea
-                            },
+                            position: "relative",
+                            borderRadius: 1,
+                            mb: 1,
                           }}
-                          multiline
-                          minRows={1}
-                          maxRows={12}
-                          fullWidth
-                          value={p}
-                          onChange={(e) => {
-                            handleParagraphChange(idx, e.target.value);
-                          }}
-                          // label={`Paragraph ${idx + 1}`}
-                          size={isMobile ? "small" : "medium"}
-                          onFocus={(e) => setEditingP(idx)}
-                          onBlur={(e) => setEditingP(null)}
-                        />
-                        {showCtrl && (
-                          <Box
+                        >
+                          <DebouncedTextField
                             sx={{
-                              position: "absolute",
-                              top: 2,
-                              left: 2,
-                              width: "100%",
-                              // backgroundColor: "#0ee3e380"
+                              // mt: 1,
+                              "& .MuiInputBase-input": {
+                                paddingTop: 1, // padding inside textarea
+                                paddingBottom: 1, // padding inside textarea
+                              },
                             }}
-                          >
-                            <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
-                              <Box
-                                sx={{
-                                  position: "relative",
-                                  display: "flex",
-                                  flexDirection: "row",
-                                  gap: 0.5,
-                                  width: "100%",
-                                }}
-                              >
+                            multiline
+                            minRows={1}
+                            maxRows={12}
+                            fullWidth
+                            value={p}
+                            onChange={(e) => {
+                              handleParagraphChange(idx, e.target.value);
+                            }}
+                            // label={`Paragraph ${idx + 1}`}
+                            size={isMobile ? "small" : "medium"}
+                            onFocus={(e) => setEditingP(idx)}
+                            onBlur={(e) => setEditingP(null)}
+                          />
+                          {showCtrl && (
+                            <Box
+                              sx={{
+                                position: "absolute",
+                                top: 2,
+                                left: 2,
+                                width: "100%",
+                                // backgroundColor: "#0ee3e380"
+                              }}
+                            >
+                              <SortableItem id={String(idx)} isMobile={isMobile} p={p}>
                                 <Box
-                                  size={isMobile ? "small" : "medium"}
-                                  aria-label="drag handle"
                                   sx={{
-                                    position: "absolute",
-                                    top: "50%",
-                                    left: "50%",
-                                    transform: "translateY(-50%)",
-                                    cursor: "grab"
+                                    position: "relative",
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    gap: 0.5,
+                                    width: "100%",
                                   }}
-                                // draggable
-                                // onDragStart={() => handleDragStart(idx)}
-                                // onDragEnd={handleDragEnd}
                                 >
-                                  <DragIndicatorIcon
-                                    sx={{ transform: "rotate(90deg)" }}
-                                  />
+                                  <Box
+                                    size={isMobile ? "small" : "medium"}
+                                    aria-label="drag handle"
+                                    sx={{
+                                      position: "absolute",
+                                      top: "50%",
+                                      left: "50%",
+                                      transform: "translateY(-50%)",
+                                      cursor: "grab"
+                                    }}
+                                  // draggable
+                                  // onDragStart={() => handleDragStart(idx)}
+                                  // onDragEnd={handleDragEnd}
+                                  >
+                                    <DragIndicatorIcon
+                                      sx={{ transform: "rotate(90deg)" }}
+                                    />
+                                  </Box>
+
+                                  <IconButton
+                                    size={isMobile ? "small" : "medium"}
+                                    aria-label="move up"
+                                    onClick={() => moveParagraph(idx, idx - 1)}
+                                    color="primary"
+                                  >
+                                    <KeyboardArrowUpIcon fontSize="small" />
+                                  </IconButton>
+
+                                  <IconButton
+                                    size={isMobile ? "small" : "medium"}
+                                    aria-label="move down"
+                                    onClick={() => moveParagraph(idx, idx + 1)}
+                                    color="primary"
+                                  >
+                                    <KeyboardArrowDownIcon fontSize="small" />
+                                  </IconButton>
                                 </Box>
-
+                              </SortableItem>
+                            </Box>
+                          )}
+                          {showCtrl && (
+                            <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
+                              <Box sx={{ display: "flex", gap: 0.5 }}>
                                 <IconButton
+                                  onClick={() => combineParagraph(idx)}
                                   size={isMobile ? "small" : "medium"}
-                                  aria-label="move up"
-                                  onClick={() => moveParagraph(idx, idx - 1)}
-                                  color="primary"
+                                  title="Combine with paragraph after this"
                                 >
-                                  <KeyboardArrowUpIcon fontSize="small" />
+                                  <MergeIcon color="primary" />
                                 </IconButton>
-
                                 <IconButton
+                                  onClick={() => insertParagraph(idx)}
                                   size={isMobile ? "small" : "medium"}
-                                  aria-label="move down"
-                                  onClick={() => moveParagraph(idx, idx + 1)}
-                                  color="primary"
+                                  title="Insert new paragraph after this"
                                 >
-                                  <KeyboardArrowDownIcon fontSize="small" />
+                                  <AddIcon color="primary" />
+                                </IconButton>
+                                <IconButton
+                                  onClick={() => removeParagraph(idx)}
+                                  size={isMobile ? "small" : "medium"}
+                                >
+                                  <DeleteIcon color="error" />
                                 </IconButton>
                               </Box>
-                            </SortableItem>
-                          </Box>
-                        )}
-                        {showCtrl && (
-                          <Box sx={{ position: "absolute", bottom: 2, right: 2 }}>
-                            <Box sx={{ display: "flex", gap: 0.5 }}>
-                              <IconButton
-                                onClick={() => combineParagraph(idx)}
-                                size={isMobile ? "small" : "medium"}
-                                title="Combine with paragraph after this"
-                              >
-                                <MergeIcon color="primary" />
-                              </IconButton>
-                              <IconButton
-                                onClick={() => insertParagraph(idx)}
-                                size={isMobile ? "small" : "medium"}
-                                title="Insert new paragraph after this"
-                              >
-                                <AddIcon color="primary" />
-                              </IconButton>
-                              <IconButton
-                                onClick={() => removeParagraph(idx)}
-                                size={isMobile ? "small" : "medium"}
-                              >
-                                <DeleteIcon color="error" />
-                              </IconButton>
                             </Box>
-                          </Box>
-                        )}
-                      </Box>
-                    );
-                  })}
-                </SortableContext>
-                {/* <DragOverlay container={modalRef.current}>
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </SortableContext>
+                  {/* <DragOverlay container={modalRef.current}>
               {activeId != null ? (
                 <OverlayItem paragraph={localData.paragraphs[Number(activeId)]} />
               ) : null}
             </DragOverlay> */}
-              </DndContext>
-            </div></Card>
+                </DndContext>
+              </Box>
+            </Box>
             :
             <Card
               sx={{
                 overflowY: "auto",
-                p: isMobile ? 1 : 2,
+                p: 1,
                 minHeight: "15vh",
               }}
             >
@@ -1288,7 +1293,7 @@ function PreviewModal({ open, onClose, title }) {
       </Box>
 
       <Box
-        sx={{ overflowY: "auto", mt: isMobile ? 1 : 2, mb: isMobile ? 1 : 2 }}
+        sx={{ overflowY: "auto", mt: 1, mb: 1 }}
       >
         {renderParagraphs(title, [])}
       </Box>
@@ -2077,7 +2082,7 @@ function TitleLogModal({
       </Box>
       <Box
         direction={"row"}
-        spacing={isMobile ? 1 : 2}
+        spacing={1}
         sx={{ justifyContent: "space-between" }}
         display={"flex"}
       >
@@ -2316,7 +2321,7 @@ const ParagraphEditor = memo(function ParagraphEditor({
     indexRef.current = 0;
   };
   return (
-    <Box prosition="relative" sx={{ mb: isMobile ? 1 : 2 }}>
+    <Box prosition="relative" sx={{ mb: 1 }}>
       <TextField
         sx={{
           // mt: 1,

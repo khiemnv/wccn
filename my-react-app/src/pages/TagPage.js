@@ -114,7 +114,7 @@ export default function TagPage() {
   console.log("Sorted tags:", sorted);
   return (
     <Box sx={{
-      p: isMobile ? 1 : 2,
+      p: 1,
       display: "flex",
       flexDirection: "column",
       width: "100%"

@@ -7,7 +7,7 @@ import { selectRoleObj, selectToken } from "./features/auth/authSlice";
 import LoginPage from "./pages/LoginPage";
 import SearchPage from "./pages/SearchPage";
 import { ResponsiveAppBar } from "./components/SearchBar";
-import { Box, useMediaQuery } from "@mui/material";
+import { Box, createTheme, ThemeProvider, useMediaQuery } from "@mui/material";
 import UserManager from "./pages/UserManagerPage";
 import Bai8 from "./pages/Bai8";
 import { TitlePage } from "./pages/TitlePage";
@@ -41,7 +41,6 @@ export function useMobileVh() {
     };
   }, []);
 }
-
 
 function App() {
   console.log("App render");
@@ -82,27 +81,59 @@ function App() {
     return <LoginPage></LoginPage>;
   }
 
-  return (
-    <Box sx={{display:"flex", flexDirection: "column", height: "50vh", flexGrow: 1}}>
-      <ResponsiveAppBar />
-      {/* <Header /> */}
-      <main style={{ minHeight: "50vh", display:"flex", flexGrow: 1 }}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/wccn" element={<HomePage />} />
-          <Route path="/category/:slug" element={<CategoryPage />} />
-          <Route path="/post/:slug" element={<PostDetail />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/bai8" element={<Bai8 />} />
-          <Route path="/title" element={<TitlePage />} />
-          <Route path="/tag" element={<TagPage />} />
-          <Route path="/setting" element={<SettingsPage />} />
+  const theme = createTheme({
+    spacing: isMobile ? 8 : 16,
+    components: {
+      MuiCard: { // Target the Card component
+        styleOverrides: {
+          root: {
+            // // Apply padding that uses theme breakpoints
+            // padding: '16px', // default padding
+            // '@media (min-width: 600px)': { // sm breakpoint
+            //   padding: '8px',
+            // },
+            // '@media (min-width: 900px)': { // md breakpoint
+            //   padding: '24px',
+            // },
+          },
+        },
+      },
+      MuiTextField: {
+        styleOverrides: {
+          root: {
+            // size: isMobile ? "small" : "medium"
+          }
+        }
+      }
+      // You can add overrides for other components here (e.g., MuiButton, MuiPaper)
 
-          {roleObj && roleObj.sys === "admin" && <Route path="/usermanager" element={<UserManager />} />}
-        </Routes>
-      </main>
-      {/* <Footer /> */}
-    </Box>
+
+    },
+  });
+
+  return (
+    <ThemeProvider theme={theme}>
+      <Box sx={{ display: "flex", flexDirection: "column", height: "50vh", flexGrow: 1 }}>
+        <ResponsiveAppBar />
+        {/* <Header /> */}
+        <main style={{ minHeight: "50vh", display: "flex", flexGrow: 1 }}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/wccn" element={<HomePage />} />
+            <Route path="/category/:slug" element={<CategoryPage />} />
+            <Route path="/post/:slug" element={<PostDetail />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/bai8" element={<Bai8 />} />
+            <Route path="/title" element={<TitlePage />} />
+            <Route path="/tag" element={<TagPage />} />
+            <Route path="/setting" element={<SettingsPage />} />
+
+            {roleObj && roleObj.sys === "admin" && <Route path="/usermanager" element={<UserManager />} />}
+          </Routes>
+        </main>
+        {/* <Footer /> */}
+      </Box>
+    </ThemeProvider>
   );
 }
 

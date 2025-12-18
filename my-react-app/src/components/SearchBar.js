@@ -26,9 +26,7 @@ export function TitleSearchBar({searchStr, onSearch}) {
     direction="row"
     alignItems="center"
     justifyContent="space-between"
-    spacing={2}
-    mb={2}
-    mt={2}
+    spacing={1}
   >
     {/* <Typography variant="h5">Tìm kiếm</Typography> */}
 

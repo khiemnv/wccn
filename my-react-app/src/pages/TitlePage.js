@@ -80,7 +80,7 @@ export const TitlePage = () => {
 
   if (!mode) {
     return (
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 1 }}>
         <h2>Please select a mode:</h2>
         <Button
           variant="contained"
@@ -141,7 +141,7 @@ export const TitlePage = () => {
             // fullWidth: true,
             bgcolor: "background.paper",
             // boxShadow: 24,
-            mt: isMobile ? 1 : 2,
+            mt: 1,
             // maxHeight: isMobile ? "80vh" : "70vh",
             // overflowY: "auto",
             borderRadius: 2,

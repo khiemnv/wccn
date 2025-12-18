@@ -299,7 +299,7 @@ export default function SearchPage() {
     navigate(`/search?q=${encodeURIComponent(searchStr)}`);
   return (
     <Box sx={{
-      p: isMobile ? 1 : 2,
+      p: 1,
       display: "flex",
       flexDirection: "column",
       width: "100%"
@@ -309,9 +309,8 @@ export default function SearchPage() {
       <Paper
         elevation={2}
         sx={{
-          p: { xs: 1, sm: 2 },
-          mb: { xs: 1, sm: 2 },
-          mt: { xs: 1, sm: 2 },
+          p: 1,
+          mt: 1,
           display: "flex",
           flexDirection: "column",
           height: "50vh",
@@ -322,7 +321,7 @@ export default function SearchPage() {
         <Stack
           sx={{ paddingBottom: 1 }}
           direction={false ? "column" : "row"}
-          spacing={isMobile ? 1 : 2}
+          spacing={1}
           alignItems={isMobile ? "stretch" : "center"}
         >
           {isMobile || (
@@ -352,7 +351,7 @@ export default function SearchPage() {
         >
           <Grid
             container
-            spacing={isMobile ? 1 : 2}
+            spacing={1}
           >
             {(titles || []).map((t) => (
               <Grid item xs={12} sm={6} md={4} key={t.titleId}>
