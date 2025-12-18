@@ -333,6 +333,8 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
   // Sync khi data (props) thay đổi từ bên ngoài
   useEffect(() => {
     setLocalData(data);
+    historyRef.current=[data];
+    indexRef.current = 0;
   }, [data]);
 
   // --- Handlers -----------------------------------------------------------
@@ -841,7 +843,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
             flexDirection: "column",
           }}
         >
-          <Box sx={{ p: isMobile ? 1 : 2 }}>
+          <Box sx={{ p: isMobile ? 1 : 2, pt: 0 }}>
             {/* path */}
             <DebouncedTextField
               label="Path"
