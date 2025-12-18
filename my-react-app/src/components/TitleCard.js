@@ -52,7 +52,6 @@ import {
   MenuItem,
   styled,
   Menu,
-  Modal,
   Autocomplete,
 } from "@mui/material";
 import HighlightWords, { EditableHighlight } from "./HighlightWords";
@@ -109,6 +108,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { DebouncedTextField } from "./DebouncedTextField";
 import { DebouncedNumInput } from "./DebouncedNumInput";
+import { MyModal } from "./dialog/MyModal";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -569,7 +569,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
       lines = lines.map((line) => line.trim()); //.filter((line) => line !== "");
       var newId = "";
       var state = "init";
-      var changes = { paragraphs: [] };
+      var changes = { paragraphs: [], tags: [] };
       var curP = [];
       for (var i in lines) {
         var line = lines[i];
@@ -578,6 +578,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
           case "id":
           case "title":
           case "path":
+          case "tags":
             if (line.startsWith("path:")) {
               changes.path = line.slice(5).trim();
               state = "path";
@@ -594,17 +595,18 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                 .map((t) => t.trim())
                 .filter((t) => t !== "");
               state = "tags";
+            } else if (line !== "") {
+              state = "paragraphs";
+              curP.push(line);
             }
             break;
-          case "tags":
+          default:
             if ((line === "") & (curP.length > 0)) {
               changes.paragraphs.push(curP.join("\n"));
               curP = [];
             } else {
               curP.push(line);
             }
-            break;
-          default:
             break;
         }
       }
@@ -1272,21 +1274,29 @@ function PreviewModal({ open, onClose, title }) {
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <MyModal open={open} onClose={onClose}>
-      {/* Close button */}
-      <IconButton
-        onClick={onClose}
+      <Box
         sx={{
-          position: "absolute",
-          top: 8,
-          right: 8,
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between"
         }}
       >
-        <CloseIcon />
-      </IconButton>
+        <Typography variant="h6" sx={{ pr: 4 }}>
+          {title.title.replace(/Question|cau/, "Câu")}
+        </Typography>
 
-      <Typography variant="h6" sx={{ pr: 4 }}>
-        {title.title.replace(/Question|cau/, "Câu")}
-      </Typography>
+        {/* Close button */}
+        <IconButton
+          onClick={onClose}
+          // sx={{
+          //   position: "absolute",
+          //   top: 8,
+          //   right: 8,
+          // }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Box>
 
       <Box sx={{ display: "flex", flexDirection: "row" }}>
         {renderTags(title, tagDict)}
@@ -2496,35 +2506,6 @@ const ParagraphEditor = memo(function ParagraphEditor({
     </Box>
   );
 });
-
-function MyModal({ open, onClose, children: Element }) {
-  const isMobile = useMediaQuery("(max-width:600px)");
-  return (
-    <Modal open={open} onClose={onClose}>
-      <Box
-        sx={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: isMobile ? "90%" : 600,
-          maxWidth: "90vw",
-          bgcolor: "background.paper",
-          boxShadow: 24,
-          p: isMobile ? 2 : 4,
-          // maxHeight: isMobile ? "calc(var(--vh) * 90)" : "calc(var(--vh) * 80)",
-          maxHeight: "80vh",
-          overflowY: "auto",
-          borderRadius: 2,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {Element}
-      </Box>
-    </Modal>
-  );
-}
 
 function OldDiffComp(beforeStr, afterStr) {
   var dmp = new diff_match_patch();

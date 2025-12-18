@@ -3,7 +3,7 @@ import debounce from "debounce";
 import { useState, useMemo, useEffect } from "react";
 
 // debounce
-export const DebouncedNumInput = ({ id, onChangeId }) => {
+export const DebouncedNumInput = ({ id, onChangeId, label="Title ID" }) => {
   const [inputId, setInputId] = useState(id);
   const debouncedSearch = useMemo(() => debounce(
     (zId) => {
@@ -23,7 +23,7 @@ export const DebouncedNumInput = ({ id, onChangeId }) => {
     debouncedSearch(e.target.value);
   };
   return <TextField
-    label="Title ID"
+    label={label}
     value={inputId}
     size="small"
     sx={{ width: 100 }}

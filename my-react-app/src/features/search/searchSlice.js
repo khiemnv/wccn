@@ -47,6 +47,7 @@ const initialState = {
   dict: dict,
   editMode: "basic", // basic or advanced
   autoSave: true,
+  gdocToken: null,
 };
 
 export const slice = createSlice({
@@ -147,7 +148,11 @@ export const slice = createSlice({
     setDict: (state, action) => {
       const { dict } = action.payload;
       state.dict = dict;    
-    }
+    },
+    setGdocToken: (state, action) => {
+      const { gdocToken } = action.payload;
+      state.gdocToken = gdocToken;    
+    },
   },
 });
 
@@ -171,6 +176,7 @@ export const {
   setTags,
   clearTags,
   setDict,
+  setGdocToken,
 } = slice.actions;
 const selectSearch = (state) => state.search;
 const selectModePara = (state, mode) => mode;
@@ -204,6 +210,7 @@ export const selectSearchStr = (state) => state.search.searchStr;
 export const selectDict = (state) => state.search.dict;
 export const selectEditmode = (state) => state.search.editMode;
 export const selectAutoSave = (state) => state.search.autoSave;
+export const selectGdocToken = (state) => state.search.gdocToken;
 
 export default slice.reducer;
 
