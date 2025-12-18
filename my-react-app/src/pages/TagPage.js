@@ -58,7 +58,8 @@ export default function TagPage() {
 
   // --- Handlers ---
   const handleAdd = async () => {
-    if (rawTags.find((t) => t.tag === newTag.tag.trim())) {
+    const tag = newTag.tag.trim(); 
+    if (rawTags.find((t) => t.tag.trim().toLowerCase() === tag.toLowerCase())) {
       setAlertObj({
         open: true,
         type: "error",
@@ -66,8 +67,7 @@ export default function TagPage() {
       });
       return; // avoid duplicates
     }
-
-    const { result } = await createTag(newTag);
+    const { result } = await createTag({tag: tag});
     if (result) {
       dispatch(addTag({ tag: result }));
       setNewTag({});
@@ -82,10 +82,22 @@ export default function TagPage() {
   };
 
   const handleSave = async () => {
-    if (!editing.tag.trim()) return;
-    const { result } = await updateTag(editing.id, { tag: editing.tag });
+    const tag = editing.tag.trim();
+    if (!tag) return;
+
+    if (rawTags.find((t) => t.tag.trim().toLowerCase() === tag.toLowerCase())) {
+      setAlertObj({
+        open: true,
+        type: "error",
+        message: "Duplicated tag: " + editing.tag,
+      });
+      return; // avoid duplicates
+    }
+
+    const changes = { tag: tag };
+    const { result } = await updateTag(editing.id, changes);
     if (result) {
-      dispatch(editTag({ id: editing.id, changes: { tag: editing.tag } }));
+      dispatch(editTag({ id: editing.id, changes: changes }));
       setEditing({});
     }
   };
