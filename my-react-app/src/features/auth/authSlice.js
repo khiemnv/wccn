@@ -17,23 +17,6 @@ const parseJwt = (token) => {
   }
 };
 
-export const loadState = () => {
-  // var autologin = localStorage.getItem("autologin") === "true";
-  // console.log(autologin)
-  const autologin = true;
-  var token = autologin ? localStorage.getItem("token") : "";
-  token = token? token:"";
-  var decoded = (autologin && token) ? parseJwt(token) : {name:'', role:''};
-
-  return({
-  autologin: autologin,
-  token: token,
-  username: decoded.name,
-  password: '',
-  role: decoded.role,
-  status: 'idle',
-})};
-
 function jwt_decode(token) {
   const base64Url = token.split('.')[1];
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -93,32 +76,25 @@ export const authSlice = createSlice({
   initialState: {},
   reducers: {
     login: (state, action) => {
-      // console.log(action);
       state.username = action.payload.username;
       state.token = action.payload.token;
       state.role = action.payload.role;
       state.roleObj = action.payload.roleObj;
-      // localStorage.setItem("token",action.token);
     },
     logout: (state) => {
       state.username = '';
-      // state.password = '';
       state.token = '';
       state.role = '';
       state.roleObj = null;
-      localStorage.removeItem("token");
-    },
-    setAutologin: (state, action) => {
-      state.autologin = action.payload.autologin;
     },
     setRoleObj: (state, action) => {
       const {roleObj} = action.payload;
       state.roleObj = roleObj;
     },
-    setBtcTv: (state, action) => {
-      const {btcTv} = action.payload;
-      state.btcTv = btcTv;
-    }
+    setGdocToken: (state, action) => {
+      const { gdocToken } = action.payload;
+      state.gdocToken = gdocToken;    
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -139,10 +115,15 @@ export const authSlice = createSlice({
   },
 });
 
-export const { login, logout, setRoleObj, setBtcTv, setAutologin } = authSlice.actions;
+export const { 
+  login,
+  logout,
+  setRoleObj,
+  setGdocToken,
+} = authSlice.actions;
 export const selectToken = (state) => state.auth.token;
 export const selectUsername = (state) => state.auth.username;
 export const selectAutologin = (state) => state.auth.autologin;
 export const selectRoleObj = (state) => state.auth.roleObj;
-export const selectBtcTv = (state) => state.auth.btcTv;
+export const selectGdocToken = (state) => state.auth.gdocToken;
 export default authSlice.reducer;

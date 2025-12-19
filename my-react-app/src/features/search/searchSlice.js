@@ -1,5 +1,4 @@
 import { createSelector, createSlice } from "@reduxjs/toolkit";
-import { update } from "firebase/database";
 const dict = [
     {
         "find": "\\s+([.,:;?!])\\s*",
@@ -149,10 +148,6 @@ export const slice = createSlice({
       const { dict } = action.payload;
       state.dict = dict;    
     },
-    setGdocToken: (state, action) => {
-      const { gdocToken } = action.payload;
-      state.gdocToken = gdocToken;    
-    },
   },
 });
 
@@ -176,7 +171,6 @@ export const {
   setTags,
   clearTags,
   setDict,
-  setGdocToken,
 } = slice.actions;
 const selectSearch = (state) => state.search;
 const selectModePara = (state, mode) => mode;
@@ -210,7 +204,6 @@ export const selectSearchStr = (state) => state.search.searchStr;
 export const selectDict = (state) => state.search.dict;
 export const selectEditmode = (state) => state.search.editMode;
 export const selectAutoSave = (state) => state.search.autoSave;
-export const selectGdocToken = (state) => state.search.gdocToken;
 
 export default slice.reducer;
 

@@ -928,6 +928,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                       const showCtrl = editingP !== idx;
                       return (
                         <Box
+                          key={idx}
                           sx={{
                             position: "relative",
                             borderRadius: 1,

@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -17,9 +17,7 @@ import { useSelector } from "react-redux";
 import {
   addTag,
   editTag,
-  selectGdocToken,
   selectTags,
-  setGdocToken,
 } from "../features/search/searchSlice";
 import {
   createTag,
@@ -29,11 +27,11 @@ import { useAppDispatch } from "../app/hooks";
 import CancelIcon from '@mui/icons-material/Cancel';
 import { MyModal } from "../components/dialog/MyModal";
 import { DebouncedNumInput } from "../components/DebouncedNumInput";
-import { getFirestore, collection, query, orderBy, limit, startAfter, getDocs, where, getCountFromServer } from 'firebase/firestore';
+import { collection, query, orderBy, limit, startAfter, getDocs, where, getCountFromServer } from 'firebase/firestore';
 import { db } from "../firebase/firebase";
-import { createNextState } from "@reduxjs/toolkit";
 import { LoadMoreButton } from "../components/LoadMoreButton";
 import CloseIcon from "@mui/icons-material/Close";
+import { selectGdocToken, setGdocToken } from "../features/auth/authSlice";
 
 export default function TagPage() {
   const dispatch = useAppDispatch();
@@ -332,7 +330,6 @@ export async function fetchNextPage({
 }
 
 // GOOGLE DOC
-const CLIENT_ID = '512994061575-sc7dlfmqlhvq6900eo1vs51pdnv6lsvv.apps.googleusercontent.com';
 function getGoogleDocId(url) {
   const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
   return match ? match[1] : null;
@@ -428,6 +425,7 @@ const ExportTagModal = ({ tag, open, onClose, setAlertObj }) => {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
 
+  // --- get total tag ---
   useEffect(() => {
     async function getTotalCountByTag(collectionName, tag) {
       const q = query(
@@ -500,7 +498,7 @@ const ExportTagModal = ({ tag, open, onClose, setAlertObj }) => {
 
   const login = () => {
     const tokenClient = window.google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
       scope: "https://www.googleapis.com/auth/documents",
       callback: (resp) => {
         dispatch(setGdocToken({ gdocToken: resp.access_token }));
