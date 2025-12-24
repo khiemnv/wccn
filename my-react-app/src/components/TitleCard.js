@@ -650,17 +650,44 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
   const handlePreview = () => {
     setOpenPreview(true);
   };
-  const normalizeText = (text) =>
-  text
-    .normalize("NFC")
-    // nối dòng sai (không sau . : ! ?)
-    .replace(/([0-9\p{L}][,;]?)\s*\n\s*(\p{L})/gu, "$1 $2")
-    // chuẩn dấu câu
-    .replace(/\s+([,.;:!?])/g, "$1")
-    .replace(/([^\d])([,.;:!?])(?=\S)/g, "$1$2 ")
-    .replace(/\s*([.:!?]\s*)([a-zàáảãạâăèéêìíòóôơùúưỳýđ])/g,
-          (match, punc, letter) => punc + letter.toUpperCase()
-        );
+  const normalizeText = (text) => {
+    const urls = [];
+    text = text.replace(
+      /\bhttps?:\/\/[^\s]+/gi,
+      m => {
+        urls.push(m);
+        return `{{URL${urls.length - 1}}}`;
+      }
+    );
+    text = text
+      .normalize("NFC")
+      // nối dòng sai (không sau . : ! ?)
+      .replace(/([0-9\p{L}][,;]?)\s*\n\s*(\p{L})/gu, "$1 $2")
+      // chuẩn hóa ellipsis
+      .replace(/\.{3,}/g, '…')
+      // thêm space
+      .replace(/,([^\s.,;:])/g, ', $1')
+      // bỏ space sau ngoặc mở
+      .replace(/([("“‘])\s+/g, '$1')
+      // bỏ space trước ngoặc đóng
+      .replace(/\s+([)"”’])/g, '$1')
+      // gạch ngang
+      .replace(/(^|\n)-(?=\S)/g, '$1- ')
+      // bỏ space trước dấu câu
+      .replace(/\s+([,.;:!?])/g, "$1")
+      // thêm space sau dấu câu
+      .replace(/([^\d])([,.;:!?])(?=\S)/g, "$1$2 ")
+      // viết hoa sau dấu câu
+      .replace(/\s*([.:!?]\s*)([a-zàáảãạâăèéêìíòóôơùúưỳýđ])/g,
+        (match, punc, letter) => punc + letter.toUpperCase()
+      );
+
+    text = text.replace(
+      /\{\{URL(\d+)\}\}/g,
+      (_, i) => urls[+i]
+    );
+    return text;
+  }
 
   const handleFix = () => {
     setLocalData((prev) => {
@@ -1237,10 +1264,11 @@ function renderParagraphs(t, words) {
         .replace("question", "Câu hỏi")
         .replace("answer", "CCN chỉ dạy")
         .replace(/Cô (Chủ nhiệm|CN)/i, "CCN")
+        .replace(/chỉ day/i, "chỉ dạy")
     )
     .filter((p) => p !== "")
     .map((s, idx) => {
-      const isSubtitle = s.match("^Câu hỏi|^CCN chỉ dạy");
+      const isSubtitle = s.match("^Câu hỏi|^CCN chỉ dạy|^Chư Tăng chỉ dạy");
       return (
         <Box key={idx}>
           {isSubtitle ? (
