@@ -668,9 +668,10 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
       // thêm space
       .replace(/,([^\s.,;:])/g, ', $1')
       // bỏ space sau ngoặc mở
-      .replace(/([("“‘])\s+/g, '$1')
+      .replace(/([(“‘])\s+/g, '$1')
       // bỏ space trước ngoặc đóng
-      .replace(/\s+([)"”’])/g, '$1')
+      .replace(/\s+([)”’])/g, '$1')
+      .replace(/"\s*(.*?)\s*"/g, '"$1"')
       // gạch ngang
       .replace(/(^|\n)-(?=\S)/g, '$1- ')
       // bỏ space trước dấu câu
@@ -1082,17 +1083,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
               </Box>
             </Box>
             :
-            <Card
-              sx={{
-                overflowY: "auto",
-                p: 1,
-                minHeight: "15vh",
-              }}
-            >
-              <Box>
-                {renderParagraphs(localData, [])}
-              </Box>
-            </Card>
+            <ParagraphsViewer data={data} localData={localData} />
           }
 
         </Box>
@@ -1255,6 +1246,35 @@ const TagEditor = memo(function TagEditor({
     </>
   );
 });
+
+function ParagraphsViewer({localData, data}) {
+  
+  const mode = 0;
+  if (!data) return null;
+  if (!localData) return null;
+  return <Card
+    sx={{
+      overflowY: "auto",
+      p: 1,
+      minHeight: "15vh",
+    }}
+  >{mode === 2 ?
+    <Box sx={{ display: "flex", flexDirection: "row", gap: 2 }}>
+    <Box>
+      {renderParagraphs(localData, [])}
+    </Box>
+    <Box>
+      <DiffViewer2 before={data.paragraphs.join("\n")} after={localData.paragraphs.join("\n")} />
+    </Box>
+    </Box>
+    :mode === 1 ?
+    <Box>
+      {renderParagraphs(localData, [])}
+    </Box>
+    :<DiffViewer2 before={data.paragraphs.join("\n")} after={localData.paragraphs.join("\n")} />
+    }
+  </Card>;
+}
 
 function renderParagraphs(t, words) {
   return t.paragraphs
@@ -2536,39 +2556,46 @@ const ParagraphEditor = memo(function ParagraphEditor({
   );
 });
 
-function OldDiffComp(beforeStr, afterStr) {
+function DiffViewer2({ before, after, fontSize="0.75rem" }) {
+  console.log("DiffViewer2", {before, after});
   var dmp = new diff_match_patch();
-  var diff = dmp.diff_main(beforeStr, afterStr);
+  var diff = dmp.diff_main(before, after);
 
-  // console.log(dmp.diff_prettyHtml(diff))
+  console.log(dmp.diff_prettyHtml(diff))
   var left = [];
   var right = [];
+  var merge = [];
   diff.forEach(([op, data], idx) => {
     if (op === 0) {
       left.push(
-        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
+        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto", fontSize }}>
           {data}
         </span>
       );
       right.push(
-        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto" }}>
+        <span key={idx} style={{ whiteSpace: "pre-line", textWrap: "auto",  fontSize }}>
           {data}
         </span>
       );
+      merge.push(right[right.length - 1]);
     } else if (op === 1) {
       right.push(
-        <ins key={idx} style={{ background: "#0ee60eff" }}>
+        <ins key={idx} style={{ background: "#0ee60eff", fontSize }}>
           {data}
         </ins>
       );
+      merge.push(right[right.length - 1]);
     } else {
       left.push(
-        <del key={idx} style={{ background: "#e4db8bff" }}>
+        <del key={idx} style={{ background: "#e4db8bff", fontSize }}>
           {data}
         </del>
       );
+      merge.push(left[left.length - 1]);
     }
   });
+  return <>{merge}</>;
+  
   return (
     <div
       style={{
