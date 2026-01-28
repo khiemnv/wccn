@@ -14,7 +14,7 @@ function SettingsPage() {
     const dispatch = useAppDispatch();
   // State for the Auto Save checkbox
   const autoSave = useSelector(selectAutoSave);
-  const Pviewmode = useSelector(selectParagraphViewMode);
+  const pvMode = useSelector(selectParagraphViewMode);
 
   // Simulate saving the setting (replace with real API call if needed)
   const handleAutoSaveChange = (e) => {
@@ -27,68 +27,94 @@ function SettingsPage() {
   };
 
   return (
+<Box
+  sx={{
+    p: 2,
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+  }}
+>
+  <Box sx={{ width: "100%", maxWidth: 640 }}>
+    <Typography
+      variant="h5"
+      sx={{ mb: 2, fontWeight: 700 }}
+    >
+      Settings
+    </Typography>
 
-    <Box sx={{
-      p: 1,
-      display: "flex",
-      flexDirection: "column",
-      width: "100%"
-    }}>
-        <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-          Settings
-        </Typography>
-<Paper
-        sx={{
-          p: 3,
-          maxWidth: 600,
-          width: '100%',
-          boxSizing: 'border-box',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-        elevation={3}
-      >
-        
+    <Paper
+      elevation={3}
+      sx={{
+        p: 3,
+        borderRadius: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+      }}
+    >
+      {/* Auto Save section */}
+      <Box>
         <FormControlLabel
           control={
             <Checkbox
               checked={autoSave}
               onChange={handleAutoSaveChange}
-              color="primary"
             />
           }
-          label="Auto Save"
-          sx={{ alignSelf: 'flex-start', mt: 1 }} // align left if you prefer, otherwise remove
+          label={
+            <Typography fontWeight={600}>
+              Auto Save
+            </Typography>
+          }
         />
 
-        <Box mt={1.5} mb={2} width="100%">
-          <Typography align="center">
-            {autoSave ? 'Auto Save is ON.' : 'Auto Save is OFF.'}
-          </Typography>
-        </Box>
-
-        <FormControl component="fieldset" sx={{ width: '100%' }}>
-          <FormLabel component="legend">View Mode</FormLabel>
-          <RadioGroup
-            row
-            value={Pviewmode}
-            onChange={handlePVMChange}
-            name="view-mode"
-            sx={{ justifyContent: 'center' }}
-          >
-            {PVmodes.map((mode) => (
-              <FormControlLabel
-                key={mode.value}
-                value={mode.value}
-                control={<Radio color="primary" />}
-                label={mode.label}
-              />
-            ))}
-          </RadioGroup>
-        </FormControl>
-      </Paper>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ ml: 4, mt: 0.5 }}
+        >
+          {autoSave
+            ? "Changes are saved automatically."
+            : "You need to save changes manually."}
+        </Typography>
       </Box>
+
+      {/* Divider */}
+      <Box
+        sx={{
+          height: 1,
+          bgcolor: "divider",
+          my: 1,
+        }}
+      />
+
+      {/* View Mode section */}
+      <FormControl>
+        <FormLabel sx={{ mb: 1, fontWeight: 600 }}>
+          View Mode
+        </FormLabel>
+
+        <RadioGroup
+          row
+          value={pvMode}
+          onChange={handlePVMChange}
+          sx={{ gap: 2 }}
+        >
+          {PVmodes.map((mode) => (
+            <FormControlLabel
+              key={mode.value}
+              value={mode.value}
+              control={<Radio />}
+              label={mode.label}
+            />
+          ))}
+        </RadioGroup>
+      </FormControl>
+    </Paper>
+  </Box>
+</Box>
+
   );
 }
 
