@@ -2661,7 +2661,7 @@ function isSameArray(a, b) {
   return a.every((v, i) => v === b[i]);
 }
 
-function titleToString(title) {
+export function titleToString(title) {
   return [
     `path: ${title.path}`,
     `id: ${title.titleId}`,
@@ -2670,8 +2670,28 @@ function titleToString(title) {
     title.paragraphs.join("\n\n"),
   ].join("\n");
 }
+function TitleCard({ t, isMobile, words }){
+  const mode = useSelector(selectMode);
 
-function TitleCard({ t, isMobile, words }) {
+  const dispatch = useDispatch();
+  const handleSave = async ({ changes, patch }) => {
+    if (Object.keys(changes).length) {
+      var { result, error } = await updateTitle2(t, changes, mode);
+      console.log(result, error);
+      if (result) {
+        dispatch(editTitle({ id: t.titleId, changes, mode }));
+      }
+    }
+  };
+
+  return (<TitleCardCommon 
+    t={t} 
+    isMobile={isMobile} 
+    words={words} 
+    handleSave={handleSave}
+    />);
+}
+export function TitleCardCommon({ t, isMobile, words, handleSave }) {
   console.log("TitleCard");
   const mode = useSelector(selectMode);
   const dispatch = useDispatch();
@@ -2689,15 +2709,6 @@ function TitleCard({ t, isMobile, words }) {
     }
   };
   const handleDel = () => { };
-  const handleSave = async ({ changes, patch }) => {
-    if (Object.keys(changes).length) {
-      var { result, error } = await updateTitle2(t, changes, mode);
-      console.log(result, error);
-      if (result) {
-        dispatch(editTitle({ id: t.titleId, changes, mode }));
-      }
-    }
-  };
   const [open, setOpen] = useState(false);
   const rawTags = useSelector(selectTags);
   const allTags = rawTags ? rawTags.filter(tagObj => !tagObj.disabled) : [];

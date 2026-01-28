@@ -11,9 +11,12 @@ import {
   getDoc,
   Timestamp,
   writeBatch,
+  orderBy,
+  startAfter,
+  limit,
 } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
-import { BaseApi } from "../user/userApi";
+import { BaseApi, cloneObj } from "../user/userApi";
 /**
  * CURD
  */
@@ -82,6 +85,28 @@ class TitleApi extends BaseApi {
     };
     super("titles", defaultEntity);
   }
+
+  async fetchNextPage(collectionName,
+  pageSize = 100,
+  lastDoc = null,
+  tag = null,) {
+    const q = lastDoc
+      ? query(
+        collection(db, collectionName),
+        where("tags", "array-contains", tag),
+        orderBy("titleId", "desc"),
+        startAfter(lastDoc),
+        limit(pageSize)
+      )
+      : query(
+        collection(db, collectionName),
+        where("tags", "array-contains", tag),
+        orderBy("titleId", "desc"),
+        limit(pageSize)
+      );
+
+    return await this.query2(q);
+  }
 }
 var titleApi = new TitleApi();
 const originalTitleGet = titleApi.getOne;
@@ -122,7 +147,7 @@ export const updateTitle2 = (before, changes, mode = "QA") => mode === "QA" ? ti
 export const getTitleLog2 = (id, mode = "QA") => mode === "QA" ? titleApi.getLog(id) : titleApi2.getLog(id);
 export const updateTitleLog2 = (logId, changes, mode = "QA") => mode === "QA" ? titleApi.updateLog(logId, changes) : titleApi2.updateLog(logId, changes);
 export const getTitle = (id, mode = "QA") => mode === "QA" ? titleApi.getOne(id) : titleApi2.getOne(id);
-
+export const fetchTitleNextPage = (...params) => titleApi.fetchNextPage(...params);
 class TagApi extends BaseApi {
   constructor() {
     const defaultEntity = { tag: "" };

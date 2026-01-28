@@ -55,8 +55,10 @@ export const slice = createSlice({
   reducers: {
     editTitle: (state, action) => {
       const { id, changes, mode } = action.payload;
-      const title = state[mode].titles.find((t) => t.titleId === id);
-      patch(title, changes);
+      const idx = state[mode].titles.findIndex((t) => t.titleId === id);
+      if (idx !== -1) {
+        Object.assign(state[mode].titles[idx], changes);
+      }
     },
     addTitle: (state, action) => {
       const { title, mode } = action.payload;

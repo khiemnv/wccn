@@ -327,6 +327,17 @@ export class BaseApi {
     }
   }
   
+  async query2(q) {
+    try {
+      const querySnapshot = await getDocs(q);
+      const result = snapshotToArray(querySnapshot);
+
+      result.forEach((u) => this.map.set(u.id, cloneObj(u)));
+      return { result };
+    } catch (ex) {
+      return { error: ex.message };
+    }
+  }
 
   async getAll() {
     try {
