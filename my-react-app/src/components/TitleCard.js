@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, memo, useCallback, useRef, useMemo, use } from "react";
 import {
   Alert,
   Checkbox,
@@ -29,6 +29,7 @@ import {
   selectDict,
   selectEditmode,
   selectMode,
+  selectParagraphViewMode,
   selectTags,
   selectTitleId,
   setDict,
@@ -1248,8 +1249,7 @@ const TagEditor = memo(function TagEditor({
 });
 
 function ParagraphsViewer({localData, data}) {
-  
-  const mode = 0;
+  const mode = useSelector(selectParagraphViewMode); // 1: preview, 2: side by side, 0: diff
   if (!data) return null;
   if (!localData) return null;
   return <Card

@@ -46,6 +46,7 @@ const initialState = {
   dict: dict,
   editMode: "basic", // basic or advanced
   autoSave: true,
+  paragraphViewMode: 1, // 1: preview, 2: side by side, 0: diff
   gdocToken: null,
 };
 
@@ -109,6 +110,10 @@ export const slice = createSlice({
       const {autoSave} = action.payload;
       state.autoSave = autoSave;
     },
+    changeParagraphViewMode: (state, action) => {
+      const {paragraphViewMode} = action.payload;
+      state.paragraphViewMode = paragraphViewMode;
+    },
     changeSearchStr: (state, action) => {
       const {searchStr} = action.payload;
       state.searchStr = searchStr;
@@ -164,6 +169,7 @@ export const {
   changeTitleId,
   changeEditMode,
   changeAutoSave,
+  changeParagraphViewMode,
   changeSearchStr,
   changeSearchPage,
   setSortByDate,
@@ -206,6 +212,7 @@ export const selectSearchStr = (state) => state.search.searchStr;
 export const selectDict = (state) => state.search.dict;
 export const selectEditmode = (state) => state.search.editMode;
 export const selectAutoSave = (state) => state.search.autoSave;
+export const selectParagraphViewMode = (state) => state.search.paragraphViewMode;
 
 export default slice.reducer;
 
