@@ -105,7 +105,25 @@ class TitleApi extends BaseApi {
         limit(pageSize)
       );
 
-    return await this.query2(q);
+    const snapshot = await getDocs(q);
+    const records = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data(),
+    }));
+
+    // records.forEach((u) => this.map.set(u.id, cloneObj(u)));
+
+    const nextCursor =
+      snapshot.docs.length > 0
+        ? snapshot.docs[snapshot.docs.length - 1]
+        : null;
+
+    var result = {
+      records,
+      nextCursor,
+      hasMore: snapshot.size === pageSize,
+    };
+    return { result };
   }
 }
 var titleApi = new TitleApi();

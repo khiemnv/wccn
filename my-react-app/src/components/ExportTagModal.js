@@ -25,6 +25,7 @@ import TitleCard, { TitleCardCommon, TitleEditor, titleToString } from "./TitleC
 import { fetchTitleNextPage, updateTitle2 } from "../services/search/keyApi";
 import { editTitle, selectMode, selectTags } from "../features/search/searchSlice";
 
+
 /**
  * Fetch one page of records
  */
@@ -34,20 +35,8 @@ async function fetchNextPage({
   lastDoc = null,
   tag = null,
 }) {
-
   try {
-    var {result:records} = await fetchTitleNextPage(collectionName, pageSize, lastDoc, tag);
-    const nextCursor = 
-      records.length > 0
-        ? records[records.length - 1]
-        : null;
-
-    var result = {
-      records,
-      nextCursor,
-      hasMore: records.length === pageSize,
-    };
-    return { result };
+    return await fetchTitleNextPage(collectionName, pageSize, lastDoc, tag);
   } catch (err) {
     const error = {
       message: err?.message || "Unknown error",
@@ -56,7 +45,6 @@ async function fetchNextPage({
     };
     return { error };
   }
-
 }
 
 // GOOGLE DOC

@@ -38,7 +38,7 @@ function chunk(arr, size) {
 export class BaseApi {
   constructor(collectionName, defaultEntity) {
     this.collectionName = collectionName;
-    this.map = new Map();
+    // this.map = new Map();
     this.defaultEntity = defaultEntity;
   }
 
@@ -47,17 +47,17 @@ export class BaseApi {
       console.log("delete", this.collectionName, "/", id);
 
       // check cache
-      if (!this.map.has(id)) {
-        return { error: "id not in cache!" };
-      }
+      // if (!this.map.has(id)) {
+      //   return { error: "id not in cache!" };
+      // }
 
       await deleteDoc(doc(db, this.collectionName, id));
 
       // update cache
-      var result = this.map.get(id);
-      this.map.delete(id);
+      // var result = this.map.get(id);
+      // this.map.delete(id);
 
-      return { result };
+      return { result: {id} };
     } catch (ex) {
       return { error: ex.message };
     }
@@ -109,16 +109,16 @@ export class BaseApi {
       console.log("update", this.collectionName, "/", id, changes);
 
       // check cache
-      if (!this.map.has(id)) {
-        return { error: "id not in cache!" };
-      }
+      // if (!this.map.has(id)) {
+      //   return { error: "id not in cache!" };
+      // }
 
       const ref = doc(db, this.collectionName, id);
       await updateDoc(ref, changes);
 
       // update cache
-      const u = this.map.get(id);
-      Object.keys(changes).forEach((key) => (u[key] = changes[key]));
+      // const u = this.map.get(id);
+      // Object.keys(changes).forEach((key) => (u[key] = changes[key]));
 
       // add log
       try {
@@ -134,7 +134,7 @@ export class BaseApi {
         console.log(error.message);
       }
 
-      return { result: cloneObj(u) };
+      return { result: {id} };
     } catch (ex) {
       return { error: ex.message };
     }
@@ -146,16 +146,16 @@ export class BaseApi {
       // console.log("update", this.collectionName, "/", id, changes);
 
       // check cache
-      if (!this.map.has(id)) {
-        return { error: "id not in cache!" };
-      }
+      // if (!this.map.has(id)) {
+      //   return { error: "id not in cache!" };
+      // }
 
       const ref = doc(db, this.collectionName, id);
       await updateDoc(ref, changes);
 
       // update cache
-      const u = this.map.get(id);
-      Object.keys(changes).forEach((key) => (u[key] = changes[key]));
+      // const u = this.map.get(id);
+      // Object.keys(changes).forEach((key) => (u[key] = changes[key]));
 
       // add log
       try {
@@ -173,7 +173,7 @@ export class BaseApi {
         console.log(error.message);
       }
 
-      return { result: cloneObj(u) };
+      return { result: {id} };
     } catch (ex) {
       return { error: ex.message };
     }
@@ -212,9 +212,9 @@ export class BaseApi {
         return { error: "missing id!" };
       }
 
-      if (this.map.has(id)) {
-        return await this.save(entity);
-      }
+      // if (this.map.has(id)) {
+      //   return await this.save(entity);
+      // }
 
       // create
       const body = {};
@@ -227,7 +227,7 @@ export class BaseApi {
 
       // save to cache
       body.id = id;
-      this.map.set(id, cloneObj(body));
+      // this.map.set(id, cloneObj(body));
 
       return { result: body };
     } catch (ex) {
@@ -236,32 +236,32 @@ export class BaseApi {
     }
   }
 
-  async save(entity) {
-    try {
-      const id = entity.id;
-      if (!id) {
-        return { error: "missing id!" };
-      }
+  // async save(entity) {
+  //   try {
+  //     const id = entity.id;
+  //     if (!id) {
+  //       return { error: "missing id!" };
+  //     }
 
-      const old = this.map.get(id);
-      const changes = {};
-      Object.keys(this.defaultEntity).forEach((key) => {
-        if (entity[key] !== old[key]) {
-          changes[key] = entity[key];
-        }
-      });
+  //     const old = this.map.get(id);
+  //     const changes = {};
+  //     Object.keys(this.defaultEntity).forEach((key) => {
+  //       if (entity[key] !== old[key]) {
+  //         changes[key] = entity[key];
+  //       }
+  //     });
 
-      if (Object.keys(changes).length > 0) {
-        return await this.update(id, changes);
-      } else {
-        console.log("no change");
-        return { result: cloneObj(old) };
-      }
-    } catch (ex) {
-      console.log(ex.message);
-      return { error: ex.message };
-    }
-  }
+  //     if (Object.keys(changes).length > 0) {
+  //       return await this.update(id, changes);
+  //     } else {
+  //       console.log("no change");
+  //       return { result: cloneObj(old) };
+  //     }
+  //   } catch (ex) {
+  //     console.log(ex.message);
+  //     return { error: ex.message };
+  //   }
+  // }
 
   /**
    * entity not has property id
@@ -279,14 +279,14 @@ export class BaseApi {
         var ref = doc(db, this.collectionName, id);
         var docRef = await setDoc(ref, body);
         body.id = id;
-        this.map.set(id, cloneObj(body));
+        // this.map.set(id, cloneObj(body));
       } else {
         ref = collection(db, this.collectionName);
         docRef = await addDoc(ref, body);
         console.log(docRef.id);
         // save to cache
         body.id = docRef.id;
-        this.map.set(docRef.id, cloneObj(body));
+        // this.map.set(docRef.id, cloneObj(body));
       }
 
       // log
@@ -319,7 +319,7 @@ export class BaseApi {
 
       // update cache
       // this.map.clear();
-      result.forEach((u) => this.map.set(u.id, cloneObj(u)));
+      // result.forEach((u) => this.map.set(u.id, cloneObj(u)));
 
       return { result };
     } catch (ex) {
@@ -332,7 +332,7 @@ export class BaseApi {
       const querySnapshot = await getDocs(q);
       const result = snapshotToArray(querySnapshot);
 
-      result.forEach((u) => this.map.set(u.id, cloneObj(u)));
+      // result.forEach((u) => this.map.set(u.id, cloneObj(u)));
       return { result };
     } catch (ex) {
       return { error: ex.message };
@@ -345,8 +345,8 @@ export class BaseApi {
       const result = snapshotToArray(querySnapshot);
 
       // update cache
-      this.map.clear();
-      result.forEach((u) => this.map.set(u.id, cloneObj(u)));
+      // this.map.clear();
+      // result.forEach((u) => this.map.set(u.id, cloneObj(u)));
 
       return { result };
     } catch (ex) {
@@ -359,7 +359,7 @@ export class BaseApi {
     const docSnap = await getDoc(ref);
     if (docSnap.exists()) {
       var obj = { ...docSnap.data(), id: docSnap.id };
-      this.map.set(obj.id, cloneObj(obj));
+      // this.map.set(obj.id, cloneObj(obj));
       return { result: obj };
     } else {
       return { error: "not found" };
@@ -423,7 +423,7 @@ class UserApi extends BaseApi {
       const users = snapshotToArray(querySnapshot);
 
       // add to cache
-      users.forEach((u) => this.map.set(u.id, cloneObj(u)));
+      // users.forEach((u) => this.map.set(u.id, cloneObj(u)));
 
       // console.log(account, found);
       if (users.length > 0) {
