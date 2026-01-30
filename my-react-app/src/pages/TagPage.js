@@ -10,8 +10,11 @@ import {
   Alert,
   useMediaQuery,
   Checkbox,
+  Stack,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import { Edit, Save, Add } from "@mui/icons-material";
+import { Edit, Save, Add, MoreVert } from "@mui/icons-material";
 import { useSelector } from "react-redux";
 import {
   addTag,
@@ -179,63 +182,17 @@ export default function TagPage() {
         }}>
           {sortedTags
             .map((tagObj, index) => (
-              <Box
+              <TagItem
                 key={index}
-                sx={{ m: 0 }}
-              >
-                {editing.id === tagObj.id ? (
-                  <Card sx={{
-                    p: 1,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}>
-                    <TextField
-                      fullWidth
-                      value={editing.tag}
-                      onChange={(e) =>
-                        setEditing({ ...editing, tag: e.target.value })
-                      }
-                      size="small"
-                    />
-                    <IconButton color="primary" onClick={handleSave}>
-                      <Save />
-                    </IconButton>
-                    <IconButton color="error" onClick={handleCancel}>
-                      <CancelIcon />
-                    </IconButton>
-                  </Card>
-                ) : (
-                  <Card sx={{
-                    p: 1,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}>
-                    <Typography>{tagObj.tag}</Typography>
-                    <Box>
-                      <IconButton onClick={() => setEditing(tagObj)}>
-                        <Edit />
-                      </IconButton>
-                      {/* <IconButton
-                      color="error"
-                      onClick={() => handleDel(tagObj.id)}
-                    >
-                      <Delete />
-                    </IconButton> */}
-                      <Checkbox
-                        checked={!tagObj.disabled}
-                        onChange={() => toggleTag(tagObj.id, !tagObj.disabled)}
-                      >
-                      </Checkbox>
-                      <Button
-                        variant="outlined"
-                        onClick={() => handleExport(tagObj)}
-                      >Export</Button>
-                    </Box>
-                  </Card>
-                )}
-              </Box>
+                index={index}
+                editing={editing}
+                tagObj={tagObj}
+                setEditing={setEditing}
+                handleSave={handleSave}
+                handleCancel={handleCancel}
+                toggleTag={toggleTag}
+                handleExport={handleExport}
+              />
             ))}
         </Box>
       </Box>
@@ -267,3 +224,124 @@ export default function TagPage() {
     </Box>
   );
 }
+function TagItem({
+  index,
+  editing,
+  tagObj,
+  setEditing,
+  handleSave,
+  handleCancel,
+  toggleTag,
+  handleExport,
+}) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const menu = (
+    <Menu
+      anchorEl={anchorEl}
+      open={open}
+      onClose={handleMenuClose}
+      anchorOrigin={{
+        vertical: "bottom",
+        horizontal: "right",
+      }}
+      transformOrigin={{
+        vertical: "top",
+        horizontal: "right",
+      }}
+    >
+      <MenuItem
+        onClick={() => {
+          handleExport(tagObj);
+          handleMenuClose();
+        }}
+      >
+        Export
+      </MenuItem>
+
+      {/* <MenuItem
+        onClick={() => {
+          // handleDelete(tagObj.id);
+          handleMenuClose();
+        }}
+        sx={{ color: "error.main" }}
+      >
+        Delete
+      </MenuItem> */}
+    </Menu>
+  );
+
+  return (
+    <Box key={index} sx={{ m: 0 }}>
+      {editing.id === tagObj.id ? (
+        <Card
+          sx={{
+            p: 1,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <TextField
+            fullWidth
+            value={editing.tag}
+            onChange={(e) => setEditing({ ...editing, tag: e.target.value })}
+            size="small"
+          />
+          <IconButton color="primary" onClick={handleSave}>
+            <Save />
+          </IconButton>
+          <IconButton color="error" onClick={handleCancel}>
+            <CancelIcon />
+          </IconButton>
+        </Card>
+      ) : (
+        <Card
+          sx={{
+            p: 1,
+            display: "flex",
+            // justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Checkbox
+            checked={!tagObj.disabled}
+            onChange={() => toggleTag(tagObj.id, !tagObj.disabled)}
+          ></Checkbox>
+          <Typography sx={{flexGrow:1}} >{tagObj.tag}</Typography>
+          <Stack direction="row">
+            <IconButton onClick={() => setEditing(tagObj)}>
+              <Edit />
+            </IconButton>
+            {/* <IconButton
+                color="error"
+                onClick={() => handleDel(tagObj.id)}
+              >
+                <Delete />
+              </IconButton> */}
+
+            {/* <Button variant="outlined" onClick={() => handleExport(tagObj)}>
+              Export
+            </Button> */}
+
+            <IconButton size="small" onClick={handleMenuOpen}>
+              <MoreVert fontSize="small" />
+            </IconButton>
+          </Stack>
+        </Card>
+      )}
+
+      {menu}
+    </Box>
+  );
+}
+
