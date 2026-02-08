@@ -762,6 +762,227 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
     const newId = parseInt(storeTitleId) + 1;
     navigate(`/title?mode=${storeMode}&id=${newId}`);
   }
+
+  const titleIdBar = <Stack direction="row" spacing={1} alignItems="center">
+    <Button
+      onClick={prevTitle}
+    >
+      Trước
+    </Button>
+
+    {/* select mode */}
+    <FormControl size="small">
+      <InputLabel id="mode-select-label">Mode</InputLabel>
+      <Select
+        labelId="mode-select-label"
+        label="Mode"
+        value={storeMode}
+        onChange={(e) => navigate(`/title?mode=${e.target.value}&id=1`)}
+      >
+        <MenuItem value="QA">QA</MenuItem>
+        <MenuItem value="BBH">BBH</MenuItem>
+      </Select>
+    </FormControl>
+    {/* 
+            <CustomizedInputBase sx={{with: 50}} searchStr={id} onSearch={(strId)=>{
+                const newId = parseInt(strId);
+                navigate(`/title?mode=${mode}&id=${newId}`);
+              }} ></CustomizedInputBase> */}
+    <DebouncedNumInput
+      id={storeTitleId}
+      onChangeId={handleIdChange}
+    ></DebouncedNumInput>
+
+    <Button
+      onClick={nextTitle}
+    >
+      Tiếp
+    </Button>
+  </Stack>;
+
+  const editActionsMenu = <Box
+    sx={{
+      display: "flex",
+      justifyContent: "space-between",
+      gap: 2,
+      flexDirection: "row",
+    }}
+  >
+    <Typography variant={isMobile ? "h6" : "h5"}>{name}</Typography>
+    <Box sx={{ display: "flex", gap: 1 }}>
+      {/* undo */}
+      <IconButton
+        disabled={indexRef.current === 0}
+        aria-label="undo"
+        color="primary"
+        onClick={handleUndo}
+      >
+        <UndoIcon fontSize="small" />
+      </IconButton>
+
+      {/* redo */}
+      <IconButton
+        disabled={indexRef.current === historyRef.current.length - 1}
+        aria-label="redo"
+        color="primary"
+        onClick={handleRedo}
+      >
+        <RedoIcon fontSize="small" />
+      </IconButton>
+
+      {/* replace */}
+      <IconButton aria-label="replace" onClick={() => setOpenDict(true)}>
+        <FindReplaceIcon />
+      </IconButton>
+
+      {/* copy */}
+      <IconButton aria-label="copy" onClick={handleCopy}>
+        <ContentCopyIcon />
+      </IconButton>
+
+      {/* paste */}
+      <IconButton aria-label="paste" onClick={handlePaste}>
+        <ContentPasteIcon />
+      </IconButton>
+
+      {/* log */}
+      <IconButton aria-label="log" onClick={handleLog}>
+        <InfoOutlineIcon />
+      </IconButton>
+    </Box>
+  </Box>
+
+  const ActionsMenu = () => {
+    const [anchorEl, setAnchorEl] = useState(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenuOpen = (event) => {
+      setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+      setAnchorEl(null);
+    };
+
+    return (
+      <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+        <IconButton
+          aria-controls={open ? "actions-menu" : undefined}
+          aria-haspopup="true"
+          aria-expanded={open ? "true" : undefined}
+          variant="contained"
+          onClick={handleMenuOpen}
+        >
+          <MoreVertIcon />
+        </IconButton>
+        <Menu
+          id="actions-menu"
+          anchorEl={anchorEl}
+          open={open}
+          onClose={handleMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          {/* Icon actions */}
+          <MenuItem
+            onClick={() => { handleUndo(); handleMenuClose(); }}
+            disabled={indexRef.current === 0}
+          >
+            <ListItemIcon>
+              <UndoIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Undo</ListItemText>
+          </MenuItem>
+          <MenuItem
+            onClick={() => { handleRedo(); handleMenuClose(); }}
+            disabled={indexRef.current === historyRef.current.length - 1}
+          >
+            <ListItemIcon>
+              <RedoIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Redo</ListItemText>
+          </MenuItem>
+          <MenuItem
+            onClick={() => { setOpenDict(true); handleMenuClose(); }}
+          >
+            <ListItemIcon>
+              <FindReplaceIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Replace</ListItemText>
+          </MenuItem>
+          <MenuItem
+            onClick={() => { handleCopy(); handleMenuClose(); }}
+          >
+            <ListItemIcon>
+              <ContentCopyIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Copy</ListItemText>
+          </MenuItem>
+          <MenuItem
+            onClick={() => { handlePaste(); handleMenuClose(); }}
+          >
+            <ListItemIcon>
+              <ContentPasteIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Paste</ListItemText>
+          </MenuItem>
+          <MenuItem
+            onClick={() => { handleLog(); handleMenuClose(); }}
+          >
+            <ListItemIcon>
+              <InfoOutlineIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Log</ListItemText>
+          </MenuItem>
+
+          {/* Divider if you want to separate groups */}
+          <Box sx={{ my: 1, borderBottom: "1px solid #eee" }} />
+
+          {/* Previous action buttons */}
+          <MenuItem
+            onClick={() => { handlePreview(); handleMenuClose(); }}
+          >
+            Preview
+          </MenuItem>
+          <MenuItem
+            onClick={() => { handleFix(); handleMenuClose(); }}
+          >
+            Fix
+          </MenuItem>
+          {onClose && (
+            <MenuItem
+              onClick={() => {
+                setLocalData(data);
+                onClose();
+                handleMenuClose();
+              }}
+            >
+              Cancel
+            </MenuItem>
+          )}
+          <MenuItem
+            disabled={Object.keys(changes).length === 0}
+            onClick={() => { onSave({ changes }); handleMenuClose(); }}
+          >
+            Save
+          </MenuItem>
+        </Menu>
+      </Box>
+    );
+  };
+  // --- Render -------------------------------------------------------------
+  // [titleIeBar][action menu]
+  // 
+
+  // editActionsMenu: [header: title, undo redo, copy paste, log]
+  // [body: path, title, tags, paragraphs]
+
   return (
     <>
       {/* title id bar */}
@@ -773,42 +994,8 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
           justifyContent: "center"
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Button
-            onClick={prevTitle}
-          >
-            Trước
-          </Button>
-
-          {/* select mode */}
-          <FormControl size="small">
-            <InputLabel id="mode-select-label">Mode</InputLabel>
-            <Select
-              labelId="mode-select-label"
-              label="Mode"
-              value={storeMode}
-              onChange={(e) => navigate(`/title?mode=${e.target.value}&id=1`)}
-            >
-              <MenuItem value="QA">QA</MenuItem>
-              <MenuItem value="BBH">BBH</MenuItem>
-            </Select>
-          </FormControl>
-          {/* 
-            <CustomizedInputBase sx={{with: 50}} searchStr={id} onSearch={(strId)=>{
-                const newId = parseInt(strId);
-                navigate(`/title?mode=${mode}&id=${newId}`);
-              }} ></CustomizedInputBase> */}
-          <DebouncedNumInput
-            id={storeTitleId}
-            onChangeId={handleIdChange}
-          ></DebouncedNumInput>
-
-          <Button
-            onClick={nextTitle}
-          >
-            Tiếp
-          </Button>
-        </Stack>
+        {titleIdBar}
+        {(isMobile) && <ActionsMenu/>}
       </Box>}
 
       {localData && <Box
@@ -821,47 +1008,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
         }}
       >
         {/* header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 2,
-            flexDirection: "row",
-          }}
-        >
-          <Typography variant={isMobile ? "h6" : "h5"}>{name}</Typography>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <IconButton
-              disabled={indexRef.current === 0}
-              aria-label="undo"
-              color="primary"
-              onClick={handleUndo}
-            >
-              <UndoIcon fontSize="small" />
-            </IconButton>
-
-            <IconButton
-              disabled={indexRef.current === historyRef.current.length - 1}
-              aria-label="redo"
-              color="primary"
-              onClick={handleRedo}
-            >
-              <RedoIcon fontSize="small" />
-            </IconButton>
-            <IconButton aria-label="replace" onClick={() => setOpenDict(true)}>
-              <FindReplaceIcon />
-            </IconButton>
-            <IconButton aria-label="copy" onClick={handleCopy}>
-              <ContentCopyIcon />
-            </IconButton>
-            <IconButton aria-label="paste" onClick={handlePaste}>
-              <ContentPasteIcon />
-            </IconButton>
-            <IconButton aria-label="log" onClick={handleLog}>
-              <InfoOutlineIcon />
-            </IconButton>
-          </Box>
-        </Box>
+        {(!isMobile) && editActionsMenu}
 
         {/* body */}
         <Box
@@ -1090,7 +1237,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
         </Box>
 
         {/* Actions */}
-        <Box
+        {(!isMobile) && <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
@@ -1125,7 +1272,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
               Save
             </Button>
           </Box>
-        </Box>
+        </Box>}
 
         {showLogModal && (
           <TitleLogModal
@@ -1180,6 +1327,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
 
   );
 }
+
 
 const TagEditor = memo(function TagEditor({
   isMobile,
