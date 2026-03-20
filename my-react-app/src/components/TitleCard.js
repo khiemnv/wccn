@@ -1372,8 +1372,20 @@ const TagEditor = memo(function TagEditor({
             {...params}
             label="Tags"
             size={isMobile ? "small" : "medium"}
+            sx={{
+              "& .MuiChip-root": {
+                height: 24,
+                maxWidth: 250,
+                "& .MuiChip-label": {
+                  maxWidth: 110,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                },
+              },
+            }}
           />
-        )}
+        )}        
       />
 
       {/* Alert */}
