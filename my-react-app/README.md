@@ -68,3 +68,34 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## firebase
+
+### run emu
+
+firebase emulators:start --import fd_data --export-on-exit
+
+### deploy
+
+firebase deploy --only hosting
+
+## Data Table
+
+### titles
+
+| field    | type      | note                         |
+|----------|-----------|------------------------------|
+| createAt | timestamp | for faster sort & query      |
+
+## API
+
+nomalizeTitle()
+
+| field    | convert to | type   | note              |
+|----------|------------|--------|-------------------|
+| createAt | createAtMs | number | fix Redux warning |
+| titleId  | titleId    | number | fix "===" warning |
+
+updateTitle(org, changes)
+
+- convert changes.createAtMs to createAt before write to firebase

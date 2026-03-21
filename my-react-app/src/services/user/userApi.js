@@ -139,8 +139,7 @@ export class BaseApi {
       return { error: ex.message };
     }
   }
-
-  async update2(before, changes) {
+  async update3(before, changes, denomalize) {
     try {
       var id = before.id;
       // console.log("update", this.collectionName, "/", id, changes);
@@ -151,7 +150,14 @@ export class BaseApi {
       // }
 
       const ref = doc(db, this.collectionName, id);
-      await updateDoc(ref, changes);
+      if (denomalize) {
+        var docForFirestore  = {...changes}
+        denomalize(docForFirestore );
+        await updateDoc(ref, docForFirestore );
+      }
+      else {
+        await updateDoc(ref, changes);
+      }
 
       // update cache
       // const u = this.map.get(id);
@@ -177,6 +183,10 @@ export class BaseApi {
     } catch (ex) {
       return { error: ex.message };
     }
+  }
+
+  async update2(before, changes) {
+    return this.update3(before, changes, null)
   }
 
   async getLog(id) {

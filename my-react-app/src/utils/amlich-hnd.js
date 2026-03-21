@@ -618,3 +618,32 @@ function showVietCal() {
 }
 
 //showVietCal();
+
+
+/**
+ * input: yyyy, mm, dd  (số)
+ * return: [yyyy, mm, dd, leap(Boolean), canChi(String)]
+ */
+export function convDLtoAL(yyyy, mm, dd) {
+	var ld = getLunarDate(dd, mm, yyyy);
+
+	return [
+		ld.year,
+		ld.month,
+		ld.day,
+		ld.leap,
+		getYearCanChi(ld.year)
+	]
+}
+
+/**
+ * input: yyyy, mm, dd, leap (nhuận)
+ * return: [yyyy, mm, dd]
+ */
+export function convALtoDL(yyyy, mm, dd, leap) {
+	var yearInfo = getYearInfo(yyyy);
+	var ld = yearInfo.find(item=>item.month === mm && item.leap === leap);
+	// console.log("convALtoDL: ", {yyyy, mm, dd, leap}, ld, yearInfo)
+	var [dd2,mm2,yyyy2] = jdn2date(ld.jd + dd - 1);
+	return [yyyy2, mm2, dd2];
+}

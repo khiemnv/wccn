@@ -125,21 +125,34 @@ class TitleApi extends BaseApi {
     };
     return { result };
   }
+  
+  async update2(before, changes) {
+    return this.update3(before, changes, denormalizeTitle);
+  }
 }
 var titleApi = new TitleApi();
 const originalTitleGet = titleApi.getOne;
-
+function normalizeTitle(title) {
+  title.titleId = parseInt(title.titleId);
+  title.createdAtMs = title.createdAt?.toMillis();
+  delete title.createdAt;
+}
+function denormalizeTitle(title) {
+  title.createdAt = Timestamp.fromMillis(title.createdAtMs);
+  delete title.createdAtMs;
+}
 function titleWrapMethod(originalMethod, idx) {
+
   return async function () {
     // Call the original method
     var { error, result } = await originalMethod.apply(this, arguments);
     if (!error) {
       if (Array.isArray(result)) {
         result.forEach(function (title) {
-          title.titleId = parseInt(title.titleId);
+          normalizeTitle(title);
         });
       } else {
-        result.titleId = parseInt(result.titleId);
+        normalizeTitle(result);
       }
     }
     return { error, result };
@@ -157,6 +170,7 @@ class TitleApi2 extends BaseApi {
     };
     super("bbh_titles", defaultEntity);
   }
+
 }
 var titleApi2 = new TitleApi2();
 titleApi2.getOne = titleWrapMethod(titleApi2.getOne, 0);
