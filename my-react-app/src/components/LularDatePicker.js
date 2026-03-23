@@ -528,15 +528,16 @@ export function FieldsetFrame({
           m: 0,
           // layout
           position: "absolute",
-          top: 0,
+          top: "-3px",
           left: dense ? 10 : 12, // tương tự notch của Outlined
           transform: "translateY(-50%)",
           // kiểu chữ giống InputLabel shrink
-          fontSize: { xs: dense ? 11 : 12, sm: dense ? 12 : 13 },
+          fontSize: "small",
+          // fontSize: { xs: dense ? 11 : 12, sm: dense ? 12 : 13 },
           lineHeight: 1,
           color: labelColor,
           // nền che viền bên dưới legend
-          px: 0.5,
+          px: "4px",
           backgroundColor: (t) => t.palette.background.paper,
           // bo góc nhẹ cho cảm giác giống notch
           borderRadius: 0.5,

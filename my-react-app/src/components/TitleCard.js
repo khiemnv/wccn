@@ -306,11 +306,11 @@ function OverlayItem({ paragraph }) {
  * return: (Date)
  **/
 function dateFromString(text) {
-  const map = new Map();
-  map.set("ẤT TỴ", "2025");
-  map.set("GT", "2024");
-  map.set("QM", "2023");
-  map.set("ND", "2022");
+  const ydict = new Map();
+  ydict.set("ẤT TỴ", 2025);
+  ydict.set("GT", 2024);
+  ydict.set("QM", 2023);
+  ydict.set("ND", 2022);
 
   // Thêm nhóm bắt cho YYYY, MM, DD và chấp nhận -, /, .
   const mYMD = /(\d{4}|ẤT TỴ|GT|QM|ND)[-/.](\d{1,2})(\+)?[-/.](\d{1,2})/.exec(
@@ -319,8 +319,8 @@ function dateFromString(text) {
   if (!mYMD) return null; // không khớp
 
   const canchi = mYMD[1];
-  if (map.has(canchi)) {
-    const y = parseInt(map(canchi), 10);
+  if (ydict.has(canchi)) {
+    const y = ydict.get(canchi);
     const m = parseInt(mYMD[2], 10);
     const leaf = mYMD[3] === "+" ? 1 : 0;
     const d = parseInt(mYMD[4], 10);
