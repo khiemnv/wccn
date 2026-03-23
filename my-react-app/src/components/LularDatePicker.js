@@ -12,7 +12,10 @@ import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import ArrowBackIosIcon from "@mui/icons-material/ArrowBackIos";
 import { LocalizationProvider, TimeField } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowDropUpIcon from "@mui/icons-material/ArrowDropUp";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 // Chặn prop isMobile khỏi DOM
 const CompactSelect = styled(Select, {
@@ -224,19 +227,16 @@ export function LularDayPicker2(ngayAL, setNgayAL, gio, setGio, isMobile) {
     <FieldsetFrame
       label="Ngày âm lịch"
       dense={isMobile} // mobile: thu gọn padding/label
-      sx={{
-        // responsive khoảng cách ngoài khung (tuỳ ý)
-        // mt: { xs: 1, sm: 1.5 },
-        // nếu muốn fullWidth ở mobile
-        // width: { xs: "100%", sm: "auto" },
-      }}
+      sx={
+        {
+          // responsive khoảng cách ngoài khung (tuỳ ý)
+          // mt: { xs: 1, sm: 1.5 },
+          // nếu muốn fullWidth ở mobile
+          // width: { xs: "100%", sm: "auto" },
+        }
+      }
     >
       <Stack spacing={1} direction={"row"}>
-        <IconButton
-          onClick={onPrev}
-        >
-          <ArrowBackIosIcon />
-        </IconButton>
         <Stack
           spacing={1}
           direction={"row"}
@@ -247,6 +247,7 @@ export function LularDayPicker2(ngayAL, setNgayAL, gio, setGio, isMobile) {
           <CompactSelect
             value={ngayAL.day}
             onChange={(e) => handleChangeLD(e.target.value)}
+            size={isMobile?"small":"medium"}
             isMobile={isMobile}
           >
             {Array.from({ length: nDayOfM }, (v, k) => (
@@ -259,6 +260,7 @@ export function LularDayPicker2(ngayAL, setNgayAL, gio, setGio, isMobile) {
           <CompactSelect
             value={t_curMonthIdx}
             onChange={(e) => handleChangeLM(e.target.value, t_curMonthIdx)}
+            size={isMobile?"small":"medium"}
             isMobile={isMobile}
           >
             {t_mLst.map(([idx, text]) => (
@@ -267,6 +269,7 @@ export function LularDayPicker2(ngayAL, setNgayAL, gio, setGio, isMobile) {
               </MenuItem>
             ))}
           </CompactSelect>
+          <Typography>{"/"}</Typography>
           {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
         <TimeField
           sx={{ width: "110px" }}
@@ -275,17 +278,78 @@ export function LularDayPicker2(ngayAL, setNgayAL, gio, setGio, isMobile) {
           onChange={(newValue) => setGio(newValue.format("hh:mm:ss"))}
         ></TimeField>
       </LocalizationProvider> */}
-          <Typography>{getYearCanChi(ngayAL.year)}</Typography>
         </Stack>
-        <IconButton
-          onClick={onNext}
-        >
-          <ArrowForwardIosIcon />
-        </IconButton>
+        <NumberField
+          value={getYearCanChi(ngayAL.year)}
+          onIncrease={onNext}
+          onDecrease={onPrev}
+          size={isMobile?"small":"large"} // hoặc "large"
+        />
+       
       </Stack>
     </FieldsetFrame>
   );
 }
+
+const NumberField = ({ value, onIncrease, onDecrease, size = "small" }) => {
+  const isSmall = size === "small";
+
+  const height = isSmall ? 32 : 48;
+  const fontSize = isSmall ? 14 : 18;
+  const buttonHeight = height / 2;
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1,
+        overflow: "hidden",
+        height,
+      }}
+    >
+      {/* value */}
+      <Box
+        sx={{
+          px: isSmall ? 1 : 1.5,
+          display: "flex",
+          alignItems: "center",
+          minWidth: isSmall ? 60 : 80,
+          fontSize,
+        }}
+      >
+        {value}
+      </Box>
+
+      {/* buttons */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <IconButton
+          size="small"
+          sx={{ p: 0, height: buttonHeight }}
+          onClick={onIncrease}
+        >
+          <ArrowDropUpIcon fontSize={isSmall ? "small" : "medium"} />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          sx={{ p: 0, height: buttonHeight }}
+          onClick={onDecrease}
+        >
+          <ArrowDropDownIcon fontSize={isSmall ? "small" : "medium"} />
+        </IconButton>
+      </Box>
+    </Box>
+  );
+};
 
 /**
  * Frame có label nổi trên viền giống MUI Outlined input
