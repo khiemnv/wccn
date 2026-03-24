@@ -70,6 +70,8 @@ export const TitlePage = () => {
       // console.log(result, error);
       if (result) {
         dispatch(editTitle({ id: t.titleId, changes, mode }));
+      } else {
+        console.log("error: ", error);
       }
     }
   }

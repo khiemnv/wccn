@@ -134,12 +134,16 @@ var titleApi = new TitleApi();
 const originalTitleGet = titleApi.getOne;
 function normalizeTitle(title) {
   title.titleId = parseInt(title.titleId);
-  title.createdAtMs = title.createdAt?.toMillis();
-  delete title.createdAt;
+  if (title.createdAt) {
+    title.createdAtMs = title.createdAt?.toMillis();
+    delete title.createdAt;
+  }
 }
 function denormalizeTitle(title) {
-  title.createdAt = Timestamp.fromMillis(title.createdAtMs);
-  delete title.createdAtMs;
+  if (title.createdAtMs) {
+    title.createdAt = Timestamp.fromMillis(title.createdAtMs);
+    delete title.createdAtMs;
+  }
 }
 function titleWrapMethod(originalMethod, idx) {
 

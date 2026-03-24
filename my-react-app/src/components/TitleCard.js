@@ -222,6 +222,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
   const isMobile = useMediaQuery("(max-width:600px)");
   // const [editingTitle, setEditingTitle] = useState(data);
   const handleSave = ({ changes }) => {
+    //console.log("EditTitleModal handleSave: ", changes)
     onSubmit({ changes });
     onClose();
   };
@@ -544,6 +545,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
       changes.tags = localData.tags;
     }
   }
+  //console.log("changes: ", changes)
 
   // auto save on exit
   const storeMode = useSelector(selectMode);
@@ -788,11 +790,13 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
 
   // console.log("editing", editing.paragraphs);
   async function handleSave({ changes }) {
+    //console.log("save changes:", changes);
     if (Object.keys(changes).length) {
-      console.log("save changes:", changes);
       var { result, error } = await updateTitle2(data, changes, storeMode);
       if (result) {
         dispatch(editTitle({ id: storeTitleId, changes, mode: storeMode }));
+      } else {
+        console.log("updateTitle2:", error);
       }
     }
   }
@@ -1023,7 +1027,11 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
           )}
           <MenuItem
             disabled={Object.keys(changes).length === 0}
-            onClick={() => { onSave({ changes }); handleMenuClose(); }}
+            onClick={() => { 
+              //console.log("changes: ", changes)
+              onSave({ changes }); 
+              handleMenuClose(); 
+            }}
           >
             Save
           </MenuItem>
@@ -1381,7 +1389,11 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                 )}
                 <Button
                   variant="contained"
-                  onClick={() => onSave({ changes })}
+                  onClick={() => {
+                    //console.log("changes: ", changes )
+                    onSave({ changes })}
+                    
+                  }
                   // fullWidth={isMobile}
                   disabled={Object.keys(changes).length === 0}
                 >
@@ -2940,6 +2952,7 @@ function isSameArray(a, b) {
 
 export function titleToString(title) {
   return [
+    `createdAtMs: ${title.createdAtMs}`,
     `path: ${title.path}`,
     `id: ${title.titleId}`,
     `title: ${title.title}`,
@@ -2952,11 +2965,13 @@ function TitleCard({ t, isMobile, words }){
 
   const dispatch = useDispatch();
   const handleSave = async ({ changes, patch }) => {
+    //console.log("handleSave: ", changes)
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
-      console.log(result, error);
       if (result) {
         dispatch(editTitle({ id: t.titleId, changes, mode }));
+      } else {
+      	console.log("handleSave: ", result, error);	
       }
     }
   };
