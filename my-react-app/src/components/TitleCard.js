@@ -1492,10 +1492,26 @@ const TagEditor = memo(function TagEditor({
         options={allTags}
         value={selectedOpts}
         onChange={(event, newValue) => {
-          const ids = (newValue).map(opt => opt.id);
+          const ids = newValue.map((opt) => opt.id);
           // console.log(ids)
           setSelectedTags(ids);
         }}
+        renderValue={(value, getTagProps) =>
+          value.map((option, index) => (
+            <Chip
+              {...getTagProps({ index })}
+              label={option.tag}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(option.tag);
+                  console.log("Copied:", option.tag);
+                } catch (err) {
+                  console.error("Copy failed:", err);
+                }
+              }}
+            />
+          ))
+        }
         renderInput={(params) => (
           <TextField
             {...params}
@@ -1504,7 +1520,7 @@ const TagEditor = memo(function TagEditor({
             sx={{
               "& .MuiChip-root": {
                 height: 24,
-                maxWidth: isMobile ? 280:500,
+                maxWidth: isMobile ? 280 : 500,
                 "& .MuiChip-label": {
                   // maxWidth: 300,
                   whiteSpace: "nowrap",
@@ -1514,7 +1530,7 @@ const TagEditor = memo(function TagEditor({
               },
             }}
           />
-        )}        
+        )}
       />
 
       {/* Alert */}
