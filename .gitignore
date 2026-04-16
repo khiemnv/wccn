@@ -1,0 +1,10 @@
+*.bak
+/my-react-app/fd_data
+/my-react-app/firebase-export-*
+cloudflare-vite-tutorial_raw
+bbh
+keys
+node_modules
+.env*
+.wrangler
+.firebase
