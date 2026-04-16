@@ -222,6 +222,7 @@ function EditTitleModal({ open, onClose, data, onSubmit }) {
   const isMobile = useMediaQuery("(max-width:600px)");
   // const [editingTitle, setEditingTitle] = useState(data);
   const handleSave = ({ changes }) => {
+    //console.log("EditTitleModal handleSave: ", changes)
     onSubmit({ changes });
     onClose();
   };
@@ -306,19 +307,33 @@ function OverlayItem({ paragraph }) {
  * return: (Date)
  **/
 function dateFromString(text) {
+  const ydict = new Map();
+  ydict.set("ẤT TỴ", 2025);
+  ydict.set("GT", 2024);
+  ydict.set("QM", 2023);
+  ydict.set("ND", 2022);
+
   // Thêm nhóm bắt cho YYYY, MM, DD và chấp nhận -, /, .
-  const mYMD = /(\d{4})[-/.](\d{1,2})(\+)?[-/.](\d{1,2})/.exec(text);
+  const mYMD = /(\d{4}|ẤT TỴ|GT|QM|ND)[-/.](\d{1,2})(\+)?[-/.](\d{1,2})/.exec(
+    text,
+  );
   if (!mYMD) return null; // không khớp
 
-  const y = parseInt(mYMD[1], 10);
-  const m = parseInt(mYMD[2], 10);
-  const leaf = mYMD[3] === '+' ? 1 : 0;
-  const d = parseInt(mYMD[4], 10);
+  const canchi = mYMD[1];
+  if (ydict.has(canchi)) {
+    const y = ydict.get(canchi);
+    const m = parseInt(mYMD[2], 10);
+    const leaf = mYMD[3] === "+" ? 1 : 0;
+    const d = parseInt(mYMD[4], 10);
 
-  const [ly, lm, ld] = convALtoDL(y, m, d, leaf);
-  // console.log("dateFromString", {ly, lm, ld})
-  return new Date(ly, lm-1, ld).getTime(); 
-  // return `${ly}-${lm}-${ld}`;
+    const [ly, lm, ld] = convALtoDL(y, m, d, leaf);
+    return new Date(ly, lm - 1, ld).getTime();
+  } else {
+    const y = parseInt(mYMD[1], 10);
+    const m = parseInt(mYMD[2], 10);
+    const d = parseInt(mYMD[4], 10);
+    return new Date(y, m - 1, d).getTime();
+  }
 }
 
 export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = false }) {
@@ -530,6 +545,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
       changes.tags = localData.tags;
     }
   }
+  //console.log("changes: ", changes)
 
   // auto save on exit
   const storeMode = useSelector(selectMode);
@@ -774,11 +790,13 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
 
   // console.log("editing", editing.paragraphs);
   async function handleSave({ changes }) {
+    //console.log("save changes:", changes);
     if (Object.keys(changes).length) {
-      console.log("save changes:", changes);
       var { result, error } = await updateTitle2(data, changes, storeMode);
       if (result) {
         dispatch(editTitle({ id: storeTitleId, changes, mode: storeMode }));
+      } else {
+        console.log("updateTitle2:", error);
       }
     }
   }
@@ -1009,7 +1027,11 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
           )}
           <MenuItem
             disabled={Object.keys(changes).length === 0}
-            onClick={() => { onSave({ changes }); handleMenuClose(); }}
+            onClick={() => { 
+              //console.log("changes: ", changes)
+              onSave({ changes }); 
+              handleMenuClose(); 
+            }}
           >
             Save
           </MenuItem>
@@ -1066,33 +1088,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
             }}
           >
             {/* path, title, tags */}
-            <Box>
-              {/* path */}
-              <DebouncedTextField
-                label="Path"
-                multiline
-                minRows={1}
-                maxRows={3}
-                fullWidth
-                value={localData.path}
-                onChange={(e) => handleChange("path", e.target.value)}
-                size={isMobile ? "small" : "medium"}
-                sx={{ mb: 1 }}
-              />
-
-              {/* Title */}
-              <DebouncedTextField
-                label="Title"
-                multiline
-                minRows={1}
-                maxRows={3}
-                fullWidth
-                value={localData.title}
-                onChange={(e) => handleChange("title", e.target.value)}
-                size={isMobile ? "small" : "medium"}
-                sx={{ mb: 1 }}
-              />
-
+            <Box>              
               {/* createdAtMs */}
               <Box
                 sx={{
@@ -1103,6 +1099,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                   alignItems: isMobile ? "stretch" : "center",
                 }}
               >
+               
                 <LularDayPicker
                   ngayDL={localData.createdAtMs}
                   setNgayDL={(newVal) => {
@@ -1110,7 +1107,7 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                   }}
                   isMobile={isMobile}
                 ></LularDayPicker>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                {(false) && <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     mt = {1}
                     label="Ngày dương lịch"
@@ -1128,8 +1125,35 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                       },
                     }}
                   />
-                </LocalizationProvider>
+                </LocalizationProvider>}
+                 {/* path */}
+              <DebouncedTextField
+                label="Path"
+                multiline
+                minRows={1}
+                maxRows={3}
+                fullWidth
+                value={localData.path}
+                onChange={(e) => handleChange("path", e.target.value)}
+                size={isMobile ? "small" : "medium"}
+              
+                sx={isMobile? {mt:1} : { ml: 1 }}
+              />
               </Box>
+
+
+              {/* Title */}
+              <DebouncedTextField
+                label="Title"
+                multiline
+                minRows={1}
+                maxRows={3}
+                fullWidth
+                value={localData.title}
+                onChange={(e) => handleChange("title", e.target.value)}
+                size={isMobile ? "small" : "medium"}
+                sx={{ mb: 1 }}
+              />
 
               {/* Tags */}
               <TagEditor
@@ -1365,7 +1389,11 @@ export function TitleEditor({ name, isMobile, data, onSave, onClose, ctrlBar = f
                 )}
                 <Button
                   variant="contained"
-                  onClick={() => onSave({ changes })}
+                  onClick={() => {
+                    //console.log("changes: ", changes )
+                    onSave({ changes })}
+                    
+                  }
                   // fullWidth={isMobile}
                   disabled={Object.keys(changes).length === 0}
                 >
@@ -1464,10 +1492,26 @@ const TagEditor = memo(function TagEditor({
         options={allTags}
         value={selectedOpts}
         onChange={(event, newValue) => {
-          const ids = (newValue).map(opt => opt.id);
+          const ids = newValue.map((opt) => opt.id);
           // console.log(ids)
           setSelectedTags(ids);
         }}
+        renderValue={(value, getTagProps) =>
+          value.map((option, index) => (
+            <Chip
+              {...getTagProps({ index })}
+              label={option.tag}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(option.tag);
+                  console.log("Copied:", option.tag);
+                } catch (err) {
+                  console.error("Copy failed:", err);
+                }
+              }}
+            />
+          ))
+        }
         renderInput={(params) => (
           <TextField
             {...params}
@@ -1476,9 +1520,9 @@ const TagEditor = memo(function TagEditor({
             sx={{
               "& .MuiChip-root": {
                 height: 24,
-                maxWidth: 250,
+                maxWidth: isMobile ? 280 : 500,
                 "& .MuiChip-label": {
-                  maxWidth: 110,
+                  // maxWidth: 300,
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -1486,7 +1530,7 @@ const TagEditor = memo(function TagEditor({
               },
             }}
           />
-        )}        
+        )}
       />
 
       {/* Alert */}
@@ -2924,6 +2968,7 @@ function isSameArray(a, b) {
 
 export function titleToString(title) {
   return [
+    `createdAtMs: ${title.createdAtMs}`,
     `path: ${title.path}`,
     `id: ${title.titleId}`,
     `title: ${title.title}`,
@@ -2936,11 +2981,13 @@ function TitleCard({ t, isMobile, words }){
 
   const dispatch = useDispatch();
   const handleSave = async ({ changes, patch }) => {
+    //console.log("handleSave: ", changes)
     if (Object.keys(changes).length) {
       var { result, error } = await updateTitle2(t, changes, mode);
-      console.log(result, error);
       if (result) {
         dispatch(editTitle({ id: t.titleId, changes, mode }));
+      } else {
+      	console.log("handleSave: ", result, error);	
       }
     }
   };

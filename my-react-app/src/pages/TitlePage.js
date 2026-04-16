@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { addTitle, changeMode, changeTitleId, editTitle, selectMode, selectTitleId, selectTitlesByIds } from "../features/search/searchSlice";
 import { useEffect, useMemo, useState } from "react";
 import { getTitle, updateTitle2 } from "../services/search/keyApi";
-import { Box, Button, FormControl, InputLabel, MenuItem, Select, Stack, TextField, useMediaQuery } from "@mui/material";
+import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Select, Snackbar, Stack, TextField, useMediaQuery } from "@mui/material";
 import { TitleEditor } from "../components/TitleCard";
 import debounce from "debounce";
 
@@ -18,6 +18,9 @@ export const TitlePage = () => {
   const id = params.get("id") ? parseInt(params.get("id"), 10) : storeTitleId;
   const mode = params.get("mode") ? params.get("mode") : storeMode;
   // console.log("TitlePage mode, id:", mode, id);
+   
+  // alert dialog
+  const [alertObj, setAlertObj] = useState({ open: false });
 
   useEffect(() => {
     if (id && storeTitleId !== id) {
@@ -69,7 +72,19 @@ export const TitlePage = () => {
       var { result, error } = await updateTitle2(t, changes, mode);
       // console.log(result, error);
       if (result) {
+        setAlertObj({
+            open: true,
+            type: "success",
+            message: "Saving success!",
+          });
         dispatch(editTitle({ id: t.titleId, changes, mode }));
+      } else {
+        setAlertObj({
+            open: true,
+            type: "error",
+            message: "Saving error: " + error,
+          });
+        console.log("error: ", error);
       }
     }
   }
@@ -119,8 +134,6 @@ export const TitlePage = () => {
       // fullWidth
       // spacing={2}
       >
-
-
         {/* title editor box */}
 
         <TitleEditor
@@ -130,36 +143,26 @@ export const TitlePage = () => {
           onClose={handleClose}
           ctrlBar={true}
         ></TitleEditor>
-        {/* <Box
-          sx={{
-            // position: "absolute",
-            // top: "50%",
-            // left: "50%",
-            // transform: "translate(-50%, -50%)",
-            // width: isMobile ? "100%" : "80%",
-            // maxWidth: "90vw",
-            // fullWidth: true,
-            bgcolor: "background.paper",
-            // boxShadow: 24,
-            mt: 1,
-            // maxHeight: isMobile ? "80vh" : "70vh",
-            // overflowY: "auto",
-            borderRadius: 2,
-            display: "flex",
-            flexGrow: "9",
-            flexDirection: "column"
-          }}
-        >
-          {titles[0] && (
-            <TitleEditor
-              data={titles[0]}
-              isMobile={isMobile}
-              onSave={handleSave}
-              onClose={handleClose}
-            ></TitleEditor>
-          )}
-        </Box> */}
+        
       </Box>
+      
+        
+	    {/* Alert */}
+	    <Snackbar
+	      anchorOrigin={{ vertical: "top", horizontal: "right" }}
+	      open={alertObj.open}
+	      autoHideDuration={5000}
+	      onClose={() => setAlertObj({ open: false })}
+	    >
+	      <Alert
+	        onClose={() => setAlertObj({ open: false })}
+	        severity={alertObj.type} // "error" | "warning" | "info" | "success"
+	        variant="filled"
+	        sx={{ width: "100%" }}
+	      >
+	        {alertObj.message}
+	      </Alert>
+	    </Snackbar>
     </Box>
   );
 };
