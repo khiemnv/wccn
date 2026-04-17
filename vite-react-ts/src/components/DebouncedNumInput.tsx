@@ -1,26 +1,35 @@
 import { TextField } from "@mui/material";
 import debounce from "debounce";
 import { useState, useMemo, useEffect } from "react";
+import type { ChangeEvent } from "react";
 
-// debounce
-export const DebouncedNumInput = ({ id, onChangeId, label="Title ID" }) => {
-  const [inputId, setInputId] = useState(id);
-  const debouncedSearch = useMemo(() => debounce(
-    (zId) => {
-      var nId = parseInt(zId);
-      if (!isNaN(nId)) {
-        onChangeId(nId);
-      }
-    },
-    500), [onChangeId]);
+type DebouncedNumInputProps = {
+  id: string | number;
+  onChangeId: (value: number) => void;
+  label?: string;
+};
+
+export const DebouncedNumInput = ({ id, onChangeId, label = "Title ID" }: DebouncedNumInputProps) => {
+  const [inputId, setInputId] = useState(String(id));
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((zId: string) => {
+        const nId = parseInt(zId, 10);
+        if (!isNaN(nId)) {
+          onChangeId(nId);
+        }
+      }, 500),
+    [onChangeId]
+  );
 
   useEffect(() => {
-    setInputId(id);
+    setInputId(String(id));
   }, [id]);
 
-  const handleIdChange = (e) => {
-    setInputId(e.target.value);
-    debouncedSearch(e.target.value);
+  const handleIdChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const nextValue = e.target.value;
+    setInputId(nextValue);
+    debouncedSearch(nextValue);
   };
   return <TextField
     label={label}

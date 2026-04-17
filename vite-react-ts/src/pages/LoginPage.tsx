@@ -14,6 +14,8 @@ import { useAppDispatch } from "../app/hooks";
 import { login } from "../features/auth/authSlice";
 import { getRole } from "../services/role/roleApi";
 
+type RoleObj = { sys: string };
+
 export default function LoginPage() {
   const dispatch = useAppDispatch();
 
@@ -24,9 +26,24 @@ export default function LoginPage() {
     console.log(res);
     const newUser = res.user;
     if (newUser) {
+      const email = newUser.email;
+      const uid = newUser.uid;
+      if (!email || !uid) {
+        console.error("Missing user email or uid from Firebase login");
+        return;
+      }
+
       try {
-        const { result: roleObj = {} } = await getRole(newUser.email, newUser.uid);
-        dispatch(login({ username: newUser.email, token: newUser.uid, roleObj }));
+        const roleResponse = await getRole(email, uid) as {
+          result?: RoleObj | null;
+        };
+        const roleObj = roleResponse.result ?? null;
+        dispatch(login({
+          username: email,
+          token: uid,
+          role: roleObj?.sys ?? "",
+          roleObj,
+        }));
       } catch (error: unknown) {
         if (error instanceof Error) {
           console.error("Failed to get role:", error.message);

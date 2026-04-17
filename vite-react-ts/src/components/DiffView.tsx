@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import {
     Box, Typography, Table, TableHead, TableBody, TableRow, TableCell,
@@ -7,7 +8,6 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import RestoreIcon from '@mui/icons-material/Restore';
 
 import "react-diff-view/style/index.css";
-import { diff_match_patch } from 'diff-match-patch';
 import { Diff, Hunk, parseDiff } from 'react-diff-view';
 import { createUnifiedDiff } from '../utils/fbUtil';
 
@@ -17,12 +17,12 @@ import { createUnifiedDiff } from '../utils/fbUtil';
 //   { version: 'v3', time: '2025-11-30 14:03', editor: 'Lê Văn C', note: 'Xóa đoạn văn', content: 'Tiêu đề cũ\nNội dung cũ\nKết luận' },
 // ];
 
-export function DiffView({ oldText, newText }) {
+export function DiffView({ oldText, newText }: { oldText: string, newText: string }) {
     // console.log([oldText, newText]);
-    var patch = createUnifiedDiff(oldText, newText);
+    const patch = createUnifiedDiff(oldText, newText);
     // console.log(patch)
     const files = parseDiff(patch);
-    function renderFile({ oldRevision, newRevision, type, hunks }) {
+    function renderFile({ oldRevision, newRevision, type, hunks }:{oldRevision: any, newRevision: any, type: any, hunks: any}) {
         return (
             <Diff key={oldRevision + '-' + newRevision} viewType="split" diffType={type} hunks={hunks}>
                 {hunks => hunks.map(hunk => <Hunk key={hunk.content} hunk={hunk} />)}
@@ -37,13 +37,13 @@ export function DiffView({ oldText, newText }) {
 
 }
 
-function EditHistoryScreen({ editHistories }) {
+function EditHistoryScreen({ editHistories }:{editHistories: any[]}) {
     //   const [compareOpen, setCompareOpen] = useState(false);
     const [revertOpen, setRevertOpen] = useState(false);
-    const [selectedVer, setSelectedVer] = useState(null);
+    const [selectedVer, setSelectedVer] = useState<number | null>(null);
     //   const [diffView, setDiffView] = useState();
 
-    const handleCompare = (index) => {
+    const handleCompare = (index: number) => {
         if (index < (editHistories.length - 1)) {
             setSelectedVer(index);
             // setDiffView([editHistories[index-1].content, editHistories[index].content])
@@ -51,7 +51,7 @@ function EditHistoryScreen({ editHistories }) {
         }
     };
 
-    const handleRevert = (index) => {
+    const handleRevert = (index: number) => {
         setSelectedVer(index);
         setRevertOpen(true);
     };
@@ -121,7 +121,7 @@ function EditHistoryScreen({ editHistories }) {
                 <DialogTitle>Xác nhận khôi phục</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Bạn có muốn khôi phục phiên bản {editHistories[selectedVer]?.version}?
+                        Bạn có muốn khôi phục phiên bản {selectedVer !== null ? editHistories[selectedVer]?.version : ''}?
                     </Typography>
                 </DialogContent>
                 <DialogActions>
@@ -129,7 +129,7 @@ function EditHistoryScreen({ editHistories }) {
                     <Button
                         color="warning"
                         onClick={() => {
-                            alert(`Đã khôi phục về ${editHistories[selectedVer].version}`);
+                            alert(`Đã khôi phục về ${selectedVer !== null ? editHistories[selectedVer].version : '' }`);
                             setRevertOpen(false);
                         }}
                     >

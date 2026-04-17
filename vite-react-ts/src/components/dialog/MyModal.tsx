@@ -1,6 +1,13 @@
+import type { ReactNode } from "react";
 import { Box, Modal, useMediaQuery } from "@mui/material";
 
-export function MyModal({ open, onClose, children: Element }) {
+type MyModalProps = {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+};
+
+export function MyModal({ open, onClose, children }: MyModalProps) {
   const isMobile = useMediaQuery("(max-width:600px)");
   return (
     <Modal open={open} onClose={onClose}>
@@ -23,7 +30,7 @@ export function MyModal({ open, onClose, children: Element }) {
           flexDirection: "column",
         }}
       >
-        {Element}
+        {children}
       </Box>
     </Modal>
   );

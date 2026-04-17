@@ -92,7 +92,7 @@ return (
             ) : (
               <>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/search" element={<SearchPage />} />
+                <Route path="/Search" element={<SearchPage />} />
               </>
             )}
           </Routes>

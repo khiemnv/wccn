@@ -1,4 +1,5 @@
-import React from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { Button } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -6,8 +7,15 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import { CANCEL, YES } from "../../constant/strings";
 
-export function PreviewDialog({ onOk, title, content, children: Element }) {
-  const [open, setOpen] = React.useState(false);
+type PreviewDialogProps = {
+  onOk: () => void;
+  title: string;
+  content: ReactNode;
+  children: ReactNode;
+};
+
+export function PreviewDialog({ onOk, title, content, children }: PreviewDialogProps) {
+  const [open, setOpen] = useState(false);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -19,7 +27,7 @@ export function PreviewDialog({ onOk, title, content, children: Element }) {
 
   return (
     <div>
-      <div onClick={handleClickOpen}>{Element}</div>
+      <div onClick={handleClickOpen}>{children}</div>
       <Dialog
         open={open}
         onClose={handleClose}
@@ -29,7 +37,7 @@ export function PreviewDialog({ onOk, title, content, children: Element }) {
           "& .MuiDialog-container": {
             "& .MuiPaper-root": {
               width: "100%",
-              maxWidth: "min-content", // Set your width here
+              maxWidth: "min-content",
             },
           },
           textAlign: "center",

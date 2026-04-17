@@ -1,9 +1,15 @@
-import { useState } from "react";
-import { Alert, Snackbar } from "@mui/material";
-import { LoadingButton } from "@mui/lab";
+import { useState, type ReactNode } from "react";
+import { Alert, Snackbar, Button } from "@mui/material";
 import { ConfirmButton } from "./ConfirmButton";
-import { ERROR, SUCCESS } from "../../constant/notify";
-import { DONE } from "../../constant/strings";
+import { ERROR, SUCCESS, DONE } from "../../constant/strings";
+
+type FeedbackButtonProps = {
+  confirm?: { title: string; message: string };
+  onClick: () => Promise<{ error?: string }>;
+  disabled?: boolean;
+  variant?: "text" | "outlined" | "contained";
+  children: ReactNode;
+};
 
 export function FeedbackButton({
   confirm,
@@ -11,9 +17,9 @@ export function FeedbackButton({
   disabled,
   variant,
   children,
-}) {
+}: FeedbackButtonProps) {
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState();
+  const [error, setError] = useState<string | undefined>(undefined);
   const [isRunning, setRunning] = useState(false);
 
   function handleClose() {
@@ -26,7 +32,8 @@ export function FeedbackButton({
       var { error } = await onClick();
       setError(error);
     } catch (ex) {
-      setError(ex.message);
+      const message = ex instanceof Error ? ex.message : String(ex);
+      setError(message);
     } finally {
       setRunning(false);
       setOpen(true);
@@ -49,15 +56,10 @@ export function FeedbackButton({
           {error ? `${ERROR} ${error}` : DONE}
         </Alert>
       </Snackbar>
-      {!confirm | disabled ? (
-        <LoadingButton
-          disabled={disabled}
-          onClick={handleClick}
-          loading={isRunning}
-          variant={variant}
-        >
-          {children}
-        </LoadingButton>
+      {!confirm || disabled ? (
+        <Button disabled={disabled || isRunning} onClick={handleClick} variant={variant}>
+          {isRunning ? "Loading..." : children}
+        </Button>
       ) : (
         <ConfirmButton
           onOk={handleClick}
@@ -65,9 +67,9 @@ export function FeedbackButton({
           content={confirm.message}
           isRunning={isRunning}
         >
-          <LoadingButton loading={isRunning} variant={variant}>
+          <Button disabled={isRunning} variant={variant}>
             {children}
-          </LoadingButton>
+          </Button>
         </ConfirmButton>
       )}
     </div>

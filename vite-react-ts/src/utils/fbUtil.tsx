@@ -1,3 +1,4 @@
+import type { QuerySnapshot } from "firebase/firestore";
 import diff_match_patch from "diff-match-patch";
 
 export function createEntity(
@@ -11,16 +12,14 @@ export function createEntity(
 }
 
 export function snapshotToArray(
-  snapshot: {
-    forEach(callback: (doc: { data: () => Record<string, unknown>; id: string }) => void): void;
-  }
+  snapshot: QuerySnapshot<unknown>
 ): Array<Record<string, unknown> & { id: string }> {
   const lst: Array<Record<string, unknown> & { id: string }> = [];
   snapshot.forEach((doc) => {
     // doc.data() is never undefined for query doc snapshots
     // console.log(doc.id, " => ", doc.data());
     lst.push({
-      ...doc.data(),
+      ...(doc.data() as Record<string, unknown>),
       id: doc.id,
     });
   });

@@ -57,7 +57,8 @@ class KeyApi extends BaseApi {
       //   grps.push(grp);
       // });
 
-      const result = await fetch(`/keys/${keyId}.json`);
+      const collectionPath = mode === "BBH" ? "bbh_keys" : "keys";
+      const result = await fetch(`/${collectionPath}/${keyId}.json`);
       const grp = await result.json();
       grps.push(grp);
       grps.forEach((grp) => {

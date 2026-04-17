@@ -8,7 +8,9 @@ import { useAppDispatch } from './app/hooks.tsx'
 import { onAuthStateChanged2 } from './firebase/firebase.tsx'
 import { getRole } from './services/role/roleApi.tsx'
 import { login, logout } from './features/auth/authSlice.tsx'
-import { BrowserRouter, Router } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
+
+type RoleObj = { sys: string };
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const dispatch = useAppDispatch();
@@ -21,8 +23,16 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       (async () => {
         try {
           if (user) {
-            const { result: roleObj } = await getRole(user.email, user.uid);
-            dispatch(login({ username: user.email, token: user.uid, roleObj }));
+            const roleResponse = await getRole(user.email, user.uid) as {
+              result?: RoleObj | null;
+            };
+            const roleObj = roleResponse.result ?? null;
+            dispatch(login({
+              username: user.email,
+              token: user.uid,
+              role: roleObj?.sys ?? "",
+              roleObj,
+            }));
           } else {
             dispatch(logout());
           }

@@ -71,3 +71,7 @@ export default defineConfig([
   },
 ])
 ```
+
+## deploy
+
+npm exec wrangler deploy

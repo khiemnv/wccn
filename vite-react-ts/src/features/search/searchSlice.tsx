@@ -1,5 +1,51 @@
-import { createSelector, createSlice } from "@reduxjs/toolkit";
-const dict = [
+import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+type Mode = "QA" | "BBH";
+type ParagraphViewMode = 0 | 1 | 2;
+type DictEntry = {
+  find: string;
+  replace: string;
+  isReg: boolean;
+  selected: boolean;
+};
+
+export type TitleItem = {
+  titleId: number;
+  title: string;
+  path: string;
+  [key: string]: unknown;
+};
+
+type Key = {
+  keyId: number;
+  [key: string]: unknown;
+};
+type Tag = {
+  id: string;
+  [key: string]: unknown;
+};
+type ModeState = {
+  keys: Key[];
+  titles: TitleItem[];
+};
+type SearchState = {
+  titles: TitleItem[];
+  keys: Key[];
+  QA: ModeState;
+  BBH: ModeState;
+  mode: Mode;
+  titleId: number;
+  searchStr: string;
+  searchPage: number;
+  sortByDate: string;
+  tags: Tag[];
+  status: string;
+  dict: DictEntry[];
+  editMode: "basic" | "advanced";
+  autoSave: boolean;
+  paragraphViewMode: ParagraphViewMode;
+  gdocToken: string | null;
+};
+const dict: DictEntry[] = [
     {
         "find": "\\s+([.,:;?!])\\s*",
         "replace": "$1 ",
@@ -31,17 +77,17 @@ const dict = [
         "selected": true
     }
 ]
-const initialState = {
+const initialState: SearchState = {
   titles: [],
   keys: [],
-  QA : {keys: [], titles: []},
-  BBH : {keys: [], titles: []},
+  QA: { keys: [], titles: [] },
+  BBH: { keys: [], titles: [] },
   mode: "QA",
   titleId: 1,
   searchStr: "",
   searchPage: 1,
   sortByDate: "dsc",
-  tags: undefined,
+  tags: [],
   status: "idle",
   dict: dict,
   editMode: "basic", // basic or advanced
@@ -54,44 +100,44 @@ export const slice = createSlice({
   name: "search",
   initialState,
   reducers: {
-    editTitle: (state, action) => {
+    editTitle: (state, action: PayloadAction<{ id: number; changes: Partial<TitleItem>; mode: Mode }>) => {
       const { id, changes, mode } = action.payload;
       const idx = state[mode].titles.findIndex((t) => t.titleId === id);
       if (idx !== -1) {
         Object.assign(state[mode].titles[idx], changes);
       }
     },
-    addTitle: (state, action) => {
+    addTitle: (state, action: PayloadAction<{ title: TitleItem; mode: Mode }>) => {
       const { title, mode } = action.payload;
-      if (!state[mode].titles.find(t=>t.titleId === title.titleId)) {
+      if (!state[mode].titles.find((t) => t.titleId === title.titleId)) {
         state[mode].titles.push(title);
       }
     },
-    deleteTitle: (state, action) => {
+    deleteTitle: (state, action: PayloadAction<{ titleId: number; mode: Mode }>) => {
       const { titleId, mode } = action.payload;
-      const index = state[mode].titles.findIndex(t=>t.titleId === titleId)
+      const index = state[mode].titles.findIndex((t) => t.titleId === titleId);
       if (index !== -1) {
-        state[mode].titles.splice(index,1);
+        state[mode].titles.splice(index, 1);
       }
     },
-    editKey: (state, action) => {
+    editKey: (state, action: PayloadAction<{ id: number; changes: Partial<Key>; mode: Mode }>) => {
       const { id, changes, mode } = action.payload;
       const key = state[mode].keys.find((k) => k.keyId === id);
       patch(key, changes);
     },
-    addKey: (state, action) => {
-      const {key, mode} = action.payload;
-      if (state[mode].keys.find(k=>k.keyId === key.keyId)) {
+    addKey: (state, action: PayloadAction<{ key: Key; mode: Mode }>) => {
+      const { key, mode } = action.payload;
+      if (state[mode].keys.find((k) => k.keyId === key.keyId)) {
         // already exists
       } else {
         state[mode].keys.push(key);
       }
     },
-    deleteKey: (state, action) => {
+    deleteKey: (state, action: PayloadAction<{ keyId: number; mode: Mode }>) => {
       const { keyId, mode } = action.payload;
-      const index = state[mode].keys.findIndex(k=>k.keyId === keyId)
+      const index = state[mode].keys.findIndex((k) => k.keyId === keyId);
       if (index !== -1) {
-        state[mode].keys.splice(index,1);
+        state[mode].keys.splice(index, 1);
       }
     },
     changeMode: (state, action) => {
@@ -180,43 +226,45 @@ export const {
   clearTags,
   setDict,
 } = slice.actions;
-const selectSearch = (state) => state.search;
-const selectModePara = (state, mode) => mode;
-const selectModeTitlesPara = (state, mode, ids) => ids;
-export const selectTitlesByIds = 
-  createSelector([selectSearch, selectModePara, selectModeTitlesPara], (search, mode, ids) =>
-  { 
-    // console.log("Selecting titles by ids:", ids, "in mode:", mode);
-    return search[mode].titles.filter((t) => ids.includes(t.titleId)); 
-  }
-  );
-const selectModeTitleParam = (state, mode, id) => id;
-export const selectTitleById = 
-  createSelector([selectSearch, selectModePara, selectModeTitleParam], (search, mode, id) =>
+const selectSearch = (state: any) => state.search as SearchState;
+const selectModePara = (_state: any, mode: Mode) => mode;
+const selectModeTitlesPara = (_state: any, _mode: Mode, ids: number[]) => ids;
+export const selectTitlesByIds =
+  createSelector([selectSearch, selectModePara, selectModeTitlesPara], (search: SearchState, mode: Mode, ids: number[]) => {
+    return search[mode].titles.filter((t) => ids.includes(t.titleId));
+  });
+const selectModeTitleParam = (_state: any, _mode: Mode, id: number) => id;
+export const selectTitleById =
+  createSelector([selectSearch, selectModePara, selectModeTitleParam], (search: SearchState, mode: Mode, id: number) =>
     search[mode].titles.find((t) => t.titleId === id)
   );
 
-export const selectAllKeys = 
-createSelector([selectSearch, selectModePara], (search, mode) => search[mode].keys);
-const selectModeKeysPara = (state, mode, ids) => ids;
-export const selectKeysByIds = 
-  createSelector([selectSearch, selectModePara, selectModeKeysPara], (search, mode, ids) => search[mode].keys.filter((k) => ids.includes(k.keyId)));
-export const selectKeyById = (id) =>
-  createSelector([selectAllKeys], (keys) => keys.find((k) => k.keyId === id));
-export const selectMode = (state) => state.search.mode;
-export const selectSortByDate = (state) => state.search.sortByDate;
-export const selectTags = (state) => state.search.tags;
+export const selectAllKeys =
+  createSelector([selectSearch, selectModePara], (search: SearchState, mode: Mode) => search[mode].keys);
+const selectModeKeysPara = (_state: any, _mode: Mode, ids: number[]) => ids;
+export const selectKeysByIds =
+  createSelector([selectSearch, selectModePara, selectModeKeysPara], (search: SearchState, mode: Mode, ids: number[]) =>
+    search[mode].keys.filter((k) => ids.includes(k.keyId))
+  );
+export const selectKeyById = (id: number) =>
+  createSelector([selectAllKeys], (keys: Key[]) => keys.find((k) => k.keyId === id));
+export const selectMode = (state: any) => state.search.mode as Mode;
+export const selectSortByDate = (state: any) => state.search.sortByDate;
+export const selectTags = (state: any) => state.search.tags;
 
-export const selectTitleId = (state) => state.search.titleId;
-export const selectSearchStr = (state) => state.search.searchStr;
-export const selectDict = (state) => state.search.dict;
-export const selectEditmode = (state) => state.search.editMode;
-export const selectAutoSave = (state) => state.search.autoSave;
-export const selectParagraphViewMode = (state) => state.search.paragraphViewMode;
+export const selectTitleId = (state: any) => state.search.titleId;
+export const selectSearchStr = (state: any) => state.search.searchStr;
+export const selectDict = (state: any) => state.search.dict;
+export const selectEditmode = (state: any) => state.search.editMode;
+export const selectAutoSave = (state: any) => state.search.autoSave;
+export const selectParagraphViewMode = (state: any) => state.search.paragraphViewMode;
 
 export default slice.reducer;
 
-function patch(entity,changes) {
-  Object.keys(changes).forEach((key) => (entity[key] = changes[key]));
+function patch(entity: Record<string, unknown> | undefined, changes: Record<string, unknown>) {
+  if (!entity) return;
+  Object.keys(changes).forEach((key) => {
+    entity[key] = changes[key];
+  });
 }
 

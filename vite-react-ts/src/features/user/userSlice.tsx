@@ -1,80 +1,63 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-const initialState = {
+interface User {
+  id: number;
+  username: string;
+}
+
+type UserState = {
+  users: User[];
+  status: "idle" | "loading";
+};
+
+const initialState: UserState = {
   users: [],
   status: "idle",
 };
 
-// user map
-const map = new Map();
+type EditUserPayload = {
+  id: number;
+  changes: Partial<User>;
+};
 
-// load local stored data
-function createMap(users) {
-  map.clear();
-  users.forEach((u) => map.set(u.email, u));
-}
+type AddUserPayload = {
+  user: User;
+};
 
-const ENABLE_CACHE = false;
-function localSave(key, obj) {
-  if (!ENABLE_CACHE) return;
-  localStorage.setItem(key, JSON.stringify(obj));
-}
-function localRestore(key) {
-  if (!ENABLE_CACHE) return;
-  const text = localStorage.getItem(key);
-  return JSON.parse(text);
-}
-function localLoadData() {
-  if (!ENABLE_CACHE) return;
-  try {
-      initialState.members = localRestore("users");
-  } catch (ex) {
-    console.log(ex.messages);
-  }
-}
+type SetAllUsersPayload = {
+  users: User[];
+};
 
-localLoadData(); // reduce fecth on debug
+type DeleteUserPayload = {
+  userId: number;
+};
 
 export const slice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    editUser: (state, action) => {
+    editUser: (state, action: PayloadAction<EditUserPayload>) => {
       const { id, changes } = action.payload;
       const user = state.users.find((u) => u.id === id);
-      patch(user, changes);
+      if (user) {
+        patch(user, changes);
+      }
     },
-    addUser: (state, action) => {
+    addUser: (state, action: PayloadAction<AddUserPayload>) => {
       const { user } = action.payload;
       state.users.push(user);
     },
-    setAllUsers: (state, action) => {
-      const { users } = action.payload;
-      state.users = users;
+    setAllUsers: (state, action: PayloadAction<SetAllUsersPayload>) => {
+      state.users = action.payload.users;
     },
-    deleteUser: (state, action) => {
+    deleteUser: (state, action: PayloadAction<DeleteUserPayload>) => {
       const { userId } = action.payload;
-      const index = state.users.findIndex(u=>u.id === userId)
-      console.log(index, userId)
+      const index = state.users.findIndex((u) => u.id === userId);
       if (index !== -1) {
-        state.users.splice(index,1);
+        state.users.splice(index, 1);
       }
     },
   },
-  // extraReducers: (builder) => {
-  //   builder
-  //     .addCase(fetchDataAsync.fulfilled, (state, action) => {
-  //       state.status = "idle";
-  //       console.log("fetchWorkingTimeAsync", action);
-  //       if (action.payload) {
-  //         state.sheetData = action.payload.sheetData;
-  //         state.sheetHdr = action.payload.sheetHdr;
-  //       }
-  //     })
-  //     .addCase(fetchDataAsync.pending, (state) => {
-  //       state.status = "loading";
-  //     });
-  // },
 });
 
 export const {
@@ -83,12 +66,21 @@ export const {
   setAllUsers,
   deleteUser,
 } = slice.actions;
-export const selectUsers = (state) => state.user.users;
-export const selectUserById = (state, id) =>
+
+type RootState = {
+  user: UserState;
+};
+
+export const selectUsers = (state: RootState) => state.user.users;
+export const selectUserById = (state: RootState, id: number) =>
   state.user.users.find((u) => u.id === id);
 
 export default slice.reducer;
-function patch(entity,changes) {
-  Object.keys(changes).forEach((key) => (entity[key] = changes[key]));
+
+function patch<T extends object>(entity: T, changes: Partial<T>) {
+  Object.keys(changes).forEach((key) => {
+    const k = key as keyof T;
+    (entity as T)[k] = changes[k] as T[typeof k];
+  });
 }
 

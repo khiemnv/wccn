@@ -14,6 +14,7 @@ import {
   selectMode,
   selectSortByDate,
   selectTitlesByIds,
+  type TitleItem,
 } from "../features/search/searchSlice";
 import { getKey, getTitle } from "../services/search/keyApi";
 import {
@@ -55,13 +56,6 @@ type SearchResultRow = {
   titleId: number;
   d: number;
   arr: WordTitleMatch[];
-};
-
-type TitleItem = {
-  titleId: number;
-  title: string;
-  path: string;
-  [key: string]: unknown;
 };
 
 function findTitlesForSearch(keys: SearchKey[]): SearchResultRow[] {
@@ -176,7 +170,7 @@ export default function SearchPage() {
     return { keyIdToWord: map, keyIds: ids, words: normalizedWords };
   }, [query, wordData]);
 
-  const keys = useSelector<RootState, SearchKey[]>((state) => selectKeysByIds(state, mode, keyIds));
+  const keys = useSelector<RootState, SearchKey[]>((state) => selectKeysByIds(state, mode, keyIds) as SearchKey[]);
   console.log("keys ", keyIds.join(","), ":");
   console.log(
     keys
@@ -190,7 +184,7 @@ export default function SearchPage() {
   const view = sortedRows.slice((page - 1) * CHUNK_SIZE, page * CHUNK_SIZE);
   console.log("view:", view);
   const titleIds = view.map((v) => v.titleId);
-  const titles = useSelector<RootState, TitleItem[]>((state) => selectTitlesByIds(state, mode, titleIds));
+  const titles = useSelector<RootState, TitleItem[]>((state) => selectTitlesByIds(state, mode, titleIds) as TitleItem[]);
   const sortedTitles = useMemo<TitleItem[]>(() => {
     return [...titles].sort((a, b) =>
       sortByDate === "asc" ? a.titleId - b.titleId : b.titleId - a.titleId
@@ -286,7 +280,17 @@ export default function SearchPage() {
         for (const res of results) {
           if (!mounted) break;
           if (res && res.result) {
-            dispatch(addTitle({ title: res.result, mode }));
+            const titleData = res.result as Record<string, unknown>;
+            const titleItem: TitleItem = {
+              titleId:
+                typeof titleData.titleId === "number"
+                  ? titleData.titleId
+                  : Number(titleData.id ?? 0),
+              title: String(titleData.title ?? ""),
+              path: String(titleData.path ?? ""),
+              ...titleData,
+            };
+            dispatch(addTitle({ title: titleItem, mode }));
           }
         }
       } finally {

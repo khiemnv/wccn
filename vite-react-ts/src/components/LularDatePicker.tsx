@@ -56,14 +56,7 @@ const CompactSelect = styled(Select, {
  * @returns [startOfM: dayjs, endOfM: dayjs]
  */
 
-type LunarDate = {
-  year: number;
-  month: number;
-  day: number;
-  leap: boolean;
-  jd: number;
-  [key: string]: unknown;
-};
+type LunarDate = ReturnType<typeof getLunarDate>;
 
 type SelectEvent = ChangeEvent<HTMLInputElement> | (Event & { target: { value: unknown; name: string } });
 

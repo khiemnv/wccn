@@ -365,6 +365,7 @@ export class BaseApi {
   }
 }
 
+
 const MAX_PAD_NUM = 999;
 class UserApi extends BaseApi {
   constructor() {

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, Snackbar } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -7,8 +8,15 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { CANCEL, DONE, NOTICE, YES, ERROR, SUCCESS } from "../../constant/strings";
 
-export function AlertDialog({ onOk, title, message, children: Element }) {
-  const [open, setOpen] = React.useState(true);
+type AlertDialogProps = {
+  onOk: () => void;
+  title: string;
+  message: string;
+  children?: ReactNode;
+};
+
+export function AlertDialog({ onOk, title, message, children }: AlertDialogProps) {
+  const [open, setOpen] = useState(true);
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -20,7 +28,7 @@ export function AlertDialog({ onOk, title, message, children: Element }) {
 
   return (
     <div>
-      <div onClick={handleClickOpen}>{Element}</div>
+      <div onClick={handleClickOpen}>{children}</div>
       <Dialog
         open={open}
         onClose={handleClose}
@@ -48,12 +56,12 @@ export function AlertDialog({ onOk, title, message, children: Element }) {
   );
 }
 
-export function AlertDlg2({ title = NOTICE, error, onOk = () => {} }) {
-  const [open, setOpen] = useState();
-  const [msg, setMsg] = useState(error);
+export function AlertDlg2({ title = NOTICE, error, onOk = () => {} }: { title?: string; error?: string; onOk?: () => void }) {
+  const [open, setOpen] = useState<boolean>(false);
+  const [msg, setMsg] = useState<string | undefined>(error);
   useEffect(() => {
     setOpen(!!error);
-    if (!!error) {
+    if (error) {
       setMsg(error);
     }
   }, [error]);
@@ -87,12 +95,12 @@ export function AlertDlg2({ title = NOTICE, error, onOk = () => {} }) {
   );
 }
 
-export function Notify({ error, onOk }) {
-  const [open, setOpen] = useState(false);
-  const [msg, setMsg] = useState(error);
+export function Notify({ error, onOk }: { error?: string; onOk: () => void }) {
+  const [open, setOpen] = useState<boolean>(false);
+  const [msg, setMsg] = useState<string | undefined>(error);
   useEffect(() => {
     setOpen(!!error);
-    if (!!error) {
+    if (error) {
       setMsg(error);
     }
   }, [error]);
@@ -109,21 +117,21 @@ export function Notify({ error, onOk }) {
     >
       <Alert
         onClose={handleClose}
-        severity={!!msg ? ERROR : SUCCESS}
+        severity={msg ? ERROR : SUCCESS}
         sx={{ width: "100%", whiteSpace: "pre-line" }}
       >
-        {!!msg ? `${ERROR} \n「${msg}」` : DONE}
+        {msg ? `${ERROR} \n「${msg}」` : DONE}
       </Alert>
     </Snackbar>
   );
 }
 
-export function ConfirmDlg({ question, onOk = () => {}, onCancel = () => {} }) {
-  const [open, setOpen] = useState();
-  const [msg, setMsg] = useState(question);
+export function ConfirmDlg({ question, onOk = () => {}, onCancel = () => {} }: { question?: string; onOk?: () => void; onCancel?: () => void }) {
+  const [open, setOpen] = useState<boolean>(false);
+  const [msg, setMsg] = useState<string | undefined>(question);
   useEffect(() => {
     setOpen(!!question);
-    if (!!question) {
+    if (question) {
       setMsg(question);
     }
   }, [question]);

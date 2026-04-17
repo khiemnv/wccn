@@ -4,7 +4,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 
 import {
@@ -18,9 +18,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { Chip, Stack, Box } from "@mui/material";
 import { useEffect, useState } from "react";
 
-export default function ChipDragSort({ value, onChange }) {
-  const [items, setItems] = useState(value);
-  const [activeId, setActiveId] = useState(null);
+type ChipDragSortProps = {
+  value: string[];
+  onChange: (items: string[]) => void;
+};
+
+export default function ChipDragSort({ value, onChange }: ChipDragSortProps) {
+  const [items, setItems] = useState<string[]>(value);
 
   useEffect(() => {
     setItems(value);
@@ -29,19 +33,19 @@ export default function ChipDragSort({ value, onChange }) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 200,   // long press (iPhone)
+        delay: 200,
         tolerance: 5,
       },
     })
   );
 
-  const handleDragEnd = ({ active, over }) => {
-    setActiveId(null);
-
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over || active.id === over.id) return;
 
-    const oldIndex = items.indexOf(active.id);
-    const newIndex = items.indexOf(over.id);
+    const oldIndex = items.indexOf(String(active.id));
+    const newIndex = items.indexOf(String(over.id));
+
+    if (oldIndex === -1 || newIndex === -1) return;
 
     const sorted = arrayMove(items, oldIndex, newIndex);
     setItems(sorted);
@@ -52,9 +56,7 @@ export default function ChipDragSort({ value, onChange }) {
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragStart={(e) => setActiveId(e.active.id)}
       onDragEnd={handleDragEnd}
-      onDragCancel={() => setActiveId(null)}
     >
       <SortableContext items={items} strategy={horizontalListSortingStrategy}>
         <Stack direction="row" spacing={1}>
@@ -63,19 +65,11 @@ export default function ChipDragSort({ value, onChange }) {
           ))}
         </Stack>
       </SortableContext>
-
-      {/* ⭐ PERFECT: DragOverlay prevents resizing while dragging */}
-      {/* <DragOverlay>
-        {activeId ? <DragChip id={activeId} /> : null}
-      </DragOverlay> */}
     </DndContext>
   );
 }
 
-//
-// ✔ Sortable chip with smooth animation
-//
-function SortableChip({ id }) {
+function SortableChip({ id }: { id: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -90,22 +84,5 @@ function SortableChip({ id }) {
     <Box ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <Chip label={id} size="small" />
     </Box>
-  );
-}
-
-//
-// ✔ Chip used in overlay (clone), NEVER resizes
-//
-function DragChip({ id }) {
-  return (
-    <Chip
-      label={id}
-      size="small"
-      sx={{
-        boxShadow: 4,
-        opacity: 0.9,
-        cursor: "grabbing",
-      }}
-    />
   );
 }

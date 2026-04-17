@@ -85,95 +85,241 @@ export function ResponsiveAppBar() {
   };
 
   return (
-    <AppBar position="static">
-      <Container maxWidth="xl">
-        <Toolbar disableGutters>
+<AppBar
+  position="static"
+  elevation={1}
+  sx={{
+    bgcolor: "primary.main",
+    borderBottom: "1px solid",
+    borderColor: "rgba(255,255,255,0.12)",
+  }}
+>
+  <Container maxWidth="xl">
+    <Toolbar
+      disableGutters
+      sx={{
+        minHeight: 64,
+        px: { xs: 1, sm: 2 },
+        gap: 1,
+      }}
+    >
+      {/* Desktop logo + title */}
+      <Box
+        sx={{
+          display: { xs: "none", md: "flex" },
+          alignItems: "center",
+          mr: 3,
+          gap: 1.25,
+          flexShrink: 0,
+        }}
+      >
+        <Box
+          component="img"
+          src={logo}
+          alt="THLC Logo"
+          sx={{
+            height: 36,
+            width: "auto",
+            objectFit: "contain",
+          }}
+        />
+        <Typography
+          variant="h6"
+          noWrap
+          sx={{
+            fontWeight: 700,
+            letterSpacing: 0.5,
+            color: "common.white",
+          }}
+        >
+          THLC
+        </Typography>
+      </Box>
 
-          {/* ✅ logo desktop */}
-          <Box
-            component="img"
-            src={logo}
-            sx={{ display: { xs: "none", md: "flex" }, mr: 1, height: 32 }}
-          />
+      {/* Mobile menu button */}
+      <Box
+        sx={{
+          display: { xs: "flex", md: "none" },
+          alignItems: "center",
+        }}
+      >
+        <IconButton
+          size="large"
+          onClick={handleOpenNavMenu}
+          color="inherit"
+          sx={{
+            borderRadius: 2,
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
 
-          <Typography
-            variant="h6"
-            noWrap
-            sx={{ display: { xs: "none", md: "flex" }, fontWeight: 700 }}
-          >
-            THLC
-          </Typography>
-
-          {/* ✅ mobile menu */}
-          <Box sx={{ display: { xs: "flex", md: "none" }, mr: 1 }}>
-            <IconButton onClick={handleOpenNavMenu} color="inherit">
-              <MenuIcon />
-            </IconButton>
-
-            <Menu
-              anchorEl={anchorElNav}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
+        <Menu
+          anchorEl={anchorElNav}
+          open={Boolean(anchorElNav)}
+          onClose={handleCloseNavMenu}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "left",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "left",
+          }}
+          slotProps={{
+            paper: {
+              elevation: 3,
+              sx: {
+                mt: 1,
+                minWidth: 180,
+                borderRadius: 2,
+              },
+            },
+          }}
+        >
+          {availablePages.map((page) => (
+            <MenuItem
+              key={page.text}
+              onClick={() => {
+                handleCloseNavMenu();
+                handleNavMenuItemClick(page);
+              }}
+              sx={{ py: 1, px: 2 }}
             >
-              {availablePages.map((page) => (
-                <MenuItem
-                  key={page.text}
-                  onClick={() => {
-                    handleCloseNavMenu();
-                    handleNavMenuItemClick(page);
-                  }}
-                >
-                  {page.text}
-                </MenuItem>
-              ))}
-            </Menu>
-          </Box>
+              <Typography align="center">{page.text}</Typography>
+            </MenuItem>
+          ))}
+        </Menu>
+      </Box>
 
-          {/* ✅ logo mobile */}
-          <Box
-            component="img"
-            src={logo}
-            sx={{ display: { xs: "flex", md: "none" }, mr: 1, height: 32 }}
-          />
+      {/* Mobile logo + title */}
+      <Box
+        sx={{
+          display: { xs: "flex", md: "none" },
+          alignItems: "center",
+          gap: 1,
+          flexGrow: 1,
+          minWidth: 0,
+        }}
+      >
+        <Box
+          component="img"
+          src={logo}
+          alt="THLC Logo"
+          sx={{
+            height: 32,
+            width: "auto",
+            objectFit: "contain",
+          }}
+        />
+        <Typography
+          variant="subtitle1"
+          noWrap
+          sx={{
+            fontWeight: 700,
+            color: "common.white",
+            letterSpacing: 0.3,
+          }}
+        >
+          THLC
+        </Typography>
+      </Box>
 
-          <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
-            {availablePages.map((page) => (
-              <Button
-                key={page.text}
-                onClick={() => handleNavMenuItemClick(page)}
-                sx={{ color: "white" }}
-              >
-                {page.text}
-              </Button>
-            ))}
-          </Box>
-
-          {/* ✅ user menu */}
-          <Tooltip title={user}>
-            <IconButton onClick={handleOpenUserMenu}>
-              <Avatar>{user[0]?.toUpperCase()}</Avatar>
-            </IconButton>
-          </Tooltip>
-
-          <Menu
-            anchorEl={anchorElUser}
-            open={Boolean(anchorElUser)}
-            onClose={handleCloseUserMenu}
+      {/* Desktop nav menu */}
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: { xs: "none", md: "flex" },
+          alignItems: "center",
+          gap: 0.5,
+          minWidth: 0,
+        }}
+      >
+        {availablePages.map((page) => (
+          <Button
+            key={page.text}
+            onClick={() => handleNavMenuItemClick(page)}
+            sx={{
+              color: "common.white",
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 500,
+              whiteSpace: "nowrap",
+              "&:hover": {
+                bgcolor: "rgba(255,255,255,0.12)",
+              },
+            }}
           >
-            {settings.map((setting) => (
-              <MenuItem
-                key={setting}
-                onClick={() => {
-                  handleCloseUserMenu();
-                  handleUserMenuItemClick(setting);
-                }}
-              >
-                {setting}
-              </MenuItem>
-            ))}
-          </Menu>
-        </Toolbar>
-      </Container>
-    </AppBar>
+            {page.text}
+          </Button>
+        ))}
+      </Box>
+
+      {/* User menu */}
+      <Box sx={{ flexShrink: 0 }}>
+        <Tooltip title={user || ""}>
+          <IconButton
+            onClick={handleOpenUserMenu}
+            sx={{
+              p: 0,
+              ml: 1,
+            }}
+          >
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: "secondary.main",
+                fontWeight: 700,
+                fontSize: 14,
+              }}
+            >
+              {user?.[0]?.toUpperCase() || "U"}
+            </Avatar>
+          </IconButton>
+        </Tooltip>
+
+        <Menu
+          anchorEl={anchorElUser}
+          open={Boolean(anchorElUser)}
+          onClose={handleCloseUserMenu}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "right",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+          slotProps={{
+            paper: {
+              elevation: 3,
+              sx: {
+                mt: 1,
+                minWidth: 180,
+                borderRadius: 2,
+              },
+            },
+          }}
+        >
+          {settings.map((setting) => (
+            <MenuItem
+              key={setting}
+              onClick={() => {
+                handleCloseUserMenu();
+                handleUserMenuItemClick(setting);
+              }}
+              sx={{ py: 1, px: 2 }}
+            >
+              <Typography align="center">{setting}</Typography>
+            </MenuItem>
+          ))}
+        </Menu>
+      </Box>
+    </Toolbar>
+  </Container>
+</AppBar>
   );
 }
