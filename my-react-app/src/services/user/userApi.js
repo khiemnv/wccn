@@ -150,13 +150,14 @@ export class BaseApi {
       // }
 
       const ref = doc(db, this.collectionName, id);
+      const updatedAt = Timestamp.now();
       if (denomalize) {
         var docForFirestore  = {...changes}
         denomalize(docForFirestore );
-        await updateDoc(ref, docForFirestore );
+        await updateDoc(ref, {...docForFirestore, updatedAt} );
       }
       else {
-        await updateDoc(ref, changes);
+        await updateDoc(ref, {...changes, updatedAt});
       }
 
       // update cache

@@ -138,11 +138,19 @@ function normalizeTitle(title) {
     title.createdAtMs = title.createdAt?.toMillis();
     delete title.createdAt;
   }
+  if (title.updatedAt) {
+    title.updatedAtMs = title.updatedAt.toMillis();
+    delete title.updatedAt;
+  }
 }
 function denormalizeTitle(title) {
   if (title.createdAtMs) {
     title.createdAt = Timestamp.fromMillis(title.createdAtMs);
     delete title.createdAtMs;
+  }
+  if (title.updatedAtMs) {
+    title.updatedAt = Timestamp.fromMillis(title.updatedAtMs);
+    delete title.updatedAtMs;
   }
 }
 function titleWrapMethod(originalMethod, idx) {
